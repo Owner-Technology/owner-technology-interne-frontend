@@ -12,8 +12,8 @@ import { useAutoAssignData } from './autoAssignData';
 // puisse sélectionner une période ; propre, clean, dans le même style »). Il garde le moteur qui distribue les leads ADS aux
 // sales (catégories d'effectif, équité, écartés, ratés des 6 minutes). L'autre vue, l'attribution des RDV posés par les setters
 // aux sales, est passée dans Perf Setter le 30/10/2026 (onglet « RDV Setter → Sales », components/perfSetter/RdvSetterSales.jsx).
-const SALES_PARTS = [['assigned', 'Affectés', '#1e3a7b'], ['excluded_small', '< 100 k€', '#9fb3df'], ['duplicate_skipped', 'Doublons', '#b8c0cf'], ['non_classifiable', 'Sans effectif', '#64748b']];
-const CAT_COLORS = ['#cfdaf0', '#9fb3df', '#7f9ad9', '#3d5ba8', '#1e3a7b'];
+const SALES_PARTS = [['assigned', 'Affectés', 'var(--ps2-r1)'], ['excluded_small', '< 100 k€', 'var(--ps2-r3)'], ['duplicate_skipped', 'Doublons', 'var(--ps2-r4)'], ['non_classifiable', 'Sans effectif', 'var(--ps2-r2)']];
+const CAT_COLORS = ['var(--ps2-r5)', 'var(--ps2-r4)', 'var(--ps2-r3)', 'var(--ps2-r2)', 'var(--ps2-r1)'];
 
 export default function AutoAssignTab({ month, avatarFor }) {
   const { period, setPeriod, state, analytics } = useAutoAssignData(month);
@@ -52,12 +52,12 @@ function SalesEngine({ d, avatarFor }) {
         <Reveal as="section" className="ps2-card ps2-span-7" aria-labelledby="ps2-auto-seen">
           <Motion.div className="ps2-card-head" variants={ITEM}><h2 id="ps2-auto-seen">Leads ADS vus par le moteur</h2><b className="ps2-auto-total ps2-num"><CountUp value={t.seen} /></b></Motion.div>
           <Motion.div variants={ITEM}><TickBreakdown items={[
-            { key: 'assigned', label: 'Affectés', value: t.assigned, color: '#1e3a7b', detail: <Detail kicker="Affectés par le moteur" value={fr(t.assigned)}
+            { key: 'assigned', label: 'Affectés', value: t.assigned, color: 'var(--ps2-r1)', detail: <Detail kicker="Affectés par le moteur" value={fr(t.assigned)}
               rows={L ? [['Leads distincts', fr(L.leads)], ['Clean · tél FR, 100 k€ et +', fr(L.clean)], ['Tél non FR', fr(L.non_fr)], ['Moins de 100 k€ sur la fiche', fr(L.u100)], ['Reçus avant la période', fr(L.before)]] : []}
               source="Funnel Leads ne compte que les leads clean reçus sur la période" /> },
-            { key: 'small', label: '< 100 k€', value: t.excluded_small, color: '#9fb3df', detail: <Detail kicker="Écartés" title="Moins de 100 k€ déclaré" value={fr(t.excluded_small)} rows={[['Distribués', '0']]} /> },
-            { key: 'dup', label: 'Doublons', value: t.duplicate_skipped, color: '#b8c0cf', detail: <Detail kicker="Écartés" title="Contact déjà reçu" value={fr(t.duplicate_skipped)} rows={[['Distribués', '0']]} /> },
-            { key: 'nc', label: 'Sans effectif', value: t.non_classifiable, color: '#64748b', detail: <Detail kicker="Écartés" title="Effectif inconnu" value={fr(t.non_classifiable)} rows={[['Distribués', '0']]} /> },
+            { key: 'small', label: '< 100 k€', value: t.excluded_small, color: 'var(--ps2-r3)', detail: <Detail kicker="Écartés" title="Moins de 100 k€ déclaré" value={fr(t.excluded_small)} rows={[['Distribués', '0']]} /> },
+            { key: 'dup', label: 'Doublons', value: t.duplicate_skipped, color: 'var(--ps2-r4)', detail: <Detail kicker="Écartés" title="Contact déjà reçu" value={fr(t.duplicate_skipped)} rows={[['Distribués', '0']]} /> },
+            { key: 'nc', label: 'Sans effectif', value: t.non_classifiable, color: 'var(--ps2-r2)', detail: <Detail kicker="Écartés" title="Effectif inconnu" value={fr(t.non_classifiable)} rows={[['Distribués', '0']]} /> },
           ]} /></Motion.div>
         </Reveal>
         <Reveal as="section" className="ps2-card ps2-span-5" aria-labelledby="ps2-auto-fate">
@@ -66,16 +66,16 @@ function SalesEngine({ d, avatarFor }) {
               detail={<Detail kicker="Règle des 6 minutes" title="Ratés sur la période" value={fr(t.missed)} rows={d.people.filter((p) => p.missed).map((p) => [p.name, fr(p.missed)])} />}>
               <span>Ratés 6 min</span><b className="ps2-num">{fr(t.missed)}</b></Info></Motion.div>
           {L && <Motion.div variants={ITEM}><TickBreakdown minCol={96} items={[
-            { key: 'kept', label: 'Chez le même sales', value: L.kept, color: '#2c6448', detail: <Detail kicker="Toujours chez le sales affecté" value={fr(L.kept)} rows={[['Sur', `${fr(L.leads)} leads`]]} /> },
-            { key: 'moved', label: 'Chez un autre', value: L.moved, color: '#3d5ba8', detail: <Detail kicker="Repris ou réaffectés" value={fr(L.moved)} rows={[['Sur', `${fr(L.leads)} leads`]]} /> },
-            { key: 'pool', label: 'Au pool', value: L.pool, color: '#c2410c', detail: <Detail kicker="Sans sales aujourd’hui" value={fr(L.pool)} rows={[['Sur', `${fr(L.leads)} leads`]]} /> },
+            { key: 'kept', label: 'Chez le même sales', value: L.kept, color: '#6cc493', detail: <Detail kicker="Toujours chez le sales affecté" value={fr(L.kept)} rows={[['Sur', `${fr(L.leads)} leads`]]} /> },
+            { key: 'moved', label: 'Chez un autre', value: L.moved, color: '#8fbdf3', detail: <Detail kicker="Repris ou réaffectés" value={fr(L.moved)} rows={[['Sur', `${fr(L.leads)} leads`]]} /> },
+            { key: 'pool', label: 'Au pool', value: L.pool, color: '#f4b183', detail: <Detail kicker="Sans sales aujourd’hui" value={fr(L.pool)} rows={[['Sur', `${fr(L.leads)} leads`]]} /> },
           ]} /></Motion.div>}
         </Reveal>
       </div>
       <Reveal as="section" className="ps2-card" aria-labelledby="ps2-auto-sales">
         <Motion.div className="ps2-card-head" variants={ITEM}><h2 id="ps2-auto-sales">Par sales et par effectif</h2></Motion.div>
         <div className="ps2-ctable-wrap" style={{ marginTop: 12 }}>
-          <table className="ps2-ctable" style={{ '--c': '#1e3a7b', minWidth: 900 }}>
+          <table className="ps2-ctable" style={{ '--c': 'var(--navy)', minWidth: 900 }}>
             <thead><tr><th style={{ textAlign: 'left' }}>Sales</th>{cats.map(([c, l]) => <th key={c}>{l} sal.</th>)}<th className="is-key" style={{ textAlign: 'left', width: 200 }}>Donnés</th><th>Gardés</th></tr></thead>
             <tbody>
               {d.people.map((p, i) => (
@@ -85,7 +85,7 @@ function SalesEngine({ d, avatarFor }) {
                     {fates[p.name]?.pool > 0 && <span className="ps2-lost" title="Leads partis au pool">−{fates[p.name].pool} pool</span>}</span></td>
                   {cats.map(([c]) => {
                     const v = p.cats[c] || 0;
-                    return <td key={c}>{v ? <span className={`ps2-cb-chip${v / max > 0.5 ? ' is-strong' : ''}`} style={{ '--c': '#1e3a7b', '--a': `${Math.round(10 + 80 * (v / max))}%` }}>{v}</span>
+                    return <td key={c}>{v ? <span className={`ps2-cb-chip${v / max > 0.5 ? ' is-strong' : ''}`} style={{ '--c': 'var(--navy)', '--a': `${Math.round(10 + 80 * (v / max))}%` }}>{v}</span>
                       : <span className="ps2-muted">·</span>}</td>;
                   })}
                   <td className="is-key" style={{ textAlign: 'left' }}><span className="ps2-ctable-sales"><span className="ps2-ctable-bar" style={{ width: 110 }}><Motion.i initial={{ width: 0 }}
@@ -120,7 +120,7 @@ function Kept({ name, f, events }) {
   if (!f) return <span className="ps2-muted">–</span>;
   const others = Math.max(0, (events || 0) - f.missed);
   return (
-    <Info className="ps2-link" label={`${name}, leads gardés, détail`} style={{ fontWeight: 650 }}
+    <Info className="ps2-link" label={`${name}, leads gardés, détail`} style={{ fontWeight: 500 }}
       detail={<Detail kicker={name} title="Leads gardés" value={fr(f.kept)}
         rows={[['Donnés par le moteur', fr(f.engine)], ['Repartis après un raté des 6 min', f.missed ? `−${fr(f.missed)}` : '0', f.missed ? 'ps2-low' : ''],
           ['Partis au pool (3 jours sans RDV, rappel)', f.pool ? `−${fr(f.pool)}` : '0'], f.other ? ['Autres (réaffectés, reçus avant la période)', `−${fr(f.other)}`] : null,

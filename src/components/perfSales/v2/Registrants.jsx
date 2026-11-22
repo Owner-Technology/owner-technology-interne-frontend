@@ -12,7 +12,7 @@ import LeadHistoryPanel from './LeadHistory';
 // vivent dans la base de la landing, pas dans le CRM : un bloc à part sous le schéma, rapproché du CRM par l'e-mail ou le
 // téléphone (`intake.registrants`, calculé par le serveur).
 
-const YELLOW = '#e6b45a';
+const YELLOW = '#b9dc8a';
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const liveLabel = (c) => (c.date ? `Live du ${dm(c.date)}` : c.title);
 const VIA = { lamia: 'via le lien Lamia', aurelie: 'via le lien Aurélie', setter: 'via le CRM setter', live: 'via le live' };
@@ -144,10 +144,10 @@ export function RegistrantsPanel({ open, period, dark, onClose }) {
             </div>
             <div className="ps2-panel-body">
               <div>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--soft)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'var(--soft)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className="ps2-swatch" style={{ background: YELLOW }} />{cohort ? liveLabel(cohort) : 'Toutes les cohortes'}</h2>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
-                  <span className="ps2-num" style={{ fontSize: 52, fontWeight: 600, letterSpacing: '-.03em' }}>{data ? <CountUp value={rows.length} duration={600} /> : '…'}</span>
+                  <span className="ps2-num" style={{ fontSize: 52, fontWeight: 500, letterSpacing: '-.04em' }}>{data ? <CountUp value={rows.length} duration={600} /> : '…'}</span>
                   {data && !crm && <span className={`ps2-intake-check ${base.length === expected ? 'is-ok' : 'is-ko'}`}>
                     {base.length === expected ? `✓ recomptés un par un : ${fr(base.length)}` : `! ${fr(base.length)} pour ${fr(expected)} affichés`}</span>}
                 </div>

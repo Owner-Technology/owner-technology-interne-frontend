@@ -179,7 +179,7 @@ export default function Studio({ model }) {
     obj > 0 && { key: 'objective', y: y(obj), value: obj, label: 'Objectif', color: 'var(--ink)', solid: true },
     open && { key: 'cadence', y: y(simulating ? projected : cadence), value: simulating ? projected : cadence, label: simulating ? 'Simulation' : 'Cadence actuelle', color: tone },
     open && simulating && { key: 'cadence-ghost', y: y(cadence), value: cadence, label: 'Cadence actuelle', color: 'var(--muted)' },
-    open && jevValue != null && { key: 'jev', y: y(jevValue), value: jevValue, label: 'Jev', color: '#b7860b' },
+    open && jevValue != null && { key: 'jev', y: y(jevValue), value: jevValue, label: 'Jev', color: '#a05a05' },
   ].filter(Boolean), 30, Y1, Y0 - 6);
 
   return (
@@ -202,7 +202,7 @@ export default function Studio({ model }) {
           <polygon points={`${X0},${Y0} ${line} ${lx},${Y0}`} fill="url(#ps2-studio-area)" style={{ opacity: drawn ? 1 : 0, transition: 'opacity 900ms ease 500ms' }} />
           <polyline points={line} fill="none" stroke="var(--navy)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"
             pathLength="1" strokeDasharray="1" style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 1300ms ${EASE_CSS} 150ms` }} />
-          {open && jevValue != null && <line x1={lx} y1={ly} x2={X1} y2={y(jevValue)} stroke="#d4a017" strokeWidth="2.4" strokeDasharray="2 6" strokeLinecap="round"
+          {open && jevValue != null && <line x1={lx} y1={ly} x2={X1} y2={y(jevValue)} stroke="#f1b76a" strokeWidth="2.4" strokeDasharray="2 6" strokeLinecap="round"
             style={{ opacity: drawn ? 1 : 0, transition: 'opacity .6s ease 1.4s' }} />}
           {open && simulating && <line x1={lx} y1={ly} x2={X1} y2={y(cadence)} stroke="var(--muted)" strokeWidth="1.6" strokeDasharray="4 5" />}
           {open && drawn && <>

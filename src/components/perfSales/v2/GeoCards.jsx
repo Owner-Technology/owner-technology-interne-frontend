@@ -10,9 +10,9 @@ import { FRANCE_REGIONS, FRANCE_VIEWBOX } from './franceRegions';
 // clients, par personne ; la tranche d'âge avec la connexion Meta, c'est juste des stats en plus »). Région = code postal
 // de l'entreprise cliente ; âge = ventilation Meta des leads des publicités (agrégée par Meta, en parts).
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-const AGE_COLORS = { female: '#3e7d5a', male: '#1e3a7b' };
+const AGE_COLORS = { female: '#6cc493', male: 'var(--navy)' };
 const pct = (v, t) => (t ? (v / t) * 100 : 0);
-const LOW = [226, 232, 243], HIGH = [30, 58, 123];   // bleu Owner très clair -> marine
+const LOW = [241, 238, 233], HIGH = [43, 41, 39];   // grège très clair -> anthracite
 const shade = (t) => `rgb(${LOW.map((c, i) => Math.round(c + (HIGH[i] - c) * t)).join(', ')})`;
 
 export default function GeoCards({ period, teams }) {
@@ -98,7 +98,7 @@ function ClientsMap({ data, teams, month }) {
         <div className="ps2-geo-map">
           <svg viewBox={FRANCE_VIEWBOX} role="img" aria-label={`Clients par région, ${label}`}>
             <defs>
-              <filter id="ps2-geo-lift" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#121b35" floodOpacity=".22" /></filter>
+              <filter id="ps2-geo-lift" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#1c1b19" floodOpacity=".22" /></filter>
             </defs>
             {metro.map((r) => (
               <Motion.path key={r.code} d={r.d} className={`ps2-geo-region${hover === r.code ? ' is-on' : ''}`} tabIndex={0} role="button"

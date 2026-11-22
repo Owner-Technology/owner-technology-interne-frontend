@@ -25,6 +25,7 @@ import Tabs from './Tabs';
 import Controls from './Controls';
 import './v2.css';
 import './v2-nav.css';
+import './owner.css';
 
 // Performance Sales v2 (dev 14/10/2026, maquette Claude Design validée : « let's go, meilleur SVG et cohérence ») :
 // un tableau de bord dès l'arrivée (mois et actualisation dans l'en-tête, gros chiffres, frise des semaines), puis des
@@ -288,7 +289,7 @@ function CallsCard({ calls }) {
       detail={<Detail kicker="Appels Allo" value={fr(calls.total)}
         rows={[['Appels passés', fr(calls.total)], ['Répondus par une personne', `${fr(calls.rate, 0)} %`], calls.missing?.length > 0 && ['Sans Allo', calls.missing.join(', ')]]}
         source="Journal d’appels Allo, par numéro de sales" />}>
-      <Ring value={calls.rate} size={112} stroke={11} track="var(--line-2)" color="#1e3a7b" label={`${fr(calls.rate, 0)} % répondus`}>
+      <Ring value={calls.rate} size={112} stroke={11} track="var(--line-2)" color="var(--navy)" label={`${fr(calls.rate, 0)} % répondus`}>
         <b>{fr(calls.rate, 0)} %</b><small>répondus</small>
       </Ring>
       <span className="ps2-calls-text">
@@ -357,11 +358,11 @@ function Pulse({ signals, onOpen }) {
                 {row.split ? (
                   <span className="ps2-score-split">
                     {row.split.map((x, k) => <Motion.i key={x.label} initial={{ flexGrow: 0 }} animate={{ flexGrow: drawn ? x.value : 0 }}
-                      transition={{ duration: 0.9, ease: EASE, delay: 0.3 + i * 0.08 + k * 0.1 }} style={{ background: k ? '#9fb3df' : '#1e3a7b' }} />)}
+                      transition={{ duration: 0.9, ease: EASE, delay: 0.3 + i * 0.08 + k * 0.1 }} style={{ background: k ? 'var(--ps2-r3)' : 'var(--navy)' }} />)}
                   </span>
                 ) : row.bars ? row.bars.map((x, k) => (
                   <span key={k} className="ps2-score-bar"><Motion.i initial={{ width: 0 }} animate={{ width: drawn ? `${((x || 0) / max) * 100}%` : 0 }}
-                    transition={{ duration: 0.9, ease: EASE, delay: 0.3 + i * 0.08 + k * 0.12 }} style={{ background: k ? (bad ? '#c2410c' : '#1e3a7b') : '#d6deee' }} /></span>
+                    transition={{ duration: 0.9, ease: EASE, delay: 0.3 + i * 0.08 + k * 0.12 }} style={{ background: k ? (bad ? '#f4b183' : 'var(--navy)') : 'var(--ps2-r4)' }} /></span>
                 )) : null}
               </span>
             </Info>
@@ -372,7 +373,7 @@ function Pulse({ signals, onOpen }) {
   );
 }
 
-const TEAM_COLORS = ['#1e3a7b', '#3e7d5a', '#d4834a', '#7f9ad9'];
+const TEAM_COLORS = ['#2b2927', '#6cc493', '#f4b183', '#8fbdf3'];
 
 function Teams({ teams, onPilot, days }) {
   const drawn = useDrawn();
@@ -584,10 +585,10 @@ function ListFlow({ data, unit }) {
     <div className="ps2-listflow">
       {steps.map(([k, l], i) => (
         <div key={k}>
-          <div className="ps2-num" style={{ fontSize: 26, fontWeight: 600 }}><CountUp value={data[k] || 0} /></div>
+          <div className="ps2-num" style={{ fontSize: 26, fontWeight: 500, letterSpacing: '-.03em' }}><CountUp value={data[k] || 0} /></div>
           <div style={{ fontSize: 12, color: 'var(--soft)' }}>{l}</div>
           <span className="ps2-bar" style={{ width: '100%', marginTop: 8 }}><Motion.i initial={{ width: 0 }} animate={{ width: drawn ? `${Math.max(data[k] ? 2 : 0, ((data[k] || 0) / max) * 100)}%` : 0 }}
-            transition={{ duration: 0.9, ease: EASE, delay: 0.2 + i * 0.1 }} style={{ background: '#4f9a72' }} /></span>
+            transition={{ duration: 0.9, ease: EASE, delay: 0.2 + i * 0.1 }} style={{ background: '#6cc493' }} /></span>
         </div>
       ))}
     </div>
@@ -610,13 +611,13 @@ function Cohort({ model }) {
   const f = byFam[fam] || {};
   const label = (families.find(([k]) => k === fam) || COHORT_FAMILIES[0])[1];
   const steps = [
-    { key: 'leads', label: 'Leads reçus', value: f.leads || 0, color: '#1e3a7b' },
-    { key: 'r1', label: 'R1 posés', value: f.r1 || 0, color: '#3d5ba8' },
-    { key: 'r1_done', label: 'R1 effectués', value: f.r1_done || 0, color: '#5d79c2' },
-    { key: 'r2', label: 'R2 posés', value: f.r2 || 0, color: '#7f9ad9' },
-    { key: 'r2_done', label: 'R2 effectués', value: f.r2_done || 0, color: '#a5b9e6' },
-    { key: 'signed', label: 'Signés', value: f.signed || 0, color: '#4f9a72' },
-    { key: 'sales', label: 'Vendus', value: f.sales || 0, color: '#2c6448' },
+    { key: 'leads', label: 'Leads reçus', value: f.leads || 0, color: 'var(--ps2-r1)' },
+    { key: 'r1', label: 'R1 posés', value: f.r1 || 0, color: '#4a4540' },
+    { key: 'r1_done', label: 'R1 effectués', value: f.r1_done || 0, color: 'var(--ps2-r2)' },
+    { key: 'r2', label: 'R2 posés', value: f.r2 || 0, color: '#8f8a83' },
+    { key: 'r2_done', label: 'R2 effectués', value: f.r2_done || 0, color: 'var(--ps2-r3)' },
+    { key: 'signed', label: 'Signés', value: f.signed || 0, color: '#6cc493' },
+    { key: 'sales', label: 'Vendus', value: f.sales || 0, color: '#1f9d57' },
   ];
   const span = `${dm(model.period.start)} → ${dm(model.pilot?.days?.today || model.period.end)}`;
   return (
@@ -696,7 +697,7 @@ function RdvSummary({ model: pageModel, data, front, range, onOpen, dark, delay 
   const closeAgenda = useCallback(() => setAgenda(false), []);
   const t = scopeFigures(model, scope.source, scope.ad);
   const scopeLabel = scope.source ? [SOURCES.find((x) => x.key === scope.source)?.label, model.ads?.[scope.source]?.find((a) => a.key === scope.ad)?.label].filter(Boolean).join(' · ') : null;
-  const track = dark ? 'rgba(148,163,184,.18)' : '#eef1f6';
+  const track = 'var(--line-2)';
   return (
     <div className="ps2-grid">
       <div className="ps2-span-12"><ChannelFilter model={model} value={scope} onChange={setScope} steps={['r1', 'r2']} countStep="r1" id="ps2-rdv-scope" /></div>
@@ -705,11 +706,11 @@ function RdvSummary({ model: pageModel, data, front, range, onOpen, dark, delay 
         const cancelled = Math.max(0, due - done - open - noshow), upcoming = Math.max(0, placed - due);
         const presence = pct(done, done + noshow);
         const parts = [
-          { key: 'done', label: 'effectués', value: done, color: '#2c6448' },
-          { key: 'noshow', label: 'absents', value: noshow, color: '#c2410c' },
-          { key: 'cancelled', label: 'annulés', value: cancelled, color: '#c9a66b' },
-          { key: 'open', label: 'pas qualifiés', value: open, color: '#cfd5df' },
-          { key: 'upcoming', label: 'à venir', value: upcoming, color: '#9fb3df' },
+          { key: 'done', label: 'effectués', value: done, color: '#6cc493' },
+          { key: 'noshow', label: 'absents', value: noshow, color: '#ee8f8a' },
+          { key: 'cancelled', label: 'annulés', value: cancelled, color: '#b5b0a8' },
+          { key: 'open', label: 'pas qualifiés', value: open, color: '#f1b76a' },
+          { key: 'upcoming', label: 'à venir', value: upcoming, color: '#8fbdf3' },
         ];
         return (
           <Reveal as="section" key={s} className="ps2-card ps2-span-6" aria-label={`Rendez-vous ${name}`}>
@@ -724,12 +725,12 @@ function RdvSummary({ model: pageModel, data, front, range, onOpen, dark, delay 
                 detail={<Detail kicker={`Présence ${name}`} value={presence == null ? '–' : `${presence} %`}
                   rows={[['Effectués', fr(done)], ['Absents', fr(noshow)], ['Annulés', fr(cancelled)], ['Pas encore qualifiés', fr(open)]]}
                   lines={[`${done} ÷ (${done} + ${noshow}) = ${presence ?? '–'} %`, 'Même règle que les cartes de présence par jour et heure.']} />}>
-                <Ring value={presence} size={116} stroke={11} track={track} color={presence == null ? '#94a3b8' : presence >= 70 ? '#2c6448' : presence >= 50 ? '#2f4f9e' : '#c2410c'} label={`Présence ${name} ${presence ?? '–'} %`}>
+                <Ring value={presence} size={116} stroke={11} track={track} color={presence == null ? 'var(--ps2-r3)' : presence >= 70 ? '#1f9d57' : presence >= 50 ? 'var(--navy)' : '#d9544d'} label={`Présence ${name} ${presence ?? '–'} %`}>
                   <b>{presence == null ? '–' : `${presence} %`}</b><small>présence</small>
                 </Ring>
               </Info>
               <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-                <div className="ps2-num" style={{ fontSize: 30, fontWeight: 600, letterSpacing: '-.02em' }}><CountUp value={placed} /> <small style={{ fontSize: 14, color: 'var(--soft)', fontWeight: 500 }}>posés</small></div>
+                <div className="ps2-num" style={{ fontSize: 30, fontWeight: 500, letterSpacing: '-.03em' }}><CountUp value={placed} /> <small style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 400 }}>posés</small></div>
                 <Composition parts={parts} total={placed} />
                 {s === 'r2' && !scope.source && !own && delay?.length > 0 && (
                   <Info className="ps2-rdv-delay" label="Délai R1 → R2, détail"
@@ -841,14 +842,14 @@ export default function PerfSalesV2({ data, dark, period, tab, onTab, front, con
   const open = (metric, extra = {}) => setVerify({ metric, ...extra });
   if (!model) {
     return (
-      <div className={`ps2${dark ? ' is-dark' : ''}`}>
+      <div className={`ps2 ps2-owner${dark ? ' is-dark' : ''}`}>
         <div className="ps2-hero"><div><div className="ps2-hero-line"><Controls controls={controls} /></div><h1>Performance Sales</h1></div></div>
         {loading && <div className="ps2-loading" aria-label="Chargement"><i /><i /><i /><i /></div>}
       </div>
     );
   }
   return (
-    <div className={`ps2${dark ? ' is-dark' : ''}${loading ? ' is-loading' : ''}`}>
+    <div className={`ps2 ps2-owner${dark ? ' is-dark' : ''}${loading ? ' is-loading' : ''}`}>
       <PopLayer>
         <Hero model={model} onOpen={open} controls={controls} />
         <Tabs tabs={TABS} tab={tab} onTab={onTab} label="Vues de la Performance Sales" />

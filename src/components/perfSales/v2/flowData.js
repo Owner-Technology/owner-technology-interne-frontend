@@ -9,14 +9,14 @@ import { fr } from './model.js';
 // Dessin : AdsFlow.jsx, agencement : flowLayout.js.
 
 export const CHANNELS = {
-  ads: { label: 'ADS', color: '#1e3a7b' },
-  webinar: { label: 'Webinaire', color: '#e6b45a' },
-  linkedin: { label: 'LinkedIn', color: '#d4834a' },
-  referral: { label: 'Parrainage', color: '#b85c78' },
-  ccs: { label: 'Cold call setter', color: '#4f9a72' },
-  cold_call: { label: 'Cold call sales', color: '#8b95a7' },
-  test: { label: 'Tests', color: '#b9c0cc' },
-  other: { label: 'Autres', color: '#c9cfda' },
+  ads: { label: 'ADS', color: '#8fbdf3' },
+  webinar: { label: 'Webinaire', color: '#b9dc8a' },
+  linkedin: { label: 'LinkedIn', color: '#f2a0a0' },
+  referral: { label: 'Parrainage', color: '#f4b183' },
+  ccs: { label: 'Cold call setter', color: '#ecd36a' },
+  cold_call: { label: 'Cold call sales', color: '#cfc8bd' },
+  test: { label: 'Tests', color: '#dedad3' },
+  other: { label: 'Autres', color: '#e5e1db' },
 };
 const CHANNEL_ORDER = ['ads', 'webinar', 'linkedin', 'referral', 'ccs', 'cold_call', 'other', 'test'];
 
@@ -31,29 +31,29 @@ export const WEBINAR_LINKS = {
 const LINK_ORDER = ['lamia', 'aurelie', 'setter', 'live'];
 
 export const FUNNEL = {
-  fr: { label: 'Traitables', sub: 'tél. FR, 100 k€ et plus', color: '#2f4f9e' },
-  non_fr: { label: 'Tél. non français', color: '#8b95a7' },
-  small: { label: '1 à 2 · < 100 k€', color: '#a3abbb' },
+  fr: { label: 'Traitables', sub: 'tél. FR, 100 k€ et plus', color: '#2b2927' },
+  non_fr: { label: 'Tél. non français', color: '#b5b0a8' },
+  small: { label: '1 à 2 · < 100 k€', color: '#cfc8bd' },
 };
 const FUNNEL_ORDER = ['fr', 'non_fr', 'small'];
 
 // Où est la fiche aujourd'hui (case `flow` du serveur). `ads` : libellé d'une fiche ADS ; `other` : d'un autre canal.
 const FATES = {
-  ads_affectation: { ads: 'Chez le sales affecté', color: '#1e3a7b',
+  ads_affectation: { ads: 'Chez le sales affecté', color: '#8fbdf3',
     lines: ['Le sales que le moteur a choisi l’a toujours (ou l’a reçue après un raté des 6 minutes d’un collègue) : colonne « ADS affectés ».'] },
-  ads_pool: { ads: 'Repris du pool', color: '#7f9ad9', lines: ['Repartie au pool commun, puis reprise par un sales (parfois celui que le moteur avait choisi) : colonne « ADS repris du pool ».'] },
+  ads_pool: { ads: 'Repris du pool', color: '#7fd3df', lines: ['Repartie au pool commun, puis reprise par un sales (parfois celui que le moteur avait choisi) : colonne « ADS repris du pool ».'] },
   other: { other: 'chez un sales', lines: ['Dans la colonne de son canal.'] },
-  pool_waiting: { ads: 'Au pool, personne ne l’a repris', other: 'au pool', color: '#c3cde3',
+  pool_waiting: { ads: 'Au pool, personne ne l’a repris', other: 'au pool', color: '#dedad3',
     lines: ['Donnée à un sales, repartie au pool commun, pas encore reprise : elle ne compte pour aucun sales.'] },
-  same_contact: { ads: 'Même contact déjà chez ce sales', other: 'même contact déjà chez ce sales', color: '#aeb6c6', lines: ['Comptée une fois par sales et par contact.'] },
-  not_given_duplicate: { ads: 'Doublons, jamais données', other: 'doublon, jamais donnée', color: '#8b95a7',
+  same_contact: { ads: 'Même contact déjà chez ce sales', other: 'même contact déjà chez ce sales', color: '#c9c4bc', lines: ['Comptée une fois par sales et par contact.'] },
+  not_given_duplicate: { ads: 'Doublons, jamais données', other: 'doublon, jamais donnée', color: '#b5b0a8',
     lines: ['Le moteur d’affectation l’a reconnue comme un contact déjà reçu.'] },
-  not_given_small: { ads: 'Écartées par le moteur, moins de 100 k€', other: 'écartée, moins de 100 k€', color: '#a3abbb',
+  not_given_small: { ads: 'Écartées par le moteur, moins de 100 k€', other: 'écartée, moins de 100 k€', color: '#d8d3cb',
     lines: ['Le moteur d’affectation ne donne pas les moins de 100 k€.'] },
   not_given_webinar: { ads: 'Prises par les setters', other: 'prises par les setters', color: '#d9b25f', lines: ['Inscrits webinaire traités par les setters.'] },
-  not_given_unclassifiable: { ads: 'Non classables (tests)', other: 'non classable (test)', color: '#cdd2dc', lines: ['Fiche de test, non classable par le moteur.'] },
-  not_given_waiting: { ads: 'Pas encore attribuées', other: 'pas encore attribuée', color: '#dde1e8', lines: ['Pas encore passée dans le moteur d’affectation.'] },
-  demo: { ads: 'Comptes de test ou de démo', other: 'compte de démo', color: '#d5dae3', lines: ['Hors statistiques.'] },
+  not_given_unclassifiable: { ads: 'Non classables (tests)', other: 'non classable (test)', color: '#e5e1db', lines: ['Fiche de test, non classable par le moteur.'] },
+  not_given_waiting: { ads: 'Pas encore attribuées', other: 'pas encore attribuée', color: '#ebe8e3', lines: ['Pas encore passée dans le moteur d’affectation.'] },
+  demo: { ads: 'Comptes de test ou de démo', other: 'compte de démo', color: '#e5e1db', lines: ['Hors statistiques.'] },
 };
 const FATE_ORDER = ['ads_affectation', 'ads_pool', 'other', 'pool_waiting', 'same_contact', 'not_given_duplicate', 'not_given_small',
   'not_given_webinar', 'not_given_unclassifiable', 'not_given_waiting', 'demo'];
@@ -78,7 +78,7 @@ export function flowGraph(intake) {
     if (!leaf) {
       const f = FATES[key] || { ads: fate, other: fate };
       const label = channel === 'ads' ? f.ads : `${CHANNELS[channel]?.label || channel} · ${f.other || f.ads}`;
-      leaf = { id, col: 3, label, value: 0, color: channel === 'ads' || key !== 'other' ? f.color || '#c9cfda' : CHANNELS[channel]?.color,
+      leaf = { id, col: 3, label, value: 0, color: channel === 'ads' || key !== 'other' ? f.color || '#dedad3' : CHANNELS[channel]?.color,
         group: channel, fate: key, lines: f.lines || [], order: rank(CHANNEL_ORDER, channel) * 100 + rank(FATE_ORDER, key) };
       leafOf.set(id, leaf);
     }
@@ -88,7 +88,7 @@ export function flowGraph(intake) {
   };
   for (const channel of channels) {
     const own = rows.filter((r) => r.channel === channel);
-    const c = CHANNELS[channel] || { label: channel, color: '#c9cfda' };
+    const c = CHANNELS[channel] || { label: channel, color: '#dedad3' };
     // Webinaire : un bloc par lien d'origine, tous vers les mêmes cases d'aujourd'hui.
     if (channel === 'webinar' && own.some((r) => r.sub)) {
       const subs = [...new Set(own.map((r) => r.sub || 'live'))].sort((a, b) => rank(LINK_ORDER, a) - rank(LINK_ORDER, b));

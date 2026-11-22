@@ -102,11 +102,11 @@ export default function VerifyPanel({ open, model: pageModel, period: pagePeriod
             </div>
             <div className="ps2-panel-body">
               <div>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--soft)' }}>{open.dossiers === 'r1p' ? 'R1 posés' : open.dossiers === 'r2p' ? 'R2 posés' : metric.label}{person ? ` · ${person}` : ''}{source ? ` · ${sourceOf(source).label}` : ''}</h2>
+                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'var(--soft)' }}>{open.dossiers === 'r1p' ? 'R1 posés' : open.dossiers === 'r2p' ? 'R2 posés' : metric.label}{person ? ` · ${person}` : ''}{source ? ` · ${sourceOf(source).label}` : ''}</h2>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
-                  <span className="ps2-num" style={{ fontSize: 52, fontWeight: 600, letterSpacing: '-.03em' }}>{fr(person || source || open?.ad ? rows.length : metric.value)}</span>
+                  <span className="ps2-num" style={{ fontSize: 52, fontWeight: 500, letterSpacing: '-.04em' }}>{fr(person || source || open?.ad ? rows.length : metric.value)}</span>
                   {!person && !source && metric.gap != null && (
-                    <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12.5, fontWeight: 600,
+                    <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12.5, fontWeight: 500,
                       background: metric.gap >= 0 ? 'var(--good-bg)' : 'var(--low-bg)', color: metric.gap >= 0 ? 'var(--good)' : 'var(--low)' }}>
                       {signedNum(metric.gap)} sur l'attendu à date ({fr(metric.expected)})</span>
                   )}

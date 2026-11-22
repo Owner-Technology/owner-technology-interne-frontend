@@ -13,14 +13,14 @@ import { agendaPeople, agendaRows } from './agendaData';
 // r1p, r2p, r1_phone) : l'agenda recompte exactement ce que la page compte. Rien n'est modifié dans le CRM.
 
 const KIND = {
-  r1: { label: 'R1', long: 'R1 posé dans le CRM', color: '#2f4f9e', bg: '#e9eef6' },
-  r2: { label: 'R2', long: 'R2 après un R1', color: '#2c6448', bg: '#e8f1ec' },
-  direct: { label: 'R2 direct', long: 'R2 direct · R1 au téléphone compté', color: '#2c6448', bg: '#ffffff' },
+  r1: { label: 'R1', long: 'R1 posé dans le CRM', color: '#1b6fd0', bg: '#e4f0fd' },
+  r2: { label: 'R2', long: 'R2 après un R1', color: '#0b7a4b', bg: '#e2f6ea' },
+  direct: { label: 'R2 direct', long: 'R2 direct · R1 au téléphone compté', color: '#0b7a4b', bg: '#ffffff' },
 };
 const STATUS = {
-  'Effectué': { icon: '✓', color: '#2c6448' }, 'Absent': { icon: '✕', color: '#c2410c' }, 'Annulé': { icon: '–', color: '#a08452' },
-  'À venir': { icon: '•', color: '#6f86c2' }, 'Pas qualifié': { icon: '?', color: '#8b95a7' }, 'Reporté': { icon: '↻', color: '#8b95a7' },
-  'À reporter': { icon: '↻', color: '#8b95a7' }, 'Au téléphone': { icon: '✓', color: '#2c6448' },
+  'Effectué': { icon: '✓', color: '#0b7a4b' }, 'Absent': { icon: '✕', color: '#c5221f' }, 'Annulé': { icon: '–', color: '#8b867e' },
+  'À venir': { icon: '•', color: '#1b6fd0' }, 'Pas qualifié': { icon: '?', color: '#9d9890' }, 'Reporté': { icon: '↻', color: '#9d9890' },
+  'À reporter': { icon: '↻', color: '#9d9890' }, 'Au téléphone': { icon: '✓', color: '#0b7a4b' },
 };
 const WEEK = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];

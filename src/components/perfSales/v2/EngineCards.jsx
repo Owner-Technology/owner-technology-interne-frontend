@@ -20,7 +20,7 @@ const SCOPES = [
 ];
 const HORIZONS = [[0, 'Fin du mois'], [1, '+1 mois'], [2, '+2 mois'], [3, '+3 mois']];
 const CATS = [1, 2, 3, 4, 5];
-const GROUPS = { big: ['11 sal. et +', '#1e3a7b'], base: ['Autres sales', '#3e7d5a'] };
+const GROUPS = { big: ['11 sal. et +', 'var(--navy)'], base: ['Autres sales', '#1f9d57'] };
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const at = (obj, c) => obj?.[c] ?? obj?.[String(c)] ?? 0;
 const pct = (v, d = 0) => `${fr(v * 100, d)} %`;

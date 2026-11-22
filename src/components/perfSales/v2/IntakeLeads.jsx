@@ -17,8 +17,8 @@ const STAGE = { none: 'Aucun RDV', r1_set: 'R1 posé', r1_done: 'R1 effectué', 
 const CLAIM = { barrier: 'barrage, R1 posé', callback: 'barrage, rappel', reactivity: 'pool réactivité', other: 'réaffecté ensuite' };
 const POOL = { traitement: '3 jours sans RDV', reactivite: '6 min ratées' };
 // Teintes Owner : le mois en cours reprend la couleur de sa case du schéma, les mois anciens du marine au plus clair.
-export const RECLAIM_MONTH = '#7f9ad9';
-const OLDER = ['#1e3a7b', '#3a5598', '#5f6f92', '#8b95a7', '#b9c0cc'];
+export const RECLAIM_MONTH = '#7fd3df';
+const OLDER = ['var(--ps2-r1)', '#4a4540', 'var(--ps2-r2)', '#8f8a83', 'var(--ps2-r3)'];
 const olderColor = (i) => OLDER[Math.min(i, OLDER.length - 1)];
 
 // Horodatage réel (journal de réactivité, timestamptz) : affiché à l'heure de Paris.
@@ -126,10 +126,10 @@ export function IntakePanel({ open, period, dark, onClose }) {
             </div>
             <div className="ps2-panel-body">
               <div>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--soft)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'var(--soft)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   {open.color && <span className="ps2-swatch" style={{ background: open.color }} />}{[open.title, ...groups.map((g, i) => sel[i]).filter(Boolean)].join(' · ')}</h2>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
-                  <span className="ps2-num" style={{ fontSize: 52, fontWeight: 600, letterSpacing: '-.03em' }}>
+                  <span className="ps2-num" style={{ fontSize: 52, fontWeight: 500, letterSpacing: '-.04em' }}>
                     {state.data ? <CountUp value={rows.length} duration={600} /> : fr(open.expected)}</span>
                   {matches != null && !filtered && (
                     <span className={`ps2-intake-check ${matches ? 'is-ok' : 'is-ko'}`}>
@@ -177,7 +177,7 @@ export function IntakePanel({ open, period, dark, onClose }) {
                                   {why.notes.map((n) => <span key={n} className="ps2-intake-why-note">{n}</span>)}</div>
                               ) : <span className="ps2-soft">jamais donnée</span>}</td>
                               <td><div className="ps2-intake-steps">{steps(r).map((s, k) => <span key={k} className={s.tone ? `is-${s.tone}` : ''}>{s.text}</span>)}</div></td>
-                              <td>{r.now ? <b style={{ fontWeight: 600 }}>{r.now}</b>
+                              <td>{r.now ? <b style={{ fontWeight: 500 }}>{r.now}</b>
                                 : <span className="ps2-tag is-warn" style={{ marginLeft: 0 }}>{r.opt_out ? 'retiré du pool' : r.engine || r.previous ? 'au pool' : 'personne'}</span>}</td>
                               <td><span className={`ps2-intake-stage is-${r.stage}`}>{STAGE[r.stage] || r.stage}</span></td>
                             </Motion.tr>
@@ -308,7 +308,7 @@ export function PoolReclaims({ reclaims, month, onLeads }) {
 // Carte « Affectés » (dev 16/10/2026 : « il faut qu'on sache exactement les leads qui ont été affectés dans une première
 // intention… après il s'est passé des trucs… on veut le détail : pourquoi ils sont repartis dans le pool ») : les fiches
 // ADS du mois données à un sales (les trois cases du schéma), ce qu'elles sont devenues et pourquoi, par sales.
-const FATE_BAR = [['ads_affectation', 'Chez le sales affecté', '#1e3a7b'], ['ads_pool', 'Repris du pool', '#7f9ad9'], ['pool_waiting', 'Au pool', '#c3cde3']];
+const FATE_BAR = [['ads_affectation', 'Chez le sales affecté', '#8fbdf3'], ['ads_pool', 'Repris du pool', '#7fd3df'], ['pool_waiting', 'Au pool', 'var(--ps2-r4)']];
 
 export function AffectedCard({ period, month, intake, onLeads }) {
   const on = useRevealed();

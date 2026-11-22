@@ -5,10 +5,10 @@ import { fr } from './model';
 
 // Présence par jour et heure (dev 14/10/2026 : « tu peux faire mieux, même le code couleur »). Un rond par créneau :
 // sa surface dit combien de RDV y sont passés, sa couleur leur présence, sur une seule échelle aux couleurs Owner
-// (rouille = absents, bleu clair = moitié, vert = présents). En bord de grille, la présence de chaque jour et de chaque
+// (rouge = absents, grège = moitié, vert = présents). En bord de grille, la présence de chaque jour et de chaque
 // heure. Présence = présents ÷ (présents + absents), la même règle que l'anneau.
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-const STOPS = [[0, [194, 65, 12]], [0.5, [214, 222, 236]], [1, [44, 100, 72]]];
+const STOPS = [[0, [217, 84, 77]], [0.5, [241, 238, 233]], [1, [31, 157, 87]]];
 
 export function presenceColor(rate) {
   if (rate == null) return 'var(--line)';

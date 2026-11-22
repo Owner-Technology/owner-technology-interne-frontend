@@ -40,7 +40,7 @@ const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet'
 const monthName = (model) => MONTHS[Number(String(model.period?.start || '').slice(5, 7)) - 1] || 'ce mois';
 const COHORT_KEY = 'ads_received';
 const isCohort = (key) => key === COHORT_KEY;
-export const channelColor = (key) => (isCohort(key) ? '#1e3a7b' : sourceOf(key).color);
+export const channelColor = (key) => (isCohort(key) ? 'var(--navy)' : sourceOf(key).color);
 export const channelLabel = (key, model) => (isCohort(key) ? `ADS reçus en ${model ? monthName(model) : 'ce mois'}` : sourceOf(key).label);
 
 // Parcours d'un canal (dev 14/10/2026 : « regarde l'incohérence ») : les MÊMES leads d'un bout à l'autre, ceux qui ont
@@ -72,7 +72,7 @@ export function FunnelPicker({ model, value, onChange }) {
   const j = model.journeys || {};
   const present = SOURCES.filter((s) => (j[s.key]?.active || 0) > 0);
   if (!present.length) return null;
-  const cohortAds = model.pilot?.intake?.journey?.active || model.cohort?.by_family?.ads?.j_active ? [{ key: COHORT_KEY, label: channelLabel(COHORT_KEY, model), color: '#1e3a7b', group: true }] : [];
+  const cohortAds = model.pilot?.intake?.journey?.active || model.cohort?.by_family?.ads?.j_active ? [{ key: COHORT_KEY, label: channelLabel(COHORT_KEY, model), color: 'var(--navy)', group: true }] : [];
   const chips = [{ key: null, label: 'Global' }, ...cohortAds, ...present];
   return (
     <div className="ps2-picker" role="radiogroup" aria-label="Canal de l’entonnoir">
@@ -147,7 +147,7 @@ export function FunnelFlow({ model, onOpen, source = null }) {
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Entonnoir${source ? ` ${channelLabel(source, model)}` : ''} : ${label}`}>
         <defs>
           <linearGradient id="ps2-band" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor="#cfdaf0" /><stop offset="0.5" stopColor="#7f9ad9" /><stop offset="1" stopColor="#1e3a7b" />
+            <stop offset="0" stopColor="var(--ps2-r4)" /><stop offset="0.5" stopColor="var(--ps2-r3)" /><stop offset="1" stopColor="var(--navy)" />
           </linearGradient>
           {color && <linearGradient id="ps2-band-channel" x1="0" x2="1" y1="0" y2="0">
             <stop offset="0" stopColor={color} stopOpacity="0.55" /><stop offset="1" stopColor={color} />
@@ -206,7 +206,7 @@ export function Donut({ counts, total, label, onPick }) {
         })}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', textAlign: 'center' }}>
-        <span className="ps2-num" style={{ fontSize: 34, fontWeight: 600 }}>{shown ? shown.value : <CountUp value={total} />}</span>
+        <span className="ps2-num" style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-.03em' }}>{shown ? shown.value : <CountUp value={total} />}</span>
         <span style={{ fontSize: 12, color: 'var(--soft)', maxWidth: 130 }}>{shown ? shown.label : label}</span>
       </div>
     </div>
@@ -221,7 +221,7 @@ export function CohortBars({ steps }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
       {steps.map((s, i) => (
         <div key={s.key} style={{ display: 'grid', gridTemplateColumns: '170px minmax(0, 1fr) 120px', alignItems: 'center', gap: 14 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{s.label}</span>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>{s.label}</span>
           <div style={{ height: 22, borderRadius: 7, background: 'var(--line-2)', overflow: 'hidden' }}>
             <Motion.div initial={{ width: 0 }} animate={{ width: drawn ? `${Math.max(1.5, (s.value / base) * 100)}%` : 0 }}
               transition={{ duration: 1.1, ease: EASE, delay: 0.2 + i * 0.09 }}
