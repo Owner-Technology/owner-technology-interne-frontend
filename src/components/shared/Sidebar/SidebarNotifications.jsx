@@ -19,6 +19,7 @@ import { ArrowLeft, AtSign, Bell, Check, CheckCheck, FileText, Mail, MessageSqua
 import apiClient from "../../../services/apiClient";
 import { CLIENT_NOTIFICATION_TYPES, notificationDate, notificationTarget } from "../../../utils/notificationPresentation.js";
 import { panelMemory } from "./panelMemory.js";
+import { UNDO_MS } from "./useGlobalNotifications.js";
 import { pinIntoView } from "../../../utils/pinIntoView.js";
 
 const ago = (value) => {
@@ -135,7 +136,7 @@ function dayLabel(key) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export function NotificationsPanel({ items, unreadCount, total, view, onView, onMore, loading, onOpen, onMarkRead, onReadAll, onDismiss, onClose }) {
+export function NotificationsPanel({ items, unreadCount, total, view, onView, onMore, loading, onOpen, onMarkRead, onReadAll, onDismiss, toast, onClose }) {
   const reduce = useReducedMotion();
   const [expanded, setExpanded] = useState({});
   const [selecting, setSelecting] = useState(false);
@@ -191,7 +192,7 @@ export function NotificationsPanel({ items, unreadCount, total, view, onView, on
     ids1.forEach((id) => { delete next[id]; });
     return next;
   });
-  const readPicked = async () => { markLeaving(shown.filter((n) => picked.has(n.id)), "read"); await onMarkRead(ids); setSelecting(false); };
+  const readPicked = async () => { markLeaving(shown.filter((n) => picked.has(n.id)), "read"); await onMarkRead(ids, { undo: true }); setSelecting(false); };
   const removePicked = async () => {
     if (!confirm) { setConfirm(true); return; }
     markLeaving(shown.filter((n) => picked.has(n.id)), "remove");
@@ -248,6 +249,7 @@ export function NotificationsPanel({ items, unreadCount, total, view, onView, on
                 current={current === n.id} onToggle={() => toggle(n.id)} onExpand={() => expand(n)} onOpen={openOne} onDismiss={removeOne} />];
           })}
         </AnimatePresence>
+        {!shown.length && loading && <NotificationSkeleton reduce={reduce} />}
         {!shown.length && !loading && (
           <motion.div className="sb-notif-empty" initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: EASE, delay: 0.12 }}>
@@ -264,6 +266,7 @@ export function NotificationsPanel({ items, unreadCount, total, view, onView, on
           </button>
         )}
       </div>
+      <UndoToast toast={toast} reduce={reduce} />
       <footer className="sb-notif-foot">
         {selecting ? (
           <div className="sb-notif-bulk">
@@ -309,6 +312,45 @@ function itemMotion(id, reduce) {
   };
 }
 
+// Premier chargement : trois cartes d'attente plutôt qu'une liste vide (rien ne laisse croire qu'il n'y a rien).
+function NotificationSkeleton({ reduce }) {
+  return (
+    <div className="sb-notif-skel" aria-hidden="true">
+      {[0, 1, 2].map((k) => (
+        <motion.div key={k} className="sb-notif-skel-row" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: k * 0.06, duration: 0.25 }}>
+          <span className="sb-notif-skel-ic" /><span className="sb-notif-skel-lines"><i /><i /></span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// Le geste qui vient d'être fait, et son « Annuler » tant qu'il n'est pas parti (la barre fond pendant ce temps) ; un
+// refus du serveur s'affiche ici aussi, en rouge.
+function UndoToast({ toast, reduce }) {
+  return (
+    <div className="sb-notif-toast-slot" role="status" aria-live="polite">
+      <AnimatePresence>
+        {toast && (
+          <motion.div key={toast.key} className={`sb-notif-toast is-${toast.tone}`}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 10, transition: { duration: 0.18, ease: AWAY } }}
+            transition={{ duration: 0.28, ease: EASE }}>
+            {toast.tone === "error" ? <ShieldAlert size={15} aria-hidden="true" /> : <Check size={15} aria-hidden="true" />}
+            <span>{toast.text}</span>
+            {toast.undo && <button type="button" onClick={toast.undo}>Annuler</button>}
+            {toast.undo && !reduce && (
+              <motion.i className="sb-notif-toast-bar" initial={{ scaleX: 1 }} animate={{ scaleX: 0 }}
+                transition={{ duration: UNDO_MS / 1000, ease: "linear" }} />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function NotificationItem({ n, i, reduce, selecting, on, open, current, onToggle, onExpand, onOpen, onDismiss }) {
   const Glyph = glyphOf(n);
   const action = actionOf(n);
@@ -317,7 +359,7 @@ function NotificationItem({ n, i, reduce, selecting, on, open, current, onToggle
   const canExpand = open || clipped;
   const { cardRef, expand } = useHeightGlide(open, reduce, onExpand);
   return (
-    <motion.article ref={cardRef} id={`notif-${n.id}`} className={`sb-notif-item${n.read ? "" : " is-unread"}${on ? " is-picked" : ""}${open ? " is-open" : ""}${current ? " is-current" : ""}`}
+    <motion.article ref={cardRef} id={`notif-${n.id}`} className={`sb-notif-item${n.read ? "" : " is-unread"}${on ? " is-picked" : ""}${open ? " is-open" : ""}${current ? " is-current" : ""}${n.fresh ? " is-fresh" : ""}`}
       variants={itemMotion(n.id, reduce)} custom={i} initial={reduce ? false : "hidden"} animate="shown" exit="gone"
       onClick={selecting ? onToggle : undefined}>
       {selecting ? (

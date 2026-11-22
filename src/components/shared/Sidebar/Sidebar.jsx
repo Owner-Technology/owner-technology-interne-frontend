@@ -291,7 +291,7 @@ export default function Sidebar({ width, collapsed, onToggle, sections, activeTa
       {notifOpen ? (
         <NotificationsPanel items={notifs.items} unreadCount={notifs.unreadCount} total={notifs.total} view={notifs.view}
           onView={notifs.setView} onMore={notifs.showMore} loading={notifs.loading} onOpen={openNotification}
-          onMarkRead={notifs.markRead} onReadAll={notifs.markAllRead} onDismiss={notifs.dismiss} onClose={() => setNotifOpen(false)} />
+          onMarkRead={notifs.markRead} onReadAll={notifs.markAllRead} onDismiss={notifs.dismiss} toast={notifs.toast} onClose={() => setNotifOpen(false)} />
       ) : (
       <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 0' }} className="ceo-side-scroll">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
