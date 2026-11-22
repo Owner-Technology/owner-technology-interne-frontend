@@ -3015,9 +3015,10 @@ export default function TrackingSheetSetter() {
               canOpenLead={(leadId) => leads.some((l) => l.id === leadId)}
               onOpenLead={(leadId) => { setSidebarView('leads'); setTimeout(() => setSelectedLead(leadId), 100); }}
               onReschedule={(ev) => {
-                // Lead hors de ses listes (R2 pris via son lien webinaire) : la fenêtre se nourrit de l'événement de l'agenda.
+                // Lead hors de ses listes (RDV pris via son lien webinaire) : la fenêtre se nourrit de l'événement de l'agenda,
+                // origine comprise (un R1 de son lien sans commercial se déplace par l'agenda libre, dev 22/11/2026).
                 const lead = leads.find((l) => l.id === ev.lead_id)
-                  || { id: ev.lead_id, full_name: ev.prospect, assigned_to: ev.assigned_email || '', assigned_to_name: ev.assigned?.name, [ev.rdv_type]: ev.start };
+                  || { id: ev.lead_id, full_name: ev.prospect, origin: ev.origin, assigned_to: ev.assigned_email || '', assigned_to_name: ev.assigned?.name, [ev.rdv_type]: ev.start };
                 openReschedule(lead, ev.rdv_type);
               }}
             />
