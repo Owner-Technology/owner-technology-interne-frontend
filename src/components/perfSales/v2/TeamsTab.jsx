@@ -8,6 +8,7 @@ import GeoCards from './GeoCards';
 import WeeksBoard from './WeeksBoard';
 import { SOURCES, euro, fr } from './model';
 import { rates } from './teamMath.js';
+import { inkFor } from './ink';
 
 // Onglet Équipes (dev 14/10/2026 : « chaque head of sales doit pouvoir gérer son équipe : voir l'objectif de son équipe,
 // les ventes, la projection, pour définir un plan d'action, quel taux de transfo on a besoin ; comparer à volume égal ;
@@ -16,7 +17,7 @@ import { rates } from './teamMath.js';
 // de ventes décomposé étape par étape face aux taux des autres équipes.
 const pct = (a, b) => (b ? (a / b) * 100 : null);
 
-export default function TeamsTab({ model, team: selected, onTeam, avatarFor, period }) {
+export default function TeamsTab({ model, team: selected, onTeam, avatarFor, period, dark = false }) {
   const teams = model.pilot?.teams || [];
   const team = teams.find((t) => t.team === selected) || teams[0];
   const teamModel = useMemo(() => team && ({
@@ -84,7 +85,7 @@ export default function TeamsTab({ model, team: selected, onTeam, avatarFor, per
 
       {people.length > 0 && (
         <Reveal as="section" className="ps2-card ps2-span-12" aria-label="Semaine par semaine" key={`weeks-${team.team}`}>
-          <WeeksBoard people={people} weeks={model.pilot.weeks} avatarFor={avatarFor} />
+          <WeeksBoard people={people} weeks={model.pilot.weeks} avatarFor={avatarFor} dark={dark} />
         </Reveal>
       )}
 
@@ -126,7 +127,7 @@ function ChannelMix({ teams, team, byPerson }) {
                   detail={<Detail kicker={t.team} title={x.label} value={fr(x.value)}
                     rows={[['Part des leads de l’équipe', `${fr(share, 0)} %`], ['Ventes sur ce canal', fr(channelValues(t, byPerson, x.key).sales)]]} />}>
                   <Motion.i initial={{ scaleX: 0 }} animate={{ scaleX: drawn ? 1 : 0 }} transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.1 + k * 0.05 }}
-                    style={{ background: x.color }}>{share >= 8 && <span>{fr(share, 0)} %</span>}</Motion.i>
+                    style={{ background: x.color }}>{share >= 8 && <span style={{ color: inkFor(x.color) }}>{fr(share, 0)} %</span>}</Motion.i>
                 </Info>
               );
             })}

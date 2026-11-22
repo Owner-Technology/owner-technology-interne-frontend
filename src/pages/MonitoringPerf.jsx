@@ -301,7 +301,7 @@ export default function MonitoringPerf({ embed = false } = {}) {
   const cColor = (r) => r>=10?K.tertiary:r>=5?K.secondary:C.text;
   const lColor = (r) => r<=30?K.tertiary:r<=50?K.secondary:K.bad;
 
-  const medal = (i) => i===0?<img src={firstPlace} alt="" style={{width:25,height:25}}/>:i===1?<img src={secondPlace} alt="" style={{width:25,height:25}}/>:i===2?<img src={thirdPlace} alt="" style={{width:25,height:25}}/>:<span style={{fontSize:16,fontWeight:500,color:C.secondary,fontVariantNumeric:"tabular-nums"}}>{i+1}</span>;
+  const medal = (i) => i===0?<img src={firstPlace} alt="" style={{width:25,height:25}}/>:i===1?<img src={secondPlace} alt="" style={{width:25,height:25}}/>:i===2?<img src={thirdPlace} alt="" style={{width:25,height:25}}/>:<span style={{fontSize:16,fontWeight:viewMode==='perf_sales'?500:800,color:C.secondary,fontVariantNumeric:"tabular-nums"}}>{i+1}</span>;
 
   const monthOpts = (sy,sm) => { const o=[]; const td=new Date(parisMonth()+'-15T12:00:00'); const c=new Date(sy,sm-1); const ym=td.getFullYear()*100+td.getMonth(); while(true){ const y=c.getFullYear()*100+c.getMonth(); if(y>ym) break; const v=c.getFullYear()+'-'+String(c.getMonth()+1).padStart(2,'0'); const l=new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(c); o.unshift({value:v,label:l.charAt(0).toUpperCase()+l.slice(1)}); c.setMonth(c.getMonth()+1); } return o; };
   const selS = { fontSize:12, fontWeight:500, padding:'6px 10px', borderRadius:8, border:'1px solid '+C.border, background:darkMode?C.subtle:'#fff', color:C.text, cursor:'pointer', outline:'none' };

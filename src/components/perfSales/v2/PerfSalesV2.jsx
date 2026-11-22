@@ -373,7 +373,7 @@ function Pulse({ signals, onOpen }) {
   );
 }
 
-const TEAM_COLORS = ['#2b2927', '#6cc493', '#f4b183', '#8fbdf3'];
+const TEAM_COLORS = ['var(--navy)', '#6cc493', '#f4b183', '#8fbdf3'];
 
 function Teams({ teams, onPilot, days }) {
   const drawn = useDrawn();
@@ -612,9 +612,9 @@ function Cohort({ model }) {
   const label = (families.find(([k]) => k === fam) || COHORT_FAMILIES[0])[1];
   const steps = [
     { key: 'leads', label: 'Leads reçus', value: f.leads || 0, color: 'var(--ps2-r1)' },
-    { key: 'r1', label: 'R1 posés', value: f.r1 || 0, color: '#4a4540' },
+    { key: 'r1', label: 'R1 posés', value: f.r1 || 0, color: 'var(--ps2-r1h)' },
     { key: 'r1_done', label: 'R1 effectués', value: f.r1_done || 0, color: 'var(--ps2-r2)' },
-    { key: 'r2', label: 'R2 posés', value: f.r2 || 0, color: '#8f8a83' },
+    { key: 'r2', label: 'R2 posés', value: f.r2 || 0, color: 'var(--ps2-r2h)' },
     { key: 'r2_done', label: 'R2 effectués', value: f.r2_done || 0, color: 'var(--ps2-r3)' },
     { key: 'signed', label: 'Signés', value: f.signed || 0, color: '#6cc493' },
     { key: 'sales', label: 'Vendus', value: f.sales || 0, color: '#1f9d57' },
@@ -781,7 +781,7 @@ function Composition({ parts, total }) {
 // canal ou une pub = le même tableau des sales restreint à ce périmètre. La frise des semaines reste celle du mois.
 const SALES_VIEWS = [['detail', 'Détail'], ['channels', 'Par canal'], ['weeks', 'Semaine par semaine']];
 
-function SalesTab({ model, salesData, salesRange, salesPeriodBar, salesLoading, front, salesNode, onOpen }) {
+function SalesTab({ model, salesData, salesRange, salesPeriodBar, salesLoading, front, salesNode, onOpen, dark }) {
   const p = model.pilot;
   const smodel = useMemo(() => (salesData && salesData !== model.raw ? buildModel(salesData, front) : null) || model, [salesData, front, model]);
   const [view, setView] = useState('detail');
@@ -823,8 +823,8 @@ function SalesTab({ model, salesData, salesRange, salesPeriodBar, salesLoading, 
             {view === 'detail' && (scoped
               ? <Reveal as="section" className="ps2-card" aria-label="Tableau par canal"><ChannelTable byPerson={scoped} source={scope.source} avatarFor={smodel.avatarFor} onOpen={openHere} /></Reveal>
               : salesNode)}
-            {view === 'channels' && <Reveal as="section" className="ps2-card" aria-label="Par canal"><ChannelBoard byPerson={smodel.byPerson} focus={scope.source} avatarFor={smodel.avatarFor} onOpen={openHere} /></Reveal>}
-            {view === 'weeks' && <Reveal as="section" className="ps2-card" aria-label="Semaine par semaine"><WeeksBoard people={p.person_weeks} weeks={p.weeks} avatarFor={model.avatarFor} /></Reveal>}
+            {view === 'channels' && <Reveal as="section" className="ps2-card" aria-label="Par canal"><ChannelBoard byPerson={smodel.byPerson} focus={scope.source} avatarFor={smodel.avatarFor} onOpen={openHere} dark={dark} /></Reveal>}
+            {view === 'weeks' && <Reveal as="section" className="ps2-card" aria-label="Semaine par semaine"><WeeksBoard people={p.person_weeks} weeks={p.weeks} avatarFor={model.avatarFor} dark={dark} /></Reveal>}
           </Motion.div>
         </AnimatePresence>
       </div>
@@ -858,8 +858,8 @@ export default function PerfSalesV2({ data, dark, period, tab, onTab, front, con
             {tab === 'overview' && <Overview model={model} onOpen={open} onPilot={pilotTeam} />}
             {tab === 'channels' && <Channels model={model} onOpen={open} period={period} dark={dark} />}
             {tab === 'leads' && <LeadsTab period={period} dark={dark} />}
-            {tab === 'sales' && <SalesTab model={model} salesData={salesData} salesRange={salesRange || period} salesPeriodBar={salesPeriodBar} salesLoading={salesLoading} front={front} salesNode={salesNode} onOpen={open} />}
-            {tab === 'teams' && <TeamsTab model={model} team={team || myTeam} onTeam={setTeam} avatarFor={model.avatarFor} period={period} />}
+            {tab === 'sales' && <SalesTab model={model} salesData={salesData} salesRange={salesRange || period} salesPeriodBar={salesPeriodBar} salesLoading={salesLoading} front={front} salesNode={salesNode} onOpen={open} dark={dark} />}
+            {tab === 'teams' && <TeamsTab model={model} team={team || myTeam} onTeam={setTeam} avatarFor={model.avatarFor} period={period} dark={dark} />}
             {tab === 'rdv' && (
               <div className={`ps2-rdvtab${rdvLoading ? ' is-loading' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {rdvPeriodBar && <div className="ps2-sales-top" style={{ justifyContent: 'flex-end' }}>{rdvPeriodBar}</div>}
@@ -869,7 +869,7 @@ export default function PerfSalesV2({ data, dark, period, tab, onTab, front, con
             {tab === 'reactivity' && reactivityNode}
             {tab === 'cohort' && <Cohort model={model} />}
             {tab === 'ventes' && <><VentesTab breakdown={ventesData} model={model} onOpen={open} /><QualityCards period={period} /></>}
-            {tab === 'auto' && <AutoAssignTab month={period} avatarFor={model.avatarFor} />}
+            {tab === 'auto' && <AutoAssignTab month={period} avatarFor={model.avatarFor} dark={dark} />}
           </Motion.div>
         </AnimatePresence>
       </PopLayer>

@@ -4,6 +4,7 @@ import { CountUp, EASE, ITEM, Reveal } from '../perfSales/motion';
 import { Detail, usePop } from '../perfSales/v2/Pop';
 import { fr, initials } from '../perfSales/v2/model';
 import LeadHistoryPanel from '../perfSales/v2/LeadHistory';
+import { INKS, inkFor } from '../perfSales/v2/ink';
 import { monthRange, usePlacements } from './setterApi';
 
 // RDV posés par jour par les setters (dev 16/10/2026 : « il nous faut les rendez-vous par jour, la moyenne de chacun,
@@ -23,7 +24,7 @@ const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet'
 const dayName = (s) => new Date(`${s}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
 const weekend = (s) => [0, 6].includes(new Date(`${s}T12:00:00`).getDay());
 // Teinte d'une case, selon la pose la plus forte de la grille : du grège clair à l'anthracite (palette des Statistiques Finance) ; en mode sombre,
-// du gris foncé au clair. Le chiffre passe en blanc (en noir en sombre) sur les cases foncées.
+// du gris foncé au clair. Le chiffre prend l'encre la plus lisible sur la teinte réelle de la case (blanc ou presque noir).
 const RAMP = { light: [[235, 232, 227], [43, 41, 39]], dark: [[52, 52, 52], [237, 237, 237]] };
 const shade = (n, max, dark = false) => {
   if (!n) return null;
@@ -33,7 +34,7 @@ const shade = (n, max, dark = false) => {
   return `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
 };
 const THUMB = { type: 'spring', stiffness: 520, damping: 40 };   // le pouce de la période glisse comme celui des bascules de la page Finance
-const ink = (n, max, dark = false) => (n / max > 0.45 ? (dark ? '#141414' : '#ffffff') : (dark ? '#f2f2f2' : '#1c1b19'));
+const ink = (bg, dark = false) => inkFor(bg, dark ? ['#141414', '#f2f2f2'] : INKS);
 
 export default function SetterPlacements({ period, dark, avatarFor, rdvMonth, refreshKey = 0 }) {
   const today = parisToday();
@@ -141,7 +142,7 @@ export default function SetterPlacements({ period, dark, avatarFor, rdvMonth, re
                         return (
                           <td key={d} className={weekend(d) ? 'is-we' : ''}>
                             {n ? (
-                              <Motion.button type="button" className="ps2-place-cell" style={{ background: bg, color: ink(n, max, dark) }}
+                              <Motion.button type="button" className="ps2-place-cell" style={{ background: bg, color: ink(bg, dark) }}
                                 onClick={(e) => open(e.currentTarget, cellDetail(s, d))} aria-label={`${s.name}, ${dayName(d)} : ${n} RDV posés`}
                                 initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3, ease: EASE, delay: Math.min(0.6, 0.05 + i * 0.03 + k * 0.008) }}>
                                 {n}</Motion.button>

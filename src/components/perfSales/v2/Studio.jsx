@@ -179,7 +179,7 @@ export default function Studio({ model }) {
     obj > 0 && { key: 'objective', y: y(obj), value: obj, label: 'Objectif', color: 'var(--ink)', solid: true },
     open && { key: 'cadence', y: y(simulating ? projected : cadence), value: simulating ? projected : cadence, label: simulating ? 'Simulation' : 'Cadence actuelle', color: tone },
     open && simulating && { key: 'cadence-ghost', y: y(cadence), value: cadence, label: 'Cadence actuelle', color: 'var(--muted)' },
-    open && jevValue != null && { key: 'jev', y: y(jevValue), value: jevValue, label: 'Jev', color: '#a05a05' },
+    open && jevValue != null && { key: 'jev', y: y(jevValue), value: jevValue, label: 'Jev', color: 'var(--warn)' },
   ].filter(Boolean), 30, Y1, Y0 - 6);
 
   return (

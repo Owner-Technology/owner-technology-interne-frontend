@@ -1,5 +1,5 @@
 // src/routes/ProtectedRoute.jsx - NOUVELLE VERSION POUR JWT
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { homeRouteFor } from '../navigation/home.js';
@@ -38,10 +38,16 @@ export default function ProtectedRoute({ children, allowedRoles = null }) {
   // checking | ok | error | out
   const [status, setStatus] = useState(() => (token && user && recentlyVerified() ? 'ok' : 'checking'));
 
+  // Audit du 23/11/2026 : en passant d'une page à l'autre (statut déjà « ok »), la vérification se fait en arrière-plan.
+  // Avant, après une minute sans vérification, la nouvelle page cédait la place à « Chargement... » plein écran puis se
+  // montait une seconde fois. Seule une session refusée par le serveur (401/403) fait quitter la page.
+  const statusRef = useRef(status);
+  statusRef.current = status;
   const checkAuth = async () => {
     if (!apiClient.getToken() || !apiClient.getUser()) { setStatus('out'); return; }
     if (recentlyVerified()) { setStatus('ok'); return; }
-    setStatus('checking');
+    const background = statusRef.current === 'ok';
+    if (!background) setStatus('checking');
     // getMe renouvelle la session si le jeton d'accès a expiré.
     try {
       await apiClient.getMe();
@@ -52,7 +58,8 @@ export default function ProtectedRoute({ children, allowedRoles = null }) {
       console.error("getMe failed:", e);
       // Une panne réseau/serveur n'est pas une déconnexion. Garder la session
       // et permettre de réessayer, sans afficher de page protégée non vérifiée.
-      setStatus(e.status !== 401 && e.status !== 403 ? 'error' : 'out');
+      if (e.status === 401 || e.status === 403) setStatus('out');
+      else if (!background) setStatus('error');
     }
   };
 

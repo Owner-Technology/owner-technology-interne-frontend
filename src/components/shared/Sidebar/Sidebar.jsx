@@ -289,6 +289,10 @@ export default function Sidebar({ width, collapsed, onToggle, sections, activeTa
         onAnimationComplete={() => { if (effCollapsed) setRenderCollapsed(true); }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
+        // Clavier (audit du 23/11/2026) : le rail replié s'ouvre quand le focus y entre au clavier, comme au survol, et se
+        // replie quand il en sort ; sinon on parcourait des icônes sans leurs noms.
+        onFocus={(e) => { if (collapsed && e.target.matches?.(":focus-visible")) setHover(true); }}
+        onBlur={(e) => { if (collapsed && !e.currentTarget.contains(e.relatedTarget)) setHover(false); }}
         style={{
           // overlay : la barre étendue passe PAR-DESSUS le contenu (pas de reflow de la page)
           position: 'fixed', left: 0, top: 0, height: '100vh', zIndex: 40,
@@ -514,14 +518,16 @@ function SidebarItem({ item, collapsed, active, onClick, C, darkMode }) {
       className="ceo-side-item"
       title={collapsed ? item.label : undefined}
       aria-current={active ? "page" : undefined}
+      aria-disabled={item.disabled || undefined}
       onClick={onClick}
       style={{
+        opacity: item.disabled ? 0.45 : 1,
         display: 'flex', alignItems: 'center', gap: 8,
         padding: collapsed ? '6px 0' : '4px 6px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         border: 'none',
         background: active ? (darkMode ? 'rgba(255,255,255,0.08)' : '#eeeeec') : 'transparent',
-        cursor: 'pointer',
+        cursor: item.disabled ? 'default' : 'pointer',
         borderRadius: 4,
         fontFamily: 'inherit',
         color: C.text,
@@ -562,7 +568,9 @@ function SortableItem({ item, collapsed, active, onClick, C, darkMode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: 'it:' + item.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, position: 'relative', zIndex: isDragging ? 50 : undefined };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    // Réordonné à la souris seulement (PointerSensor) : l'enveloppe ne prend pas le focus, le bouton suffit (une seule
+    // tabulation par entrée).
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} tabIndex={-1} role={undefined} aria-roledescription={undefined}>
       <SidebarItem item={item} collapsed={collapsed} active={active} onClick={onClick} C={C} darkMode={darkMode} />
     </div>
   );

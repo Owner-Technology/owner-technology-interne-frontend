@@ -21,17 +21,18 @@ export const CHANNELS = {
 const CHANNEL_ORDER = ['ads', 'webinar', 'linkedin', 'referral', 'ccs', 'cold_call', 'other', 'test'];
 
 // D'où vient une fiche webinaire du CRM (dev 16/10/2026 : « les liens webinaires Lamia ? Aurélie ? les webinaires traités
-// depuis le CRM setter ? ») : `links[].sub`, calculé par le serveur (perf_intake.webinar_link).
+// depuis le CRM setter ? ») : `links[].sub`, calculé par le serveur (perf_intake.webinar_link). Teintes tirées du vert
+// tilleul du canal Webinaire (#b9dc8a) : lui-même, assombri de 15 %, rapproché du gris r3 à 40 %, éclairci de 40 %.
 export const WEBINAR_LINKS = {
-  lamia: { label: 'Webinaire · lien Lamia', short: 'Lien Lamia', color: '#e6b45a' },
-  aurelie: { label: 'Webinaire · lien Aurélie', short: 'Lien Aurélie', color: '#d9a046' },
-  setter: { label: 'Webinaire · CRM setter', short: 'CRM setter', color: '#cfae74' },
-  live: { label: 'Webinaire · RDV après le live', short: 'Après le live', color: '#efd08f' },
+  lamia: { label: 'Webinaire · lien Lamia', short: 'Lien Lamia', color: '#b9dc8a' },
+  aurelie: { label: 'Webinaire · lien Aurélie', short: 'Lien Aurélie', color: '#9dbb75' },
+  setter: { label: 'Webinaire · CRM setter', short: 'CRM setter', color: '#b7ca96' },
+  live: { label: 'Webinaire · RDV après le live', short: 'Après le live', color: '#d5eab9' },
 };
 const LINK_ORDER = ['lamia', 'aurelie', 'setter', 'live'];
 
 export const FUNNEL = {
-  fr: { label: 'Traitables', sub: 'tél. FR, 100 k€ et plus', color: '#2b2927' },
+  fr: { label: 'Traitables', sub: 'tél. FR, 100 k€ et plus', color: 'var(--navy)' },
   non_fr: { label: 'Tél. non français', color: '#b5b0a8' },
   small: { label: '1 à 2 · < 100 k€', color: '#cfc8bd' },
 };

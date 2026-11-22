@@ -1307,7 +1307,6 @@ export default function TrackingSheetFinance() {
       return true;
     });
   }, [panelRowId]);
-  const closePanel = useCallback(() => setPanelOpen(false), []);
   // Lien direct vers la fiche d'un client (notification d'une mention dans une note interne) :
   // /tracking-finance?client=<id>&onglet=echanges[&note=<id>]. Traité une fois par lien, quand les lignes du mois sont là.
   // La note exacte d'une mention (21/11/2026) : le fil des Échanges défile jusqu'à elle.
@@ -1316,6 +1315,17 @@ export default function TrackingSheetFinance() {
   // fiche quand la liste arrive.
   const { search: linkSearch } = useLocation();
   const linkDone = useRef(null);
+  // Fermer la fiche retire aussi le lien qui l'a ouverte (audit du 23/11/2026) : sans cela, ouvrir une seconde fois la même
+  // notification ne faisait rien (même adresse, déjà traitée).
+  const closePanel = useCallback(() => {
+    setPanelOpen(false);
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('client')) return;
+    ['client', 'onglet', 'note'].forEach((k) => params.delete(k));
+    const search = params.toString() ? `?${params}` : '';
+    linkDone.current = search;
+    navigate({ pathname: window.location.pathname, search, hash: window.location.hash }, { replace: true });
+  }, [navigate]);
   const linkClient = useRef(null);
   const [panelTab, setPanelTab] = useState(null);
   useEffect(() => {
@@ -1783,7 +1793,7 @@ function FinanceMenu({ sections }) {
   const pages = useMemo(() => myPages(), []);
   const shared = useMemo(() => [
     ...sections.map((sec) => ({ key: `finance-${sec.key}`, label: sec.label, items: sec.items.map((it) => ({
-      id: it.id, label: it.label, icon: it.Icon ? <it.Icon size={16} strokeWidth={1.9} /> : null,
+      id: it.id, label: it.label, icon: it.Icon ? <it.Icon size={16} strokeWidth={1.9} /> : null, disabled: !!it.disabled,
       badge: it.count ? { value: it.count, tone: 'muted' } : undefined,
     })) })),
     ...(pages.length ? [{ key: 'pages', label: 'Mes pages', items: pages.map((p) => ({ id: p.id, label: p.label, icon: p.icon })) }] : []),
@@ -1796,10 +1806,12 @@ function FinanceMenu({ sections }) {
     const page = pages.find((p) => p.id === id);
     if (page) navigate(page.path);
   };
-  const dark = typeof document !== 'undefined' && document.body.classList.contains('dark-mode');
+  // Mode sombre du menu (audit du 23/11/2026) : un vrai état, que le bouton du menu change (avant, le bouton ne changeait
+  // rien à l'écran et un second clic repartait de l'ancienne valeur).
+  const [dark, setDark] = useState(() => typeof document !== 'undefined' && document.body.classList.contains('dark-mode'));
   return (
     <SharedSidebar width={collapsed ? 56 : 260} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)}
-      sections={shared} activeTab={active} setActiveTab={open} C={getColors(dark)} darkMode={dark} setDarkMode={() => {}} />
+      sections={shared} activeTab={active} setActiveTab={open} C={getColors(dark)} darkMode={dark} setDarkMode={setDark} />
   );
 }
 

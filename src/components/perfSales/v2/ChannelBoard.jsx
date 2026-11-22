@@ -3,6 +3,7 @@ import { motion as Motion } from 'framer-motion';
 import { EASE, useRevealed } from '../motion';
 import { Detail, Info } from './Pop';
 import { SOURCES, fr, initials } from './model';
+import { inkFor, mixHex, owner } from './ink';
 import { isPerformanceSalesPerson } from '../../../utils/performanceSales.js';
 
 // Chaque sales, canal d'acquisition par canal (dev 14/10/2026 : « faut qu'on voie le détail par canaux d'acquisition »).
@@ -12,7 +13,7 @@ import { isPerformanceSalesPerson } from '../../../utils/performanceSales.js';
 const STEPS = [['received', 'Leads reçus'], ['r1_done', 'R1 effectués'], ['r2_done', 'R2 effectués'], ['signed', 'Signatures'], ['sales', 'Ventes']];
 const METRIC_OF = { received: 'leads', r1_done: 'r1e', r2_done: 'r2e', signed: 'signed', sales: 'sales' };
 
-export default function ChannelBoard({ byPerson, avatarFor, onOpen, focus = null }) {
+export default function ChannelBoard({ byPerson, avatarFor, onOpen, focus = null, dark = false }) {
   const dim = (key) => (focus && key !== focus ? ' is-dim' : '');   // canal choisi en tête d'onglet : les autres s'estompent
   const on = useRevealed();
   const [step, setStep] = useState('sales');
@@ -46,6 +47,7 @@ export default function ChannelBoard({ byPerson, avatarFor, onOpen, focus = null
             <span role="rowheader" className="ps2-wb-name"><Face name={r.name} url={avatarFor?.(r.name)} /><span>{r.name}</span></span>
             {sources.map((s, k) => {
               const v = val(r.steps, s.key);
+              const a = Math.round(16 + 74 * (v / max));   // poids de la case : part de la teinte du canal sur la carte
               return (
                 <span key={s.key} role="cell" className={`ps2-cb-cell${dim(s.key)}`}>
                   {v ? (
@@ -55,7 +57,7 @@ export default function ChannelBoard({ byPerson, avatarFor, onOpen, focus = null
                           rows={STEPS.map(([st, l]) => [l, fr(val(r.steps, s.key, st)), st === step ? 'ps2-strong' : ''])}
                           action={onOpen && <button type="button" className="ps2-link" onClick={() => { dismiss(); onOpen(METRIC_OF[step], { person: r.name, source: s.key }); }}>Dossiers</button>} />
                       )}>
-                      <Motion.span className={`ps2-cb-chip${v / max > 0.45 ? ' is-strong' : ''}`} style={{ '--c': s.color, '--a': `${Math.round(16 + 74 * (v / max))}%` }}
+                      <Motion.span className="ps2-cb-chip" style={{ '--c': s.color, '--a': `${a}%`, color: inkFor(mixHex(s.color, a / 100, owner(dark).card)) }}
                         initial={{ scale: 0.6, opacity: 0 }} animate={on ? { scale: 1, opacity: 1 } : {}}
                         transition={{ duration: 0.45, ease: EASE, delay: 0.15 + i * 0.03 + k * 0.03 }}>{v}</Motion.span>
                     </Info>
