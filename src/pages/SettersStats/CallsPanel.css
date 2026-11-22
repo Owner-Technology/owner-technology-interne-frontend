@@ -1,9 +1,11 @@
 /* Page CEO « Setters » : ligne d'appels sous un RDV, panneau « Appels du prospect » et lecteur d'un enregistrement.
-   Le panneau reprend les jetons et les classes de Perf Sales v2 (.ps2-*, v2.css), comme la fiche de « Gestion des leads » ; seuls les ajouts sont ici. */
+   Le panneau reprend les jetons et les classes de Perf Sales v2 (.ps2-*, v2.css), comme la fiche de « Gestion des leads » ; seuls les ajouts sont ici.
+   Peau des Statistiques Finance (22/11/2026) : jetons et micro-libellés de Perf Setter (perfSetter.css), graisses 400 / 500, plus de police machine. */
 
 /* ── La ligne sous un RDV (dans le tiroir du setter, hors .ps2) : un bouton discret, qui se remplit au survol ─ */
 .sc-trigger { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; max-width: 100%; padding: 5px 12px; border: 1px solid var(--sc-line, currentColor); border-radius: 999px; background: transparent; color: inherit;
-  font: inherit; font-size: 12.5px; font-weight: 600; text-align: left; cursor: pointer; transition: background .2s, border-color .2s; }
+  font: inherit; font-size: 12.5px; font-weight: 450; text-align: left; cursor: pointer; transition: background .2s, border-color .2s, transform .18s cubic-bezier(.22, 1, .36, 1); }
+.sc-trigger:active { transform: scale(.98); }
 .sc-trigger:hover, .sc-trigger:focus-visible { background: var(--sc-hover, transparent); border-color: var(--sc-accent, currentColor); }
 .sc-trigger .sc-chev, .sc-trigger .sc-phone { flex: none; transition: transform .3s cubic-bezier(.22, 1, .36, 1); }
 .sc-trigger:hover .sc-chev, .sc-trigger:focus-visible .sc-chev { transform: translateX(3px); }
@@ -16,15 +18,16 @@
 .sc-panel .ps2-panel-body { gap: 28px; }
 .sc-section { display: flex; flex-direction: column; gap: 12px; }
 .sc-section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
-.sc-title { margin: 0; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.sc-title { margin: 0; font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .sc-note { display: block; margin-top: 1px; font-size: 12px; color: var(--soft); }
 .sc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.sc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
-.sc-chip i { flex: none; width: 6px; height: 6px; border-radius: 50%; }
+.sc-chip { display: inline-flex; align-items: center; gap: 7px; height: 24px; padding: 0 9px 0 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font-size: 12px; font-weight: 450; white-space: nowrap; box-shadow: 0 1px 1px rgba(50, 40, 30, .03); }
+.sc-chip i { flex: none; width: 8px; height: 8px; border-radius: 50%; }
 
 /* Les repères d'un prospect : une carte légère, deux colonnes, le libellé au-dessus de la valeur (une seule colonne sur mobile). */
-.sc-facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; padding: 18px 20px; background: var(--bg); border: 1px solid var(--line-2); border-radius: 14px; font-size: 13px; }
-.sc-facts dt { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--soft); }
+.sc-facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; padding: 18px 20px; background: var(--sunk, var(--bg)); border: 0; border-radius: 14px; font-size: 13px; }
+.sc-facts dt { font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .sc-facts dd { margin: 3px 0 0; line-height: 1.4; }
 
 /* Les libellés gris clair du design system (--muted, 3,1:1) passent sous le seuil de lisibilité sur le fond du panneau : ici ils prennent --soft. */
@@ -39,17 +42,17 @@
 .ps2-hist-ev.sc-ev { grid-template-columns: 46px 26px minmax(0, 1fr); padding: 6px 0; }
 .sc-day-sum { color: var(--soft); }
 
-.sc-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px 16px; background: var(--bg); border: 1px solid var(--line-2); border-radius: 14px; }
+.sc-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px 16px; background: var(--sunk, var(--bg)); border: 1px solid var(--line-2); border-radius: 14px; }
 .sc-ev.has-card .ps2-hist-time { padding-top: 18px; }
 .sc-ev.has-card .ps2-hist-dot { margin-top: 12px; }
 .sc-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.sc-card-head b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.sc-card-head b { font-size: 13.5px; font-weight: 500; color: var(--ink); }
 .ps2-hist-ev.is-good .sc-card-head b { color: var(--good); }
-.sc-dur { flex: none; font-family: var(--mono); font-size: 12px; color: var(--soft); }
+.sc-dur { flex: none; font-size: 12px; color: var(--soft); font-variant-numeric: tabular-nums; }
 .sc-sub { margin-top: -6px; font-size: 12px; line-height: 1.45; color: var(--soft); }
 .sc-card > .sc-sub:last-child { margin-top: 0; }
 .sc-summary { font-size: 13px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
-.sc-eyebrow { display: block; margin-bottom: 3px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.sc-eyebrow { display: block; margin-bottom: 3px; font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .sc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .sc-error { margin-top: -6px; font-size: 12.5px; color: var(--low-strong); }
 .sc-none { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--soft); }
@@ -92,7 +95,7 @@
 .sc-seek:disabled { cursor: default; }
 .sc-seek:disabled::-webkit-slider-thumb { opacity: 0; }
 .sc-seek:disabled::-moz-range-thumb { opacity: 0; }
-.sc-time { flex: none; font-family: var(--mono); font-size: 11px; color: var(--soft); white-space: nowrap; }
+.sc-time { flex: none; font-size: 11px; color: var(--soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 640px) {
   .sc-facts { grid-template-columns: minmax(0, 1fr); padding: 16px; }

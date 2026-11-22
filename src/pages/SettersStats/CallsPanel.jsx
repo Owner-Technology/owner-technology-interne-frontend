@@ -37,9 +37,9 @@ function Glyph({ kind, color, delay }) {
   );
 }
 
-// Pastille d'étiquette d'Allo : la même que celle du tiroir (point + texte teinté), la teinte calculée sur le fond du panneau pour rester lisible sur les cartes grises.
+// Pastille d'étiquette d'Allo : la pastille blanche à point de couleur de la page Finance (la teinte de l'étiquette passe par le point).
 const chip = (tone, text) => (
-  <span className="sc-chip" style={{ color: tone, background: `color-mix(in srgb, ${tone} 11%, var(--card))` }}><i style={{ background: tone }} />{text}</span>
+  <span className="sc-chip"><i style={{ background: tone }} />{text}</span>
 );
 
 const appear = (delay) => ({ initial: { opacity: 0, x: 8 }, animate: { opacity: 1, x: 0 }, transition: { duration: 0.35, ease: EASE, delay } });
@@ -182,7 +182,7 @@ export default function CallsPanel({ target, setter, dark, onClose, zBase = 2000
   return createPortal(
     <AnimatePresence>
       {target && (
-        <div className={`ps2${dark ? " is-dark" : ""}`} style={{ display: "contents" }}>
+        <div className={`ps2 pst${dark ? " is-dark" : ""}`} style={{ display: "contents" }}>
           <Motion.div className="ps2-overlay" style={{ zIndex: zBase }} onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} />
           <Motion.div ref={asideRef} tabIndex={-1} className="ps2-panel ps2-hist-panel sc-panel" style={{ zIndex: zBase + 1 }} role="dialog" aria-modal="true"
             aria-label={`Appels vers ${target.rdv.company || target.rdv.full_name || "ce prospect"}`}

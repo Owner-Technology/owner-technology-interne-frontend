@@ -10,11 +10,11 @@ import { ChevronRight, Headphones, Phone } from "lucide-react";
 import "./CallsPanel.css";
 import { lineOf, noteOf, overviewOf, recordedOf, tagTone } from "./setterCalls.js";
 
-const smallLabel = (C) => ({ fontSize: 10.5, fontWeight: 600, color: C.secondary, textTransform: "uppercase", letterSpacing: "0.05em" });
+const smallLabel = (C) => ({ fontSize: 10.5, fontWeight: 500, color: C.muted, textTransform: "uppercase", letterSpacing: "0.09em" });
 
 // ── Cadre d'ensemble de la fiche d'un setter ──────────────────────────────────────────────────────────────
 export function CallsOverview({ calls, C, dark = false, styles }) {
-  const note = { marginTop: 12, fontSize: 12.5, color: C.secondary, lineHeight: 1.5 };
+  const note = { marginTop: 12, fontSize: 12.5, color: C.muted, lineHeight: 1.5 };
   if (calls.state === "loading") return <div style={note} role="status">Lecture des appels Allo…</div>;
   if (calls.state !== "ready") return null;
   const view = overviewOf(calls.data);
@@ -25,18 +25,18 @@ export function CallsOverview({ calls, C, dark = false, styles }) {
   const figure = (f) => (
     <div key={f.key} style={{ minWidth: 0 }}>
       <div style={label}>{f.label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: C.text, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{f.value}</div>
-      {f.note && <div style={{ fontSize: 12, color: C.secondary, marginTop: 2, lineHeight: 1.45 }}>{f.note}</div>}
+      <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", color: C.text, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{f.value}</div>
+      {f.note && <div style={{ fontSize: 12, color: C.muted, marginTop: 2, lineHeight: 1.45 }}>{f.note}</div>}
     </div>
   );
-  const title = (text) => <h4 style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: "0 0 14px" }}>{text}</h4>;
-  const section = { marginTop: 24, paddingTop: 24, borderTop: `1px solid ${C.border}` };
+  const title = (text) => <h4 style={{ fontSize: 13.5, fontWeight: 500, color: C.text, margin: "0 0 14px" }}>{text}</h4>;
+  const section = { marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--line-soft)" };
   const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "22px 24px" };
   return (
     <section aria-label="Appels Allo de ce setter" style={{ ...card, padding: "20px 22px", marginTop: 12 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Appels Allo vers les prospects</h3>
-        {view.since && <span style={{ fontSize: 12, color: C.secondary }}>depuis le {view.since}</span>}
+        <h3 style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.012em", color: C.text, margin: 0 }}>Appels Allo vers les prospects</h3>
+        {view.since && <span style={{ fontSize: 12.5, color: C.muted }}>depuis le {view.since}</span>}
       </div>
       <div>
         {title("Activité")}
@@ -53,10 +53,10 @@ export function CallsOverview({ calls, C, dark = false, styles }) {
             {view.attempts.map((a) => (
               <div key={a.key} style={{ display: "grid", gridTemplateColumns: "104px minmax(0, 1fr) 48px", alignItems: "center", gap: 12, fontSize: 12.5, color: C.text }}>
                 <span>{a.label}</span>
-                <span aria-hidden style={{ height: 8, borderRadius: 999, background: C.subtle, overflow: "hidden" }}>
+                <span aria-hidden style={{ height: 8, borderRadius: 999, background: "var(--line-soft)", overflow: "hidden" }}>
                   <span style={{ display: "block", height: "100%", width: `${a.pct}%`, background: C.accent, borderRadius: 999 }} />
                 </span>
-                <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{a.n}</span>
+                <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{a.n}</span>
               </div>
             ))}
           </div>
@@ -67,7 +67,7 @@ export function CallsOverview({ calls, C, dark = false, styles }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {view.tags.map((t) => <span key={t.tag}>{pill(tagTone(t.tag, dark), `${t.label} · ${t.n}`)}</span>)}
             </div>
-          ) : <div style={{ fontSize: 12.5, color: C.secondary }}>Aucune étiquette relevée.</div>}
+          ) : <div style={{ fontSize: 12.5, color: C.muted }}>Aucune étiquette relevée.</div>}
         </div>
       </div>
     </section>
@@ -77,14 +77,14 @@ export function CallsOverview({ calls, C, dark = false, styles }) {
 // ── Sous un RDV : la ligne d'appels du prospect ───────────────────────────────────────────────────────────
 // Posée sous le prospect (colonnes 2 à 6 de la ligne du RDV) : les colonnes existantes ne bougent pas. Le détail s'ouvre dans le panneau latéral.
 export function RdvCallsPanel({ view, C, onOpen }) {
-  const wrap = { gridColumn: "2 / -1", marginTop: -2, minWidth: 0, fontSize: 12.5, color: C.secondary };
+  const wrap = { gridColumn: "2 / -1", marginTop: -2, minWidth: 0, fontSize: 12.5, color: C.muted };
   if (view.kind === "none" || view.kind === "before_allo" || view.kind === "no_phone") return <div style={wrap}>{noteOf(view)}</div>;
   if (view.kind !== "calls") return null;
   const recorded = recordedOf(view.entry);
   return (
     <div style={wrap}>
       <button type="button" className="sc-trigger" onClick={onOpen} aria-haspopup="dialog"
-        style={{ color: C.secondary, "--sc-line": C.border, "--sc-hover": C.subtle, "--sc-accent": C.accent }}
+        style={{ color: C.muted, "--sc-line": C.border, "--sc-hover": "var(--hover)", "--sc-accent": C.accent }}
         title="Voir le détail des appels de ce setter vers ce prospect">
         <Phone size={13} aria-hidden className="sc-phone" />
         <span style={{ color: C.text }}>Appels Allo vers ce prospect</span>

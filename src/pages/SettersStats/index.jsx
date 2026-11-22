@@ -3,12 +3,15 @@
 // les clients signés mois par mois, et la fiche d'un setter : ses clients signés et ses RDV posés, regroupés par mois et triés par date. Lecture seule.
 // Calculs côté serveur (app/services/ceo_setters.py) ; logique d'affichage testée dans ./settersStats.js.
 // Données : GET /ceo-dashboard/setters et /ceo-dashboard/setters/calls?period= (admin, CEO). Lien direct vers une fiche : ?setter=<id>.
-// Aucune donnée, aucun calcul n'a changé : la présentation reprend la charte de la Performance Sales (classes ps2 de perfSales/v2/v2.css).
+// Aucune donnée, aucun calcul n'a changé : la présentation reprend les classes ps2 de perfSales/v2/v2.css et le kit des Statistiques Finance
+// (pastilles, étiquettes, onglets à pouce blanc), à la peau de la page (perfSetter.css).
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion as Motion } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
+import { X } from "lucide-react";
 import apiClient from "../../services/apiClient";
 import { fmtTalk } from "../../utils/setterPilotage.js";
-import { ITEM, Reveal } from "../../components/perfSales/motion";
+import { EASE, ITEM, Reveal } from "../../components/perfSales/motion";
+import { Tag } from "../TrackingSheetFinance/components/PageKit.jsx";
 import { CallsOverview, RdvCallsPanel } from "./RdvCalls.jsx";
 import CallsPanel from "./CallsPanel.jsx";
 import useProspectCalls from "./useProspectCalls.js";
@@ -19,10 +22,11 @@ import {
   groupByMonth, hasActivity, initials, originEntries, periodOptions, periodStats, resultSegments, splitClient,
 } from "./settersStats.js";
 
-// Couleurs des résultats : la charte Owner (vert, terre cuite, or, bleu clair), les mêmes dans la barre, la légende et les pastilles de la fiche.
-const RESULT_TONES = { held: "#3e7d5a", no_show: "#c2410c", to_qualify: "#d4a017", upcoming: "#9fb3df" };
-const outcomeTone = (key) => RESULT_TONES[key] || OUTCOME_TONES[key] || OUTCOME_TONES.removed;
-const CLIENT_TONES = { client: "#3e7d5a", already_client: "#8a93a6", signed_not_declared: "#d4a017" };
+// Couleurs des résultats : les pastels des Statistiques Finance (vert, rouge, ambre, bleu, gris), les mêmes dans la barre, la légende et les pastilles de la fiche.
+const RESULT_TONES = { held: "#6cc493", no_show: "#ee8f8a", to_qualify: "#f1b76a", upcoming: "#8fbdf3", removed: "#b5b0a8" };
+const outcomeTone = (key) => RESULT_TONES[key] || OUTCOME_TONES[key] || RESULT_TONES.removed;
+const CLIENT_TONES = { client: "#6cc493", already_client: "#b5b0a8", signed_not_declared: "#f1b76a" };
+const SPRING = { type: "spring", stiffness: 520, damping: 40 };   // pouce des onglets de la fiche, comme les bascules de la page Finance
 const RESULT_LABELS = { held: "Honorés", no_show: "No-show", to_qualify: "À qualifier", upcoming: "À venir" };
 
 function readSetterParam() {
@@ -88,11 +92,11 @@ const legend = (rdv) => (
   </div>
 );
 
+// Pastille blanche à point de couleur (fst-pill du kit Finance) : un résultat, un état ; l'origine d'un client est une étiquette pastel (Tag).
 const pill = (tone, text, title) => (
-  <span title={title} className="pst-pill" style={{ color: `color-mix(in srgb, ${tone} 58%, var(--ink))`, background: `${tone}1f` }}>
-    <span style={{ background: tone }} />{text}
-  </span>
+  <span title={title} className="fst-pill pst-pill" style={{ "--dot": tone }}>{text}</span>
 );
+const originTag = (key) => <Tag tone={ORIGIN_TONES[key] || ORIGIN_TONES.other}>{ORIGIN_LABELS[key] || key}</Tag>;
 
 const kpi = (title, value, detailText, tone) => (
   <div className="ps2-setter-kpi" key={title}>
@@ -168,10 +172,10 @@ export default function SettersStats({ C, darkMode, refreshKey = 0, cache, avata
   const detail = useMemo(() => (data?.setters || []).find((s) => s.id === detailId) || null, [data, detailId]);
   const periodLabel = options.find((o) => o.value === period)?.label || "";
 
-  const sub = { fontSize: 11.5, color: C.secondary, marginTop: 2 };
+  const sub = { fontSize: 12, color: C.muted, marginTop: 2 };
   const styles = {
     card: { background: C.bg, border: `1px solid ${C.border}`, borderRadius: 18 },
-    label: { fontFamily: "var(--mono)", fontSize: 10.5, fontWeight: 500, color: C.secondary, textTransform: "uppercase", letterSpacing: "0.05em" },
+    label: { fontSize: 10.5, fontWeight: 500, color: C.muted, textTransform: "uppercase", letterSpacing: "0.09em" },
     sub, pill, resultBar, legend,
     avatar: (name, size = 32) => <Face name={name} size={size} url={avatarFor?.(name)} />,
   };
@@ -255,8 +259,8 @@ export default function SettersStats({ C, darkMode, refreshKey = 0, cache, avata
                 </tr>
               </thead>
               <tbody>
-                {active.map((s) => (
-                  <tr key={s.id} onClick={() => openDetail(s.id)} title="Voir ses clients et ses RDV" className="pst-row">
+                {active.map((s, i) => (
+                  <tr key={s.id} onClick={() => openDetail(s.id)} title="Voir ses clients et ses RDV" className="pst-row" style={{ "--i": i }}>
                     <td>
                       <span className="pst-who">
                         <Face name={s.name} url={avatarFor?.(s.name)} />
@@ -310,8 +314,8 @@ export default function SettersStats({ C, darkMode, refreshKey = 0, cache, avata
                 </tr>
               </thead>
               <tbody>
-                {[...everActive, { id: "__team", name: "Équipe", months: data.team.months, totals: data.team.totals, team: true }].map((s) => (
-                  <tr key={s.id} className={s.team ? "is-total" : "pst-row"} onClick={s.team ? undefined : () => openDetail(s.id)}>
+                {[...everActive, { id: "__team", name: "Équipe", months: data.team.months, totals: data.team.totals, team: true }].map((s, i) => (
+                  <tr key={s.id} className={s.team ? "is-total" : "pst-row"} onClick={s.team ? undefined : () => openDetail(s.id)} style={{ "--i": i }}>
                     <td className="pst-name">{s.team ? s.name || "Setter inconnu" : (
                       <button type="button" className="pst-open" onClick={(e) => { e.stopPropagation(); openDetail(s.id); }} aria-label={`Ouvrir la fiche de ${s.name || "Setter inconnu"}`}>{s.name || "Setter inconnu"}</button>
                     )}</td>
@@ -336,8 +340,10 @@ export default function SettersStats({ C, darkMode, refreshKey = 0, cache, avata
         </Reveal>
       )}
 
-      {detail && <SetterDetail detail={detail} rdvAll={data?.rdv_all || []} allCalls={callsOf(calls[ALL], detail.id)} tab={tab} setTab={setTab}
-        onClose={closeDetail} C={C} darkMode={darkMode} styles={styles} />}
+      <AnimatePresence>
+        {detail && <SetterDetail key="fiche" detail={detail} rdvAll={data?.rdv_all || []} allCalls={callsOf(calls[ALL], detail.id)} tab={tab} setTab={setTab}
+          onClose={closeDetail} C={C} darkMode={darkMode} styles={styles} />}
+      </AnimatePresence>
     </div>
   );
 }
@@ -362,41 +368,42 @@ function SetterDetail({ detail, rdvAll, allCalls, tab, setTab, onClose, C, darkM
     ["CA des contrats", fmtEuro(t.sales.amount), `${fmtEuro(t.sales.cash)} encaissés`],
     ["Transformation", fmtRate(conversion(t.rdv)), "clients / RDV honorés"],
   ];
-  const tabBtn = (key, text) => (
-    <button type="button" onClick={() => setTab(key)} style={{
-      padding: "9px 14px", border: "none", borderBottom: `2px solid ${tab === key ? C.accent : "transparent"}`, background: "transparent",
-      color: tab === key ? C.text : C.secondary, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
-    }}>{text}</button>
+  // Onglets de la fiche : la bascule à pouce blanc de la page Finance (fst-tabs), le pouce glisse d'un onglet à l'autre.
+  const tabBtn = (key, text, n) => (
+    <button type="button" className="fst-tab" aria-pressed={tab === key} onClick={() => setTab(key)}>
+      {tab === key && <Motion.span layoutId="pst-fiche-tab" className="fst-tab-bg" transition={SPRING} />}
+      <span>{text}</span><span className="fst-tab-count">{n}</span>
+    </button>
   );
   const monthHeader = (month, right) => (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: "18px 2px 8px" }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{month === "sans-date" ? "Sans date" : fmtMonth(month)}</div>
-      <div style={{ fontSize: 12.5, color: C.secondary }}>{right}</div>
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: "20px 2px 9px" }}>
+      <div style={{ fontSize: 14.5, fontWeight: 500, letterSpacing: "-0.008em", color: C.text }}>{month === "sans-date" ? "Sans date" : fmtMonth(month)}</div>
+      <div style={{ fontSize: 12.5, color: C.muted }}>{right}</div>
     </div>
   );
-  const row = { display: "grid", alignItems: "center", gap: 14, padding: "12px 16px", borderBottom: `1px solid ${C.border}` };
+  const row = { display: "grid", alignItems: "center", gap: 14, padding: "12px 16px", borderBottom: "1px solid var(--line-soft)" };
   const ellipsis = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
+  // La fiche glisse depuis la droite (feuille qui flotte, voile chaud) et repart de même à la fermeture ; rien ne bouge si les animations sont réduites.
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(18,27,53,.32)", display: "flex", justifyContent: "flex-end" }}>
-      <div role="dialog" aria-label={`Fiche de ${detail.name}`} onClick={(e) => e.stopPropagation()}
-        style={{ width: "min(1080px, 100vw)", height: "100%", overflowY: "auto", background: "var(--bg)", boxShadow: "-24px 0 60px rgba(18,27,53,.18)", padding: "24px 28px 48px" }}>
+    <Motion.div className="pst-sheet-veil" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: EASE }}>
+      <Motion.div role="dialog" aria-label={`Fiche de ${detail.name}`} onClick={(e) => e.stopPropagation()} className="pst-sheet"
+        initial={{ x: 48, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 32, opacity: 0, transition: { duration: 0.2, ease: EASE } }} transition={{ duration: 0.42, ease: EASE }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {avatar(detail.name, 44)}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>{detail.name}</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em", color: C.text, margin: 0 }}>{detail.name}</h2>
             <div style={sub}>{detail.has_webinar_link ? "Setter avec lien webinaire" : "Setter"}{!detail.active ? " · compte désactivé" : ""} · chiffres depuis mai 2026</div>
           </div>
-          <button type="button" aria-label="Fermer" onClick={onClose}
-            style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: "pointer", fontSize: 20, lineHeight: 1, fontFamily: "inherit" }}>×</button>
+          <button type="button" aria-label="Fermer" onClick={onClose} className="pst-close"><X size={16} strokeWidth={2} aria-hidden="true" /></button>
         </div>
 
-        <div className="pst-dkpis" style={{ display: "grid", gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))`, gap: 10, marginTop: 18 }}>
+        <div className="pst-dkpis" style={{ display: "grid", gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))`, gap: 10, marginTop: 20 }}>
           {tiles.map(([k, v, d]) => (
-            <div key={k} style={{ ...card, padding: "12px 14px" }}>
-              <div style={label}>{k}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{v}</div>
-              {d && <div style={sub}>{d}</div>}
+            <div key={k} className="pst-sheet-tile">
+              <div style={{ fontSize: 13, color: C.muted }}>{k}</div>
+              <div style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1.1, color: C.text, marginTop: 8, fontVariantNumeric: "tabular-nums" }}>{v}</div>
+              {d && <div style={{ ...sub, marginTop: 5 }}>{d}</div>}
             </div>
           ))}
         </div>
@@ -409,14 +416,14 @@ function SetterDetail({ detail, rdvAll, allCalls, tab, setTab, onClose, C, darkM
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 12 }}>
             <span style={{ ...label, marginRight: 4 }}>Origine des clients</span>
             {originEntries(detail.origins).map(([key, n]) => (
-              <span key={key}>{pill(ORIGIN_TONES[key] || ORIGIN_TONES.other, `${ORIGIN_LABELS[key] || key} · ${fmtInt(n)}`)}</span>
+              <Tag key={key} tone={ORIGIN_TONES[key] || ORIGIN_TONES.other}>{`${ORIGIN_LABELS[key] || key} · ${fmtInt(n)}`}</Tag>
             ))}
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${C.border}`, marginTop: 18 }}>
-          {tabBtn("clients", `Clients signés (${fmtInt(detail.clients?.length)})`)}
-          {tabBtn("rdv", `RDV posés (${fmtInt(rdvs.length)})`)}
+        <div className="fst-tabs" role="group" aria-label="Contenu de la fiche" style={{ display: "inline-flex", marginTop: 20 }}>
+          {tabBtn("clients", "Clients signés", fmtInt(detail.clients?.length))}
+          {tabBtn("rdv", "RDV posés", fmtInt(rdvs.length))}
         </div>
 
         {tab === "clients" && (
@@ -432,22 +439,22 @@ function SetterDetail({ detail, rdvAll, allCalls, tab, setTab, onClose, C, darkM
                       const who = splitClient(c.client_name, c.societe);
                       return (
                         <div key={`${c.numero_client || i}-${c.signed_at}`} className="pst-drow" style={{ ...row, gridTemplateColumns: "78px minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.9fr) 104px minmax(0, 1.3fr)" }}>
-                          <div style={{ fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>{c.numero_client || "Sans n°"}</div>
+                          <div style={{ fontWeight: 500, color: C.text, fontVariantNumeric: "tabular-nums" }}>{c.numero_client || "Sans n°"}</div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, color: C.text, ...ellipsis }}>{who.company}</div>
+                            <div style={{ fontWeight: 500, color: C.text, ...ellipsis }}>{who.company}</div>
                             {who.person && <div style={{ ...sub, ...ellipsis }}>{who.person}</div>}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            {pill(ORIGIN_TONES[c.origin] || ORIGIN_TONES.other, ORIGIN_LABELS[c.origin] || c.origin)}
+                            {originTag(c.origin)}
                             {c.origin_label && <div style={{ ...sub, ...ellipsis }}>{c.origin_label}</div>}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, color: C.text }}>Signé le {fmtDay(c.signed_at)}</div>
+                            <div style={{ fontWeight: 500, color: C.text }}>Signé le {fmtDay(c.signed_at)}</div>
                             <div style={sub}>RDV du {fmtRdv(c.rdv_at)} · {c.kind === "r1" ? "R1" : "R2"} {CHANNEL_LABELS[c.channel]}</div>
                             <div style={sub}>{fmtInt(c.days_to_sign)} j entre le RDV posé et la signature</div>
                           </div>
                           <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                            <div style={{ fontWeight: 600, color: C.text }}>{fmtEuro(c.amount)}</div>
+                            <div style={{ fontWeight: 500, color: C.text }}>{fmtEuro(c.amount)}</div>
                             <div style={sub}>{fmtEuro(c.cash)} cash</div>
                           </div>
                           <div style={{ minWidth: 0 }}>
@@ -480,14 +487,14 @@ function SetterDetail({ detail, rdvAll, allCalls, tab, setTab, onClose, C, darkM
                       return (
                         <div key={`${r.lead_id}-${r.kind}`} className="pst-drow" style={{ ...row, gridTemplateColumns: "172px minmax(0, 2fr) minmax(0, 1.1fr) 120px minmax(0, 1.4fr) minmax(0, 1.2fr)" }}>
                           <div>
-                            <div style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>{fmtRdv(r.rdv_at)}</div>
+                            <div style={{ fontWeight: 500, color: C.text, whiteSpace: "nowrap" }}>{fmtRdv(r.rdv_at)}</div>
                             <div style={sub}>{r.kind === "r1" ? "R1" : "R2"} · {CHANNEL_LABELS[r.channel]}</div>
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, color: C.text, ...ellipsis }}>{r.company || r.full_name || "Prospect sans nom"}</div>
+                            <div style={{ fontWeight: 500, color: C.text, ...ellipsis }}>{r.company || r.full_name || "Prospect sans nom"}</div>
                             {r.company && r.full_name && <div style={{ ...sub, ...ellipsis }}>{r.full_name}</div>}
                           </div>
-                          <div style={{ minWidth: 0 }}>{pill(ORIGIN_TONES[r.origin] || ORIGIN_TONES.other, ORIGIN_LABELS[r.origin] || r.origin)}</div>
+                          <div style={{ minWidth: 0 }}>{originTag(r.origin)}</div>
                           <div>{pill(outcomeTone(r.outcome), OUTCOME_LABELS[r.outcome] || r.outcome, OUTCOME_HINTS[r.outcome])}</div>
                           <div style={{ minWidth: 0 }}>
                             {state
@@ -509,7 +516,7 @@ function SetterDetail({ detail, rdvAll, allCalls, tab, setTab, onClose, C, darkM
             })
         )}
         <CallsPanel target={openCall} setter={detail} dark={darkMode} onClose={() => setOpenCall(null)} />
-      </div>
-    </div>
+      </Motion.div>
+    </Motion.div>
   );
 }
