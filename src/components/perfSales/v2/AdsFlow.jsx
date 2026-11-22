@@ -26,8 +26,9 @@ function useWidth() {
 }
 
 const NARROW = 760;
-// Blocs clairs : texte foncé ; les autres en blanc.
-const LIGHT = new Set(['#8b95a7', '#a3abbb', '#b9c0cc', '#c9cfda', '#e6b45a', '#d9b25f', '#d9a046', '#cfae74', '#efd08f']);
+// Blocs clairs (teintes pastel des canaux, gris chauds) : texte foncé ; les autres (anthracite) en blanc.
+const LIGHT = new Set(['#8fbdf3', '#7fd3df', '#b9dc8a', '#f2a0a0', '#f4b183', '#ecd36a', '#cfc8bd', '#b5b0a8', '#c9c4bc', '#d8d3cb', '#dedad3', '#e5e1db',
+  '#ebe8e3', '#e6b45a', '#d9b25f', '#d9a046', '#cfae74', '#efd08f']);
 
 export default function AdsFlow({ intake, month, onLeads }) {
   const graph = useMemo(() => flowGraph(intake), [intake]);
@@ -126,7 +127,7 @@ function Diagram({ graph, layout: L, month, onLeads }) {
 
       {L.nodes.filter((n) => n.col < 3).map((n) => (
         <Motion.button type="button" key={n.id} className={`ps2-flow-block${n.twoLines ? '' : ' is-line'}${n.kind === 'root' ? ' is-src' : ''}`}
-          style={{ left: L.x.cols[n.col], top: n.y, width: L.blockW[n.col], height: n.h, background: n.color, color: LIGHT.has(n.color) ? '#121b35' : '#ffffff' }}
+          style={{ left: L.x.cols[n.col], top: n.y, width: L.blockW[n.col], height: n.h, background: n.color, color: LIGHT.has(n.color) ? '#1c1b19' : '#ffffff' }}
           initial={{ opacity: 0, scaleY: 0.7 }} animate={drawn ? { opacity: dim(n.id) ? 0.4 : 1, scaleY: 1 } : {}}
           transition={{ duration: 0.6, ease: EASE, delay: drawn && !hover ? delayOf(n.col) : 0 }}
           onMouseEnter={() => setHover(n.id)} onFocus={() => setHover(n.id)} onClick={(e) => openNode(e, n.id)}>

@@ -2,18 +2,20 @@
 // sa définition, son calcul étape par étape et ses répartitions. Les mêmes totaux servent l'en-tête, l'entonnoir, les
 // canaux, le panneau de vérification et la liste des dossiers (le backend contrôle que canaux = entonnoir).
 import { isPerformanceSalesPerson } from '../../../utils/performanceSales.js';
+// Couleur de chaque canal : la même que dans les Statistiques de la Finance (une origine, une teinte, partout).
+import { originColor } from '../../../pages/TrackingSheetFinance/statistics/model.js';
 
 export const SOURCES = [
-  { key: 'affectation', label: 'ADS affectés', color: '#1e3a7b', group: 'origin' },
-  { key: 'pool', label: 'ADS repris du pool', color: '#7f9ad9', group: 'origin' },
-  { key: 'ccs', label: 'Cold call setter', color: '#4f9a72', group: 'origin' },
-  { key: 'cold_call', label: 'Cold call sales', color: '#8b95a7', group: 'origin' },
-  { key: 'webinar', label: 'Webinaire', color: '#e6b45a', group: 'origin' },
-  { key: 'linkedin', label: 'LinkedIn', color: '#d4834a', group: 'origin' },
-  { key: 'referral', label: 'Parrainage', color: '#b85c78', group: 'origin' },
-  { key: 'setter_rdv', label: 'Traités par un setter', color: '#2c6448', group: 'setter' },
-  { key: 'second_chance', label: 'Seconde chance', color: '#a9d6bb', group: 'setter' },
-  { key: 'other', label: 'Lead non retrouvé', color: '#c9cfda', group: 'origin' },
+  { key: 'affectation', label: 'ADS affectés', color: originColor('affectation'), group: 'origin' },
+  { key: 'pool', label: 'ADS repris du pool', color: originColor('pool'), group: 'origin' },
+  { key: 'ccs', label: 'Cold call setter', color: originColor('ccs'), group: 'origin' },
+  { key: 'cold_call', label: 'Cold call sales', color: originColor('cold_call'), group: 'origin' },
+  { key: 'webinar', label: 'Webinaire', color: originColor('webinar'), group: 'origin' },
+  { key: 'linkedin', label: 'LinkedIn', color: originColor('linkedin'), group: 'origin' },
+  { key: 'referral', label: 'Parrainage', color: originColor('referral'), group: 'origin' },
+  { key: 'setter_rdv', label: 'Traités par un setter', color: originColor('setter_rdv'), group: 'setter' },
+  { key: 'second_chance', label: 'Seconde chance', color: originColor('second_chance'), group: 'setter' },
+  { key: 'other', label: 'Lead non retrouvé', color: originColor('other'), group: 'origin' },
 ];
 export const sourceOf = (key) => SOURCES.find((s) => s.key === key) || SOURCES[SOURCES.length - 1];
 

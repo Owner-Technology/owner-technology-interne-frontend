@@ -8,11 +8,11 @@ import { dm, fr } from './model';
 // choisir la période, une période donnée qu'on veut »). Période au choix en tête ; la prise en main porte sur les leads
 // ADS affectés (l'horloge de la règle des 6 minutes) ; l'arrivée couvre tous les leads de la période.
 const PRESETS = [['month', 'Mois affiché'], ['7d', '7 jours'], ['30d', '30 jours'], ['prev', 'Mois précédent'], ['custom', 'Dates']];
-const BUCKETS = [['d0', 'Jour même', '#3e7d5a'], ['d1', 'J+1', '#e6b45a'], ['d2', 'J+2', '#d4834a'], ['d3plus', 'J+3 et +', '#c2410c']];
+const BUCKETS = [['d0', 'Jour même', '#6cc493'], ['d1', 'J+1', '#ecd36a'], ['d2', 'J+2', '#f4b183'], ['d3plus', 'J+3 et +', '#ee8f8a']];
 const FAMILIES = { ads: 'ADS', setters: 'Setters', cold_call: 'Cold call sales', linkedin: 'LinkedIn', webinar: 'Webinaire', referral: 'Parrainage', other: 'Autres' };
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 const fmtMin = (m) => (m == null ? '–' : m < 60 ? `${Math.round(m)} min` : `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`);
-const pctTone = (v, good, mid) => (v == null ? '#94a3b8' : v >= good ? '#3e7d5a' : v >= mid ? '#d4a017' : '#c2410c');
+const pctTone = (v, good, mid) => (v == null ? 'var(--ps2-r3)' : v >= good ? 'var(--good-strong)' : v >= mid ? '#a05a05' : '#d9544d');
 
 // Choix de la période (mois affiché, 7 ou 30 jours, mois précédent, dates libres) ; repris par la présence par jour et heure.
 export function PeriodBar({ period, onPeriod, analytics, warning, loading }) {
@@ -36,8 +36,8 @@ export function PeriodBar({ period, onPeriod, analytics, warning, loading }) {
   );
 }
 
-export default function Reactivity({ analytics, period, onPeriod, loading, error, warning, dark, salesFilter = () => true }) {
-  const track = dark ? 'rgba(148,163,184,.18)' : '#eef1f6';
+export default function Reactivity({ analytics, period, onPeriod, loading, error, warning, salesFilter = () => true }) {
+  const track = 'var(--line-2)';
   const td = analytics?.treatment_delay;
   const g = td?.global;
   const all = analytics?.arrival_all;
@@ -103,13 +103,13 @@ export default function Reactivity({ analytics, period, onPeriod, loading, error
               <tbody>
                 {sales.map((s, i) => (
                   <Motion.tr key={s.sales} variants={ITEM}>
-                    <td style={{ fontWeight: 600 }}>{s.sales}</td>
+                    <td style={{ fontWeight: 500 }}>{s.sales}</td>
                     <td>{fr(s.n)}</td>
-                    <td style={{ fontWeight: 650, color: pctTone(s.same_day_pct, 70, 50) }}>{fr(s.same_day_pct, 0)} %</td>
+                    <td style={{ fontWeight: 500, color: pctTone(s.same_day_pct, 70, 50) }}>{fr(s.same_day_pct, 0)} %</td>
                     <td style={{ textAlign: 'left' }}><Split row={s} index={i} /></td>
                     <td>{fmtMin(s.median_biz_minutes)}</td>
-                    <td style={{ fontWeight: 650, color: pctTone(s.sla_rate, 80, 60) }}>{s.sla_rate == null ? '–' : `${fr(s.sla_rate, 0)} %`}
-                      {s.sla_missed > 0 && <span className="ps2-muted" style={{ fontWeight: 500, fontSize: 11.5 }}> · {s.sla_missed} raté{s.sla_missed > 1 ? 's' : ''}</span>}</td>
+                    <td style={{ fontWeight: 500, color: pctTone(s.sla_rate, 80, 60) }}>{s.sla_rate == null ? '–' : `${fr(s.sla_rate, 0)} %`}
+                      {s.sla_missed > 0 && <span className="ps2-muted" style={{ fontWeight: 400, fontSize: 11.5 }}> · {s.sla_missed} raté{s.sla_missed > 1 ? 's' : ''}</span>}</td>
                   </Motion.tr>
                 ))}
               </tbody>
@@ -184,7 +184,7 @@ const FAMILY_GROUPS = [
   { key: 'cold_call', label: 'Cold call sales', members: ['cold_call'], staff: true },
   { key: 'setters', label: 'Setters (outil de scraping)', members: ['setters'], staff: true },
 ];
-const PARTS = [['weekend', 'Week-end', '#1e3a7b'], ['after_close', 'Soir', '#3d5ba8'], ['before_open', 'Matin', '#7f9ad9'], ['in_hours', 'En heures', '#d6deee']];
+const PARTS = [['weekend', 'Week-end', 'var(--ps2-r1)'], ['after_close', 'Soir', 'var(--ps2-r2)'], ['before_open', 'Matin', 'var(--ps2-r3)'], ['in_hours', 'En heures', 'var(--ps2-r4)']];
 
 function merge(fams, members) {
   const out = { n: 0, in_hours: 0, weekend: 0, after_close: 0, before_open: 0, grid: Array.from({ length: 7 }, () => Array(24).fill(0)) };
@@ -216,7 +216,7 @@ function Arrivals({ all }) {
   const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const shown = hover ? data.grid[hover.d][hover.h] : null;
   // Teinte d'une case : du bleu très clair (1 lead) au bleu marine (le créneau le plus chargé).
-  const tint = (v) => `color-mix(in srgb, #1e3a7b ${Math.round(14 + 86 * Math.sqrt(v / max))}%, #eef2f9)`;
+  const tint = (v) => `color-mix(in srgb, var(--navy) ${Math.round(14 + 86 * Math.sqrt(v / max))}%, var(--line-2))`;
   return (
     <Reveal as="section" className="ps2-card ps2-span-12" aria-labelledby="ps2-arrivals">
       <Motion.div className="ps2-card-head" variants={ITEM}><h2 id="ps2-arrivals">Quand arrivent les leads</h2></Motion.div>
@@ -244,15 +244,15 @@ function Arrivals({ all }) {
                         stroke={hover?.d === i && hover?.h === h ? 'var(--ink)' : 'none'} strokeWidth="1.5"
                         initial={{ opacity: 0 }} animate={{ opacity: drawn ? 1 : 0 }} transition={{ duration: 0.4, ease: EASE, delay: drawn ? 0.05 + (i + h) * 0.015 : 0 }} />
                       {v > 0 && <text x={x + (S - G) / 2} y={y + (S - G) / 2 + 3.5} textAnchor="middle" fontSize="9.5" fontWeight="700" pointerEvents="none"
-                        fill={Math.sqrt(v / max) > 0.45 ? '#fff' : '#1e3a7b'} style={{ opacity: drawn ? 1 : 0, transition: 'opacity .4s ease .6s' }}>{v}</text>}
+                        fill={Math.sqrt(v / max) > 0.45 ? 'var(--card)' : 'var(--navy)'} style={{ opacity: drawn ? 1 : 0, transition: 'opacity .4s ease .6s' }}>{v}</text>}
                     </g>
                   );
                 })}
-                <text x={L + 24 * S + 10} y={T + i * S + S / 2 + 4} fontSize="12" fontWeight="700" fill={i >= 5 ? '#1e3a7b' : 'var(--soft)'}>{rowSum[i]}</text>
+                <text x={L + 24 * S + 10} y={T + i * S + S / 2 + 4} fontSize="12" fontWeight="700" fill={i >= 5 ? 'var(--navy)' : 'var(--soft)'}>{rowSum[i]}</text>
               </g>
             ))}
             {/* Heures ouvrées, lundi-vendredi : un cadre sur la grille (la légende est sous la grille). */}
-            <rect x={L + ws * S} y={T} width={(we - ws) * S} height={5 * S} rx="8" fill="none" stroke="#c2410c" strokeWidth="2" strokeDasharray="5 4" pointerEvents="none" />
+            <rect x={L + ws * S} y={T} width={(we - ws) * S} height={5 * S} rx="8" fill="none" stroke="var(--low-strong)" strokeWidth="2" strokeDasharray="5 4" pointerEvents="none" />
             {colSum.map((v, h) => <text key={h} x={L + h * S + S / 2} y={T + 7 * S + 17} textAnchor="middle" fontSize="10" fontWeight="650" fill="var(--soft)">{v || ''}</text>)}
             {shown != null && (
               <g pointerEvents="none" transform={`translate(${Math.min(W - 70, Math.max(70, L + hover.h * S + S / 2))}, ${Math.max(14, T + hover.d * S - 8)})`}>

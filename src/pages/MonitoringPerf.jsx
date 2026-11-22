@@ -78,6 +78,17 @@ const nextDay = (iso) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(
 const rangeLabelFR = (r) => (String(r).includes('..') ? r.split('..').map(d => d.split('-').reverse().slice(0, 2).join('/')).join(' → ') : monthLabelFR(r));
 
 const COLORS = { primary: "#6366f1", secondary: "#fb923c", tertiary: "#10b981" };
+// Performance Sales (peau Owner, 22/11/2026) : gris chauds, encre presque noire ; les taux en vert, ambre ou rouge d'étiquette.
+const PERF_C = {
+  light: { bg: '#ffffff', border: '#e8e4de', surface: '#f4f2ef', text: '#1c1b19', muted: '#9d9890', subtle: '#faf9f7', secondary: '#55514b', accent: '#1b6fd0',
+    shadow: '0 14px 34px rgba(28,27,25,.10), 0 2px 6px rgba(28,27,25,.04)' },
+  dark: { bg: '#1f1f1f', border: '#2e2e2e', surface: '#141414', text: '#f2f2f2', muted: '#7d7d7d', subtle: '#262626', secondary: '#a3a3a3', accent: '#93b8ec',
+    shadow: '0 14px 34px rgba(0,0,0,.45)' },
+};
+const PERF_TONES = {
+  light: { primary: '#4a3fc4', secondary: '#a05a05', tertiary: '#0b7a4b', bad: '#c5221f', signed: '#a05a05', ink: '#2b2927', onInk: '#fff' },
+  dark: { primary: '#aaa5ee', secondary: '#f5c56b', tertiary: '#7fd1a3', bad: '#f28b82', signed: '#f5c56b', ink: '#ededed', onInk: '#141414' },
+};
 const MONTHS_FR = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
 const monthLabelFR = (ym) => { const p = String(ym || '').split('-'); return (MONTHS_FR[(+p[1] || 1) - 1] || '') + ' ' + (p[0] || ''); };
 
@@ -128,7 +139,6 @@ export default function MonitoringPerf({ embed = false } = {}) {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
   useEffect(() => { localStorage.setItem("darkMode", darkMode); document.body.classList.toggle("dark-mode", darkMode); document.documentElement.classList.toggle("dark-mode", darkMode); }, [darkMode]);
 
-  const C = { bg: darkMode ? '#1e1f28' : '#ffffff', border: darkMode ? '#2a2b36' : '#e2e6ef', surface: darkMode ? '#13141b' : '#f6f7f9', text: darkMode ? '#eef0f6' : '#1e2330', muted: darkMode ? '#5e6273' : '#9ca3af', subtle: darkMode ? '#252636' : '#f4f6fb', secondary: darkMode ? '#8b8fa0' : '#6b7280', accent: darkMode ? '#7c8adb' : '#5b6abf', shadow: darkMode ? '0 1px 3px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15)' : '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)' };
 
   const [session, setSession] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
@@ -142,6 +152,9 @@ export default function MonitoringPerf({ embed = false } = {}) {
     return v === 'lead-quality' || v === 'lead_quality' ? 'lead_quality' : 'perf_sales';
   }, []);
   const [viewMode, setViewMode] = useState(initialViewMode);
+  // Performance Sales : palette Owner (toile grège, gris chauds, comme les Statistiques de la Finance) ; Qualité Leads garde la sienne.
+  const C = viewMode === 'perf_sales' ? PERF_C[darkMode ? 'dark' : 'light'] : { bg: darkMode ? '#1e1f28' : '#ffffff', border: darkMode ? '#2a2b36' : '#e2e6ef', surface: darkMode ? '#13141b' : '#f6f7f9', text: darkMode ? '#eef0f6' : '#1e2330', muted: darkMode ? '#5e6273' : '#9ca3af', subtle: darkMode ? '#252636' : '#f4f6fb', secondary: darkMode ? '#8b8fa0' : '#6b7280', accent: darkMode ? '#7c8adb' : '#5b6abf', shadow: darkMode ? '0 1px 3px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15)' : '0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)' };
+  const K = viewMode === 'perf_sales' ? PERF_TONES[darkMode ? 'dark' : 'light'] : { ...COLORS, bad: '#ff453a', signed: '#f59e0b', ink: COLORS.primary, onInk: '#fff' };
   const [perfData, setPerfData] = useState(null);
   const [callsCrm, setCallsCrm] = useState(null); // /tracking/sales-calls-crm (appels/répondu/répondeur hybride, mai+)
   const [dataLoading, setDataLoading] = useState(true);
@@ -280,51 +293,51 @@ export default function MonitoringPerf({ embed = false } = {}) {
   }), [totals, callsLoading, avatarMap, session]);
 
 
-  const gcColor = (tx) => tx>=5?COLORS.tertiary:tx>=2?COLORS.secondary:C.text;
-  const rxColor = (tx) => tx>=80?COLORS.tertiary:tx>=50?COLORS.secondary:'#ff453a';
-  const arColor = (tx) => tx>=50?COLORS.tertiary:tx>=35?COLORS.secondary:'#ff453a';   // taux de réponse d'appels
-  const cvColor = (tx) => tx>=40?COLORS.tertiary:tx>=20?COLORS.secondary:C.text;
-  const r1pColor = (tx) => tx>=30?COLORS.tertiary:tx>=15?COLORS.secondary:C.text;
-  const cColor = (r) => r>=10?COLORS.tertiary:r>=5?COLORS.secondary:C.text;
-  const lColor = (r) => r<=30?COLORS.tertiary:r<=50?COLORS.secondary:'#ff453a';
+  const gcColor = (tx) => tx>=5?K.tertiary:tx>=2?K.secondary:C.text;
+  const rxColor = (tx) => tx>=80?K.tertiary:tx>=50?K.secondary:K.bad;
+  const arColor = (tx) => tx>=50?K.tertiary:tx>=35?K.secondary:K.bad;   // taux de réponse d'appels
+  const cvColor = (tx) => tx>=40?K.tertiary:tx>=20?K.secondary:C.text;
+  const r1pColor = (tx) => tx>=30?K.tertiary:tx>=15?K.secondary:C.text;
+  const cColor = (r) => r>=10?K.tertiary:r>=5?K.secondary:C.text;
+  const lColor = (r) => r<=30?K.tertiary:r<=50?K.secondary:K.bad;
 
-  const medal = (i) => i===0?<img src={firstPlace} alt="" style={{width:25,height:25}}/>:i===1?<img src={secondPlace} alt="" style={{width:25,height:25}}/>:i===2?<img src={thirdPlace} alt="" style={{width:25,height:25}}/>:<span style={{fontSize:16,fontWeight:800,color:C.secondary,fontVariantNumeric:"tabular-nums"}}>{i+1}</span>;
+  const medal = (i) => i===0?<img src={firstPlace} alt="" style={{width:25,height:25}}/>:i===1?<img src={secondPlace} alt="" style={{width:25,height:25}}/>:i===2?<img src={thirdPlace} alt="" style={{width:25,height:25}}/>:<span style={{fontSize:16,fontWeight:500,color:C.secondary,fontVariantNumeric:"tabular-nums"}}>{i+1}</span>;
 
   const monthOpts = (sy,sm) => { const o=[]; const td=new Date(parisMonth()+'-15T12:00:00'); const c=new Date(sy,sm-1); const ym=td.getFullYear()*100+td.getMonth(); while(true){ const y=c.getFullYear()*100+c.getMonth(); if(y>ym) break; const v=c.getFullYear()+'-'+String(c.getMonth()+1).padStart(2,'0'); const l=new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(c); o.unshift({value:v,label:l.charAt(0).toUpperCase()+l.slice(1)}); c.setMonth(c.getMonth()+1); } return o; };
   const selS = { fontSize:12, fontWeight:500, padding:'6px 10px', borderRadius:8, border:'1px solid '+C.border, background:darkMode?C.subtle:'#fff', color:C.text, cursor:'pointer', outline:'none' };
   const thS = { whiteSpace:'nowrap', textAlign:'center' };
   const tdS = { textAlign:'center', fontVariantNumeric:'tabular-nums' };
   // Un taux absent (« — ») reste neutre : ni rouge ni vert.
-  const pctPill = (txt,color)=>{const c=txt==='—'?C.muted:color;return <span style={{display:'inline-block',padding:'3px 11px',borderRadius:8,fontSize:12.5,fontWeight:600,color:c,background:txt==='—'?'transparent':c+'22',fontVariantNumeric:'tabular-nums'}}>{txt}</span>;};
+  const pctPill = (txt,color)=>{const c=txt==='—'?C.muted:color;return <span style={{display:'inline-block',padding:'3px 9px',borderRadius:7,fontSize:12.5,fontWeight:500,color:c,background:txt==='—'?'transparent':c+'22',fontVariantNumeric:'tabular-nums'}}>{txt}</span>;};
 
   const metricButton = {border:0,background:'none',color:C.accent,font:'inherit',cursor:'pointer',padding:'4px 6px',textDecoration:'underline',textUnderlineOffset:3};
   const perfColumns = [
     { key:'rank', label:'#', tip:'Classement par ventes', always:true, cell:(s,i,k)=><td key={k} style={tdS}>{medal(i)}</td> },
-    { key:'sales', label:'Sales', tip:'Commercial', always:true, cell:(s,i,k)=>{const meta=avatarMap[s.salesKey]||{};const av=meta.av;const rl={sales:'Sales',head_of_sales:'Head of Sales',head_of_sales_manager:'Manager',admin:'Admin'}[meta.role]||'';return <td key={k} style={{...tdS,textAlign:'left',paddingLeft:8}}><div style={{display:'flex',alignItems:'center',gap:11}}>{av?<img src={av} alt="" style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:'1px solid '+C.border}} />:<div style={{width:36,height:36,borderRadius:'50%',background:i===0?COLORS.tertiary:i===1?COLORS.secondary:COLORS.primary,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:'#fff',fontWeight:600,flexShrink:0}}>{s.salesName.charAt(0).toUpperCase()}</div>}<div style={{minWidth:0}}><div style={{fontWeight:650,fontSize:13.5,color:C.text,whiteSpace:'nowrap',letterSpacing:'-0.01em',...(canal!=='global'?{cursor:'pointer'}:{})}} onClick={()=>canal!=='global'&&openDetail(s.salesName)}>{s.salesName}</div>{rl&&<div style={{fontSize:11,color:C.muted,marginTop:1}}>{rl}</div>}</div></div></td>;} },
-    { key:'leads', label:'Leads', tip:'Leads reçus (créés) dans le mois', cell:(s,i,k)=><td key={k} style={{...tdS,fontWeight:700}}>{canal==='ads'?(s.leads_ads||0):canal==='cc'?(s.leads_cc||0):(s.leads_assigned||0)}</td> },
+    { key:'sales', label:'Sales', tip:'Commercial', always:true, cell:(s,i,k)=>{const meta=avatarMap[s.salesKey]||{};const av=meta.av;const rl={sales:'Sales',head_of_sales:'Head of Sales',head_of_sales_manager:'Manager',admin:'Admin'}[meta.role]||'';return <td key={k} style={{...tdS,textAlign:'left',paddingLeft:8}}><div style={{display:'flex',alignItems:'center',gap:11}}>{av?<img src={av} alt="" style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:'1px solid '+C.border}} />:<div style={{width:36,height:36,borderRadius:'50%',background:i===0?K.tertiary:i===1?K.secondary:K.primary,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:'#fff',fontWeight:500,flexShrink:0}}>{s.salesName.charAt(0).toUpperCase()}</div>}<div style={{minWidth:0}}><div style={{fontWeight:500,fontSize:13.5,color:C.text,whiteSpace:'nowrap',letterSpacing:'-0.01em',...(canal!=='global'?{cursor:'pointer'}:{})}} onClick={()=>canal!=='global'&&openDetail(s.salesName)}>{s.salesName}</div>{rl&&<div style={{fontSize:11,color:C.muted,marginTop:1}}>{rl}</div>}</div></div></td>;} },
+    { key:'leads', label:'Leads', tip:'Leads reçus (créés) dans le mois', cell:(s,i,k)=><td key={k} style={{...tdS,fontWeight:500}}>{canal==='ads'?(s.leads_ads||0):canal==='cc'?(s.leads_cc||0):(s.leads_assigned||0)}</td> },
     { key:'conv', label:'Conv.%', tip:'Ventes déclarées dans la période ÷ leads reçus dans la période. Ce ratio d’activité ne suit pas une même cohorte de clients.', cell:(s,i,k)=><td key={k} style={tdS}>{pctPill(percent(s.conv_global,2),gcColor(s.conv_global))}</td> },
     { key:'appels', label:'Appels', tip:'Appels sortants passés depuis Allo dans la période. « Non relevé » : le sales n’appelle pas depuis Allo, ses appels ne sont pas comptés.', cell:(s,i,k)=><td key={k} style={tdS}>{sCallsLoading&&i>=0?<span style={{color:C.muted}}>…</span>:s.calls_available?s.calls_total.toLocaleString('fr-FR'):<span style={{fontSize:11.5,color:C.muted}}>non relevé</span>}</td> },
-    { key:'rep', label:sCrm?'Rép.':'Décr.', tip:sCrm?'Leads répondu (atteints), vérité CRM':'Décrochés (OnOff)', cell:(s,i,k)=><td key={k} style={sCrm?{...tdS,color:COLORS.tertiary,fontWeight:600}:tdS}>{s.calls_answered.toLocaleString('fr-FR')}</td> },
+    { key:'rep', label:sCrm?'Rép.':'Décr.', tip:sCrm?'Leads répondu (atteints), vérité CRM':'Décrochés (OnOff)', cell:(s,i,k)=><td key={k} style={sCrm?{...tdS,color:K.tertiary,fontWeight:500}:tdS}>{s.calls_answered.toLocaleString('fr-FR')}</td> },
     { key:'repondeur', label:'Répondeur', tip:'Tombés sur répondeur / messagerie', crmOnly:true, cell:(s,i,k)=><td key={k} style={{...tdS,color:C.muted}}>{s.repondeur!=null?s.repondeur.toLocaleString('fr-FR'):'—'}</td> },
     { key:'txrep', label:sCrm?'Tx Rép.':'Tx Décr.', tip:sCrm?'Taux de réponse Allo : appels répondus par une personne ÷ appels sortants (répondeurs détectés exclus)':'Décrochés ÷ Appels', cell:(s,i,k)=><td key={k} style={tdS}>{(s.calls_measured ?? s.calls_available)&&!sCallsLoading?pctPill(percent(s.conv_calls_to_answered,1),arColor(s.conv_calls_to_answered)):'—'}</td> },
     { key:'r1rep', label:sCrm?'R1/Rép':'R1/Décr', tip:sCrm?'Parmi les contacts atteints dans la période : part ayant un R1 planifié dans cette même période':'R1 placés ÷ Décrochés', cell:(s,i,k)=><td key={k} style={tdS}>{pctPill(percent(s.conv_answered_to_r1p,1),r1pColor(s.conv_answered_to_r1p))}</td> },
     { key:'r1p', label:'R1 placés', tip:'Tous les R1 planifiés dans la période, sales et setters inclus. Cliquer pour voir les dossiers.', cell:(s,i,k)=><td key={k} style={tdS}><button onClick={()=>openAppointments(s.salesName,'r1')} style={metricButton}>{s.r1_placed}</button></td> },
     { key:'r1tel', label:'R1 tél.', tip:'R1 faits au téléphone : un R2 posé sans R1 dans le CRM, compté au mois du R2. À part des R1 placés. Cliquer pour voir les dossiers.', crmOnly:true, cell:(s,i,k)=><td key={k} style={tdS}>{s.r1_phone?<button onClick={()=>openAppointments(s.salesName,'r1_phone')} style={metricButton}>{s.r1_phone}</button>:<span style={{color:C.muted}}>0</span>}</td> },
-    { key:'r1s', label:'Dont setter', tip:'R1 placés par le setter', crmOnly:true, cell:(s,i,k)=><td key={k} style={{...tdS,color:COLORS.primary,fontWeight:600}}>{s.r1p_s}</td> },
+    { key:'r1s', label:'Dont setter', tip:'R1 placés par le setter', crmOnly:true, cell:(s,i,k)=><td key={k} style={{...tdS,color:K.primary,fontWeight:500}}>{s.r1p_s}</td> },
     { key:'r1e', label:'R1 effectués', tip:'R1 planifiés dans la période et qualifiés comme effectués', cell:(s,i,k)=><td key={k} style={tdS}>{s.r1_done}</td> },
     { key:'r1se', label:'Dont setter effectués', tip:'R1 placés par un setter et réellement effectués ; sous-ensemble des R1 effectués', crmOnly:true, cell:(s,i,k)=><td key={k} style={tdS}>{s.r1r_s}</td> },
     { key:'txr1', label:'Tx R1', tip:'Présence R1 : R1 effectués ÷ R1 passés (date prévue dépassée). Les R1 à venir du mois ne comptent pas.', cell:(s,i,k)=><td key={k} style={tdS}>{pctPill(percent(s.conv_r1p_to_r1r,0),rxColor(s.conv_r1p_to_r1r))}</td> },
     { key:'r2p', label:'R2 placés', tip:'Tous les R2 planifiés dans la période, sales et setters inclus. Cliquer pour voir les dossiers.', cell:(s,i,k)=><td key={k} style={tdS}><button onClick={()=>openAppointments(s.salesName,'r2')} style={metricButton}>{s.r2_placed}</button></td> },
-    { key:'r2s', label:'Dont setter', tip:'R2 placés par le setter', crmOnly:true, cell:(s,i,k)=><td key={k} style={{...tdS,color:COLORS.primary,fontWeight:600}}>{s.r2p_s}</td> },
+    { key:'r2s', label:'Dont setter', tip:'R2 placés par le setter', crmOnly:true, cell:(s,i,k)=><td key={k} style={{...tdS,color:K.primary,fontWeight:500}}>{s.r2p_s}</td> },
     { key:'r2e', label:'R2 effectués', tip:'R2 planifiés dans la période et qualifiés comme effectués, y compris réflexion ou refus après rendez-vous', cell:(s,i,k)=><td key={k} style={tdS}>{s.r2_done}</td> },
     { key:'r2se', label:'Dont setter effectués', tip:'R2 placés par un setter et réellement effectués ; sous-ensemble des R2 effectués', crmOnly:true, cell:(s,i,k)=><td key={k} style={tdS}>{s.r2r_s}</td> },
     { key:'txr2', label:'Tx R2', tip:'Présence R2 : R2 effectués ÷ R2 passés (date prévue dépassée). Les R2 à venir du mois ne comptent pas.', cell:(s,i,k)=><td key={k} style={tdS}>{pctPill(percent(s.conv_r2p_to_r2r,0),rxColor(s.conv_r2p_to_r2r))}</td> },
     ...((canal!=='ads'&&sCrm)?[{key:'ccs1',label:'CC setter R1 effectués',tip:'R1 effectués du canal CC, issus du setter ; inclus dans R1 effectués',cell:(s,i,k)=><td key={k} style={tdS}>{s.r1_cc_setter_done}</td>},{key:'ccs2',label:'CC setter R2 effectués',tip:'R2 effectués issus du CC setter, même si le sales a placé le R2 ; inclus dans R2 effectués',cell:(s,i,k)=><td key={k} style={tdS}>{s.r2_cc_setter_done}</td>}]:[]),
-    { key:'signes', label:'Signatures', tip:'Contrats Owner signés sur Yousign dans la période, au commercial du contrat ; un contrat signé peut ne pas être encore déclaré.', cell:(s,i,k)=><td key={k} style={{...tdS,fontWeight:750,color:'#f59e0b'}}>{s.signed}</td> },
-    { key:'ventes', label:'Ventes', tip:'Ventes déclarées dans la période (déclaration de vente)', cell:(s,i,k)=><td key={k} style={{...tdS,fontWeight:800,fontSize:15,color:COLORS.tertiary}}>{s.signatures}</td> },
+    { key:'signes', label:'Signatures', tip:'Contrats Owner signés sur Yousign dans la période, au commercial du contrat ; un contrat signé peut ne pas être encore déclaré.', cell:(s,i,k)=><td key={k} style={{...tdS,fontWeight:500,color:K.signed}}>{s.signed}</td> },
+    { key:'ventes', label:'Ventes', tip:'Ventes déclarées dans la période (déclaration de vente)', cell:(s,i,k)=><td key={k} style={{...tdS,fontWeight:500,fontSize:15,color:K.tertiary}}>{s.signatures}</td> },
     { key:'convv', label:'Conv.V.', tip:'Conversion ventes : Ventes ÷ R2 effectués', cell:(s,i,k)=><td key={k} style={tdS}>{pctPill(percent(s.conv_sales,1),cvColor(s.conv_sales))}</td> },
-    { key:'revenue', label:'Revenu', tip:'Revenu enregistré dans les déclarations de vente', cell:(s,i,k)=><td key={k} style={{...tdS,color:COLORS.secondary}}>{s.revenue.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</td> },
-    { key:'cash', label:'Cash déclaré', tip:'Cash déclaré à la vente ; ce montant ne constitue pas un encaissement bancaire', cell:(s,i,k)=><td key={k} style={{...tdS,color:COLORS.tertiary}}>{s.cashCollected.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</td> },
+    { key:'revenue', label:'Revenu', tip:'Revenu enregistré dans les déclarations de vente', cell:(s,i,k)=><td key={k} style={{...tdS,color:K.secondary}}>{s.revenue.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</td> },
+    { key:'cash', label:'Cash déclaré', tip:'Cash déclaré à la vente ; ce montant ne constitue pas un encaissement bancaire', cell:(s,i,k)=><td key={k} style={{...tdS,color:K.tertiary}}>{s.cashCollected.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</td> },
   ];
 
   // Ligne d'en-tête des groupes : chaque colonne visible appartient à un thème, les colonnes voisines du même thème
@@ -332,7 +345,9 @@ export default function MonitoringPerf({ embed = false } = {}) {
   const COLUMN_GROUP = { leads:'activity', conv:'activity', appels:'activity', rep:'activity', repondeur:'activity', txrep:'activity', r1rep:'activity',
     r1p:'r1', r1tel:'r1', r1s:'r1', r1e:'r1', r1se:'r1', txr1:'r1', r2p:'r2', r2s:'r2', r2e:'r2', r2se:'r2', txr2:'r2', ccs1:'r1', ccs2:'r2',
     signes:'result', ventes:'result', convv:'result', revenue:'result', cash:'result' };
-  const GROUP_LABEL = { activity:['Activité','#64748b'], r1:['Premier rendez-vous','#6366f1'], r2:['Second rendez-vous','#0284c7'], result:['Résultat','#10b981'] };
+  const GROUP_LABEL = viewMode === 'perf_sales'
+    ? { activity:['Activité',C.muted], r1:['Premier rendez-vous',K.primary], r2:['Second rendez-vous',darkMode?'#93b8ec':'#1b6fd0'], result:['Résultat',K.tertiary] }
+    : { activity:['Activité','#64748b'], r1:['Premier rendez-vous','#6366f1'], r2:['Second rendez-vous','#0284c7'], result:['Résultat','#10b981'] };
   const columnGroups = (cols) => cols.reduce((acc, c) => {
     const key = COLUMN_GROUP[c.key] || null, last = acc[acc.length - 1];
     if (last && last.key === key) last.span += 1;
@@ -341,8 +356,8 @@ export default function MonitoringPerf({ embed = false } = {}) {
   }, []);
 
   const appointmentDialog = appointmentDetail && createPortal(
-    <div onClick={()=>{++appointmentRequest.current;setAppointmentDetail(null);}} style={{position:'fixed',inset:0,zIndex:12000,background:'rgba(20,25,35,.35)',backdropFilter:'blur(5px)',display:'grid',placeItems:'center',padding:20}}>
-      <Motion.section role="dialog" aria-modal="true" aria-label="Détail des rendez-vous" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} onClick={e=>e.stopPropagation()} style={{background:C.bg,color:C.text,borderRadius:20,width:'min(900px,100%)',maxHeight:'85dvh',overflow:'auto',padding:24,boxShadow:'0 20px 60px #0002'}}>
+    <div onClick={()=>{++appointmentRequest.current;setAppointmentDetail(null);}} style={{position:'fixed',inset:0,zIndex:12000,background:darkMode?'rgba(0,0,0,.6)':'rgba(28,27,25,.22)',display:'grid',placeItems:'center',padding:20}}>
+      <Motion.section role="dialog" aria-modal="true" aria-label="Détail des rendez-vous" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} onClick={e=>e.stopPropagation()} style={{background:C.bg,color:C.text,borderRadius:22,width:'min(900px,100%)',maxHeight:'85dvh',overflow:'auto',padding:24,boxShadow:darkMode?'0 24px 60px rgba(0,0,0,.5)':'0 24px 60px rgba(28,27,25,.14)'}}>
         <div style={{display:'flex',justifyContent:'space-between',gap:20}}><div><h2 style={{margin:0,fontSize:20}}>{appointmentDetail.stage==='r1_phone'?'R1 au téléphone':appointmentDetail.stage.toUpperCase()} · {appointmentDetail.person}</h2><p style={{color:C.secondary}}>{rangeLabelFR(salesRange)} · {canal.toUpperCase()} · heure de Paris</p></div><button aria-label="Fermer" onClick={()=>{++appointmentRequest.current;setAppointmentDetail(null);}} style={metricButton}>Fermer</button></div>
         {appointmentDetail.loading?<p>Chargement des rendez-vous…</p>:appointmentDetail.error?<p>Le détail n’a pas pu être chargé.</p>:<>
           <p><strong>{appointmentDetail.stage==='r1_phone'?`${appointmentDetail.data.total} R1 faits au téléphone (R2 posé sans R1) · ${appointmentDetail.data.setter} R2 posés par un setter`:`${appointmentDetail.data.total} placés · ${appointmentDetail.data.done} effectués · ${appointmentDetail.data.setter} placés par un setter`}</strong></p>
@@ -360,7 +375,7 @@ export default function MonitoringPerf({ embed = false } = {}) {
     <>
       {appointmentDialog}
       {tip && <CalcTip text={tip.t} rect={tip.r} darkMode={darkMode} />}
-      <style>{`@keyframes pageReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes sidebarReveal{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}@keyframes rowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}html,body{background:${darkMode?'#13141b':'#ffffff'}}.perfv2{border-collapse:separate;border-spacing:0;background:${C.bg};border-radius:14px}.perfv2 th{padding:14px 12px;font-size:12px;font-weight:600;color:${C.secondary};border-bottom:1px solid ${C.border}}.perfv2 .perfv2-groups th{padding:10px 12px 6px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid transparent}.perfv2 .perfv2-groups th.is-group{border-bottom:2px solid}.perfv2 td{padding:13px 12px;font-size:13px;border-bottom:1px solid ${C.border};white-space:nowrap}.perfv2 tbody tr:hover{background:${C.subtle}}.mp-scroll::-webkit-scrollbar{width:3px;height:3px}.mp-scroll::-webkit-scrollbar-track{background:transparent}.mp-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:4px}`}</style>
+      <style>{`@keyframes pageReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes sidebarReveal{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}@keyframes rowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}html,body{background:${viewMode==='perf_sales'?C.surface:darkMode?'#13141b':'#ffffff'}}.perfv2{border-collapse:separate;border-spacing:0;background:${C.bg};border-radius:14px}.perfv2 th{padding:14px 12px;font-size:12px;font-weight:${viewMode==='perf_sales'?500:600};color:${C.secondary};border-bottom:1px solid ${C.border}}.perfv2 .perfv2-groups th{padding:10px 12px 6px;font-size:10.5px;font-weight:${viewMode==='perf_sales'?500:700};letter-spacing:${viewMode==='perf_sales'?'.09em':'.07em'};text-transform:uppercase;border-bottom:1px solid transparent}.perfv2 .perfv2-groups th.is-group{border-bottom:2px solid}.perfv2 td{padding:13px 12px;font-size:13px;border-bottom:1px solid ${C.border};white-space:nowrap}.perfv2 tbody tr:hover{background:${C.subtle}}.mp-scroll::-webkit-scrollbar{width:3px;height:3px}.mp-scroll::-webkit-scrollbar-track{background:transparent}.mp-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:4px}`}</style>
 
       {/* « backwards », pas « both » : l'animation finie ne laisse aucune transformation sur ce bloc. Sinon il devient le repère
           des éléments « fixed » de la page (bulles de détail) et, dans le shell CEO, les décale de la largeur de la barre
@@ -402,7 +417,7 @@ export default function MonitoringPerf({ embed = false } = {}) {
 
             {/* CONTENT */}
             <div style={{flex:1,marginLeft:8}}>
-              <div className="mp-scroll" style={{background:darkMode?C.bg:'#f6f7f9',borderRadius:8,border:'1px solid '+C.border,overflow:'auto',minHeight:viewMode==='perf_sales'?'calc(100vh - 16px)':'calc(100vh - 120px)',maxHeight:viewMode==='perf_sales'?'calc(100vh - 16px)':'calc(100vh - 120px)'}}>
+              <div className="mp-scroll" style={{background:viewMode==='perf_sales'?C.surface:darkMode?C.bg:'#f6f7f9',borderRadius:viewMode==='perf_sales'?18:8,border:'1px solid '+(viewMode==='perf_sales'?'transparent':C.border),overflow:'auto',minHeight:viewMode==='perf_sales'?'calc(100vh - 16px)':'calc(100vh - 120px)',maxHeight:viewMode==='perf_sales'?'calc(100vh - 16px)':'calc(100vh - 120px)'}}>
 
                 {viewMode==='perf_sales' && (<div className={'ps' + (darkMode ? ' ps-dark' : '')} style={{padding:'20px 20px 28px'}}>
                   {dataError && <div role="alert" style={{padding:16,color:C.text,border:`1px solid ${C.border}`,borderRadius:12}}>{dataError} <button onClick={()=>setRefreshKey(k=>k+1)} style={selS}>Réessayer</button></div>}
@@ -431,8 +446,8 @@ export default function MonitoringPerf({ embed = false } = {}) {
                           <div className="ps2-segment"><button type="button" aria-pressed={adsDetailView} onClick={()=>{const on=!adsDetailView;setAdsDetailView(on);setCanal(on?'ads':'global');}}>{adsDetailView?'Retour au tableau':'Leads ADS par effectif'}</button></div>
                         </div>
                   {!sLoading && canal==='ads' && adsDetailView && (headcountLoading ? <div style={{textAlign:'center',padding:60,color:C.muted}}>Chargement...</div> : !headcountData ? <div style={{textAlign:'center',padding:60,color:C.muted}}>Le détail des effectifs n’a pas pu être chargé. Utilisez Actualiser pour réessayer.</div> : <table className="leaderboard" style={{width:'100%'}}><thead><tr>{['#','Sales','Leads','1-2','3-4','5-6','7-10','11-19','20+','Inconnu'].map(h=><th key={h} style={thS}>{h}</th>)}</tr></thead><tbody>
-                    {[...(headcountData.by_person||[])].sort((a,b)=>(b.leads_assigned||0)-(a.leads_assigned||0)).map((p,i)=>{const hc=p.headcount_breakdown||{};return(<tr key={p.person_name} style={{animation:'rowIn 0.3s cubic-bezier(0.16,1,0.3,1) '+(i*40)+'ms both'}}><td style={tdS}>{medal(i)}</td><td style={{...tdS,textAlign:'left',fontWeight:i<3?700:500,paddingLeft:12}}>{p.person_name}</td><td style={{...tdS,fontWeight:700}}>{(p.leads_assigned||0).toLocaleString('fr-FR')}</td>{['1-2','3-4','5-6','7-10','11-19','20+'].map(b=><td key={b} style={tdS}>{hc[b]||0}</td>)}<td style={{...tdS,color:C.muted}}>{p.unknown||0}</td></tr>);})}
-                    {headcountData.totals && <tr style={{borderTop:'2px solid '+C.border,fontWeight:700,background:darkMode?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)'}}><td style={tdS}></td><td style={{...tdS,textAlign:'left',paddingLeft:12}}>Total</td><td style={tdS}>{(headcountData.totals.leads_assigned||0).toLocaleString('fr-FR')}</td>{['1-2','3-4','5-6','7-10','11-19','20+'].map(b=><td key={b} style={tdS}>{(headcountData.totals.headcount_breakdown||{})[b]||0}</td>)}<td style={{...tdS,color:C.muted}}>{headcountData.totals.unknown||0}</td></tr>}
+                    {[...(headcountData.by_person||[])].sort((a,b)=>(b.leads_assigned||0)-(a.leads_assigned||0)).map((p,i)=>{const hc=p.headcount_breakdown||{};return(<tr key={p.person_name} style={{animation:'rowIn 0.3s cubic-bezier(0.16,1,0.3,1) '+(i*40)+'ms both'}}><td style={tdS}>{medal(i)}</td><td style={{...tdS,textAlign:'left',fontWeight:500,paddingLeft:12}}>{p.person_name}</td><td style={{...tdS,fontWeight:500}}>{(p.leads_assigned||0).toLocaleString('fr-FR')}</td>{['1-2','3-4','5-6','7-10','11-19','20+'].map(b=><td key={b} style={tdS}>{hc[b]||0}</td>)}<td style={{...tdS,color:C.muted}}>{p.unknown||0}</td></tr>);})}
+                    {headcountData.totals && <tr style={{borderTop:'1px solid '+C.border,fontWeight:500,background:darkMode?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)'}}><td style={tdS}></td><td style={{...tdS,textAlign:'left',paddingLeft:12}}>Total</td><td style={tdS}>{(headcountData.totals.leads_assigned||0).toLocaleString('fr-FR')}</td>{['1-2','3-4','5-6','7-10','11-19','20+'].map(b=><td key={b} style={tdS}>{(headcountData.totals.headcount_breakdown||{})[b]||0}</td>)}<td style={{...tdS,color:C.muted}}>{headcountData.totals.unknown||0}</td></tr>}
                   </tbody></table>)}
 
                   {!sLoading && sRows.length>0 && !(canal==='ads'&&adsDetailView) && (()=>{
@@ -440,19 +455,19 @@ export default function MonitoringPerf({ embed = false } = {}) {
                     const toggleable = perfColumns.filter(c=>!c.always && (!c.crmOnly||sCrm));
                     return (<>
                     <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10,position:'relative'}}>
-                      <button onClick={()=>setColMenuOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:9,border:'1px solid '+C.border,background:darkMode?'#16171e':'#fff',color:C.text,fontSize:12.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                      <button onClick={()=>setColMenuOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,padding:'0 14px',height:34,borderRadius:999,border:'1px solid '+C.border,background:C.bg,color:C.text,fontSize:12.5,fontWeight:500,cursor:'pointer',fontFamily:'inherit',boxShadow:darkMode?'none':'0 1px 2px rgba(50,40,30,.05)'}}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
                         Colonnes{hiddenCols.size>0?` (${toggleable.filter(c=>!hiddenCols.has(c.key)).length}/${toggleable.length})`:''}
                       </button>
                       {colMenuOpen && (<>
                         <div onClick={()=>setColMenuOpen(false)} style={{position:'fixed',inset:0,zIndex:40}} />
-                        <div style={{position:'absolute',top:'calc(100% + 6px)',right:0,zIndex:41,background:C.bg,border:'1px solid '+C.border,borderRadius:10,boxShadow:C.shadow,padding:8,minWidth:200,maxHeight:340,overflowY:'auto'}}>
+                        <div style={{position:'absolute',top:'calc(100% + 6px)',right:0,zIndex:41,background:C.bg,border:'1px solid '+C.border,borderRadius:14,boxShadow:C.shadow,padding:8,minWidth:200,maxHeight:340,overflowY:'auto'}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'2px 6px 8px',borderBottom:'1px solid '+C.border,marginBottom:4}}>
-                            <span style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:'0.04em'}}>Colonnes</span>
-                            <button onClick={()=>setHiddenCols(new Set())} style={{border:'none',background:'transparent',color:COLORS.primary,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Tout afficher</button>
+                            <span style={{fontSize:10.5,fontWeight:500,color:C.muted,textTransform:'uppercase',letterSpacing:'0.09em'}}>Colonnes</span>
+                            <button onClick={()=>setHiddenCols(new Set())} style={{border:'none',background:'transparent',color:K.ink,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>Tout afficher</button>
                           </div>
                           {toggleable.map(c=>{const on=!hiddenCols.has(c.key);return (<div key={c.key} onClick={()=>setHiddenCols(prev=>{const n=new Set(prev);n.has(c.key)?n.delete(c.key):n.add(c.key);return n;})} style={{display:'flex',alignItems:'center',gap:9,padding:'7px 8px',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:500,color:on?C.text:C.muted,userSelect:'none'}} onMouseEnter={e=>e.currentTarget.style.background=darkMode?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                            <span style={{width:16,height:16,borderRadius:5,border:'1.5px solid '+(on?COLORS.primary:C.border),background:on?COLORS.primary:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all 0.15s'}}>{on&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}</span>
+                            <span style={{width:16,height:16,borderRadius:5,border:'1.5px solid '+(on?K.ink:C.border),background:on?K.ink:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all 0.15s'}}>{on&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.onInk} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}</span>
                             {c.label}
                           </div>);})}
                         </div>
@@ -462,7 +477,7 @@ export default function MonitoringPerf({ embed = false } = {}) {
                     <tr className="perfv2-groups">{columnGroups(visCols).map((g,i)=><th key={i} colSpan={g.span} className={g.label?'is-group':''} style={g.label?{color:g.color,borderBottomColor:g.color}:undefined}>{g.label}</th>)}</tr>
                     <tr>{visCols.map(c=><th key={c.key} style={{...thS,cursor:'help'}} onMouseEnter={e=>setTip({t:c.tip,r:e.currentTarget.getBoundingClientRect()})} onMouseLeave={()=>setTip(null)}>{c.label}</th>)}</tr></thead><tbody>
                     {sRows.map((s,i)=>(<tr key={canal+'-'+i+'-'+s.salesKey} style={{'--i':i}}>{visCols.map(c=>c.cell(s,i,c.key))}</tr>))}
-                    <tr style={{'--i':sRows.length+1,fontWeight:750,background:C.subtle,borderTop:'2px solid '+C.border}}>{visCols.map(c=>c.key==='rank'?<td key={c.key} style={tdS}>Σ</td>:c.key==='sales'?<td key={c.key} style={{...tdS,textAlign:'left'}}>Total · {sRows.length} lignes</td>:['r1p','r2p','r1tel'].includes(c.key)?<td key={c.key} style={tdS}>{sTotals[{r1p:'r1_placed',r2p:'r2_placed',r1tel:'r1_phone'}[c.key]]}</td>:c.key==='appels'?<td key={c.key} style={tdS}>{sCallsLoading?'…':sTotals.calls_measured?sTotals.calls.toLocaleString('fr-FR'):'—'}</td>:c.cell(sTotals,-1,c.key))}</tr>
+                    <tr style={{'--i':sRows.length+1,fontWeight:500,background:C.subtle,borderTop:'1px solid '+C.border}}>{visCols.map(c=>c.key==='rank'?<td key={c.key} style={tdS}>Σ</td>:c.key==='sales'?<td key={c.key} style={{...tdS,textAlign:'left'}}>Total · {sRows.length} lignes</td>:['r1p','r2p','r1tel'].includes(c.key)?<td key={c.key} style={tdS}>{sTotals[{r1p:'r1_placed',r2p:'r2_placed',r1tel:'r1_phone'}[c.key]]}</td>:c.key==='appels'?<td key={c.key} style={tdS}>{sCallsLoading?'…':sTotals.calls_measured?sTotals.calls.toLocaleString('fr-FR'):'—'}</td>:c.cell(sTotals,-1,c.key))}</tr>
                     </tbody></table></RevealBlock>
                     </>);
                   })()}
@@ -547,8 +562,8 @@ export default function MonitoringPerf({ embed = false } = {}) {
         </div>
       </div>
 
-      {detailModal && (<div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.5)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onClick={()=>setDetailModal(null)}>
-        <div style={{background:darkMode?'#242428':'#fff',borderRadius:16,padding:24,maxWidth:750,width:'100%',maxHeight:'80vh',overflow:'auto',boxShadow:'0 24px 64px rgba(0,0,0,0.3)',border:'1px solid '+C.border}} onClick={e=>e.stopPropagation()}>
+      {detailModal && (<div style={{position:'fixed',inset:0,zIndex:9999,background:darkMode?'rgba(0,0,0,.6)':'rgba(28,27,25,.22)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onClick={()=>setDetailModal(null)}>
+        <div style={{background:C.bg,borderRadius:22,padding:24,maxWidth:750,width:'100%',maxHeight:'80vh',overflow:'auto',boxShadow:darkMode?'0 24px 60px rgba(0,0,0,.5)':'0 24px 60px rgba(28,27,25,.14)',border:'1px solid '+C.border}} onClick={e=>e.stopPropagation()}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
             <div><h3 style={{margin:0,fontSize:18,fontWeight:700,color:C.text}}>{detailModal.personName}</h3><span style={{fontSize:13,color:C.muted}}>{detailModal.type==='ads'?'Leads ADS':'Cold Calls'} &middot; {detailModal.data?detailModal.data.period||range:range}</span></div>
             <button onClick={()=>setDetailModal(null)} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,color:C.muted,borderRadius:8,padding:'4px 8px'}}>&times;</button>

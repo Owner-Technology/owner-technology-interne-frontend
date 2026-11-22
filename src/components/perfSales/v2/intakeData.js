@@ -5,12 +5,12 @@ export const monthOf = (ym) => `${MONTHS[Number(String(ym).slice(5, 7)) - 1] || 
 
 // Pourquoi un lead a quitté le sales choisi par le moteur (serveur : perf_intake.departure), dans l'ordre des règles.
 export const REASONS = {
-  kept: { label: 'Gardé par le sales affecté', short: 'Gardés', color: '#1e3a7b', icon: 'check' },
-  sla_given: { label: '6 min ratées → redonné à un autre sales', short: '6 min · redonnés', color: '#3a5598', icon: 'clock' },
-  sla_pool: { label: '6 min ratées → pool réactivité', short: '6 min · pool', color: '#5f78b5', icon: 'clock' },
-  barrier: { label: '3 jours sans RDV → barrage', short: '3 jours', color: '#7f9ad9', icon: 'calendar' },
-  manual: { label: 'Réaffecté à la main', short: 'À la main', color: '#a9b4c9', icon: 'hand' },
-  other: { label: 'Autre', short: 'Autre', color: '#c9cfda', icon: 'dot' },
+  kept: { label: 'Gardé par le sales affecté', short: 'Gardés', color: 'var(--ps2-r1)', icon: 'check' },
+  sla_given: { label: '6 min ratées → redonné à un autre sales', short: '6 min · redonnés', color: '#4a4540', icon: 'clock' },
+  sla_pool: { label: '6 min ratées → pool réactivité', short: '6 min · pool', color: 'var(--ps2-r2)', icon: 'clock' },
+  barrier: { label: '3 jours sans RDV → barrage', short: '3 jours', color: '#8f8a83', icon: 'calendar' },
+  manual: { label: 'Réaffecté à la main', short: 'À la main', color: 'var(--ps2-r3)', icon: 'hand' },
+  other: { label: 'Autre', short: 'Autre', color: 'var(--ps2-r4)', icon: 'dot' },
 };
 export const REASON_ORDER = ['kept', 'sla_given', 'sla_pool', 'barrier', 'manual', 'other'];
 
@@ -59,7 +59,7 @@ export const AFFECTED_FATES = ['ads_affectation', 'ads_pool', 'pool_waiting'];
 export function affectedLeads(month, { reason = null, sales = null, expected = null } = {}) {
   const title = [reason ? REASONS[reason].label : 'Tous les leads affectés', sales].filter(Boolean).join(' · ');
   return {
-    kicker: `Affectés en ${month}`, title, color: reason ? REASONS[reason].color : '#1e3a7b', expected,
+    kicker: `Affectés en ${month}`, title, color: reason ? REASONS[reason].color : 'var(--ps2-r1)', expected,
     file: `affectes${reason ? `-${reason}` : ''}${sales ? `-${sales}` : ''}`,
     pick: (d) => d.leads.filter((r) => r.channel === 'ads' && AFFECTED_FATES.includes(r.fate)
       && (!reason || r.departure === reason) && (!sales || (r.engine || 'sans moteur') === sales)),

@@ -160,7 +160,7 @@ export default function LeadsTab({ period, dark }) {
                         <div className="ps2-intake-why"><span className="ps2-intake-why-tag" style={{ '--c': why.color }}><ReasonIcon kind={why.icon} />{why.label}</span>
                           {why.notes.map((n) => <span key={n} className="ps2-intake-why-note">{n}</span>)}</div>
                       ) : <span className="ps2-muted">–</span>}</td>
-                      <td>{r.now ? <b style={{ fontWeight: 600 }}>{r.now}</b>
+                      <td>{r.now ? <b style={{ fontWeight: 500 }}>{r.now}</b>
                         : <span className="ps2-tag is-warn" style={{ marginLeft: 0 }}>{r.opt_out ? 'retiré du pool' : r.engine || r.previous ? 'au pool' : 'personne'}</span>}</td>
                       <td><span className={`ps2-intake-stage is-${r.stage}`}>{STAGE[r.stage] || r.stage}</span></td>
                     </Motion.tr>

@@ -8,9 +8,9 @@ import { fr } from './model';
 // selon la période » ; « un R2 posé directement veut dire que le R1 s'est fait au téléphone : dans le R1 total, les R1
 // du CRM plus les R1 faits au téléphone »). Mêmes chiffres que la ligne Total du tableau, pour la période et le canal
 // choisis. Chaque tuile se lit seule : le nombre, et sa part sur une jauge ; le calcul est dans la bulle.
-const R1 = '#1e3a7b';
-const PHONE = '#4f9a72';
-const R2 = '#2f7fb8';
+const R1 = 'var(--navy)';
+const PHONE = '#6cc493';
+const R2 = '#8fbdf3';
 const pct = (a, b) => (b ? (a / b) * 100 : null);
 
 function Gauge({ parts, delay }) {

@@ -43,7 +43,7 @@ export default function ChannelTable({ byPerson, source, avatarFor, onOpen }) {
   total.tx_r2 = total.r2 ? total.r2_done / total.r2 : null;
   total.conv = total.leads ? total.sales / total.leads : null;
   const maxSales = Math.max(1, ...rows.map((r) => r.sales));
-  const color = SOURCES.find((s) => s.key === source)?.color || '#1e3a7b';
+  const color = SOURCES.find((s) => s.key === source)?.color || 'var(--navy)';
   const cell = (r, k) => {
     if (k === 'tx_r1' || k === 'tx_r2' || k === 'conv') return pctText(r[k]);
     if (k === 'revenue') return r.revenue ? euro(r.revenue) : '–';

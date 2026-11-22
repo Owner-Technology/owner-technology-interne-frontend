@@ -11,7 +11,7 @@ import { AD_SOURCES, SOURCES, fr } from './model';
 // effectués ÷ (effectués + absents + annulés), les RDV passés dont l'issue est connue, un annulé comptant contre la pub.
 // La fraction affichée est celle du pourcentage. Pas qualifiés et à venir restent dans la barre, hors calcul ; la
 // présence des anneaux R1/R2 (effectués ÷ (effectués + absents)) est rappelée dans le détail au clic.
-const PARTS = [['done', '#2c6448'], ['noshow', '#c2410c'], ['cancelled', '#c9a66b'], ['open', '#cfd5df'], ['upcoming', '#9fb3df']];
+const PARTS = [['done', '#6cc493'], ['noshow', '#ee8f8a'], ['cancelled', '#b5b0a8'], ['open', '#f1b76a'], ['upcoming', '#8fbdf3']];
 const LABEL = { done: 'effectués', noshow: 'absents', cancelled: 'annulés', open: 'pas qualifiés', upcoming: 'à venir' };
 const NB = '\u00a0';   // insécable : un calcul ne se coupe qu'entre ses termes, jamais entre un nombre et son libellé
 const rate = (a, b) => (b ? Math.round((a / b) * 100) : null);

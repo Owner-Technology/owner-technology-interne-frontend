@@ -1,0 +1,497 @@
+/* Peau Owner de la Performance Sales (22/11/2026) : la langue des Statistiques de la page Finance (toile grège, cartes
+   blanches très arrondies à trait fin, encre presque noire en graisse 500, gris chauds, étiquettes pastel à liseré, un
+   seul accent rose). La peau seulement : mêmes blocs, mêmes chiffres, mêmes gestes que v2.css et v2-nav.css, chargés
+   avant. Portée : la page qui porte `.ps2-owner` (PerfSalesV2), panneaux rendus dans le <body> compris ; la Perf Setter,
+   qui partage v2.css, garde son rendu tant qu'elle ne porte pas la classe. */
+
+/* ── Jetons ──────────────────────────────────────────────────────────────── */
+body:has(.ps2-owner) .ps2 {
+  --ink: #1c1b19; --soft: #55514b; --muted: #9d9890; --line: #e8e4de; --line-2: #f1eee9;
+  --bg: #f4f2ef; --card: #ffffff; --navy: #2b2927; --blue: #1b6fd0; --blue-bg: #e4f0fd;
+  --good: #0b7a4b; --good-strong: #1f9d57; --good-bg: #e2f6ea; --low: #c2500e; --low-strong: #c2500e; --low-bg: #fde9da;
+  --warn: #7a5a05; --warn-bg: #fbf1c2; --grey-bg: #f1eee9; --flow-src: #2b2927;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; --mono: var(--sans);
+  --ps2-card-line: #ece9e4; --ps2-hover: #faf9f7; --ps2-soft-bg: #f7f5f2; --ps2-track: #ebe8e3; --ps2-micro: #a8a39b;
+  --ps2-accent: #ff1f7a; --ps2-r1: #2b2927; --ps2-r2: #6f6a63; --ps2-r3: #b5b0a8; --ps2-r4: #dedad3; --ps2-r5: #ebe8e3;
+  --ps2-shadow-1: 0 1px 2px rgba(50, 40, 30, .05);
+  --ps2-shadow-2: 0 1px 2px rgba(50, 40, 30, .06), 0 6px 16px -10px rgba(50, 40, 30, .18);
+  --ps2-shadow-menu: 0 14px 34px rgba(28, 27, 25, .10), 0 2px 6px rgba(28, 27, 25, .04);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  font-feature-settings: 'cv11', 'ss01';
+}
+/* Sombre : les noirs et gris neutres des autres pages Owner, plus de bleu nuit. */
+body:has(.ps2-owner) .ps2.is-dark {
+  --ink: #f2f2f2; --soft: #a3a3a3; --muted: #7d7d7d; --line: #2e2e2e; --line-2: #262626;
+  --bg: #181818; --card: #1f1f1f; --navy: #ededed; --blue: #93b8ec; --blue-bg: #1d2735;
+  --good: #7fd1a3; --good-strong: #5fbf8a; --good-bg: #1d3328; --low: #f0a07a; --low-strong: #f0a07a; --low-bg: #3a2219;
+  --warn: #f5c56b; --warn-bg: #3a2f14; --grey-bg: #262626; --flow-src: #3a3a3a;
+  --ps2-card-line: #2e2e2e; --ps2-hover: #262626; --ps2-soft-bg: #262626; --ps2-track: #181818; --ps2-micro: #7d7d7d;
+  --ps2-r1: #ededed; --ps2-r2: #a3a3a3; --ps2-r3: #6b6b6b; --ps2-r4: #3f3f3f; --ps2-r5: #2e2e2e;
+  --ps2-shadow-1: none; --ps2-shadow-2: 0 1px 2px rgba(0, 0, 0, .3); --ps2-shadow-menu: 0 14px 34px rgba(0, 0, 0, .45);
+}
+
+/* ── Dérivé de v2.css et v2-nav.css : graisses 600 et plus → 500, teintes de l'ancienne charte (marine, gris froids,
+   ombres bleutées) → jetons et teintes Owner. Une règle par règle d'origine, même sélecteur, sous la portée. ── */
+body:has(.ps2-owner) .ps2 .ps2-hero h1 { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-kpi-value { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-kpi-note { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-week b { font-weight: 500; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-tab[aria-selected="true"] { color: #141414; }
+body:has(.ps2-owner) .ps2 .ps2-card h2 { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-card h3 { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-stage-value { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-stage-note { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-chip { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-avatar { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-watch b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-tile:hover { box-shadow: 0 10px 28px rgba(50, 40, 30, .08); }
+body:has(.ps2-owner) .ps2 .ps2-tile-value { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-podium-col b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-podium-step { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-check-icon { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-table tr.is-total td { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-overlay { background: rgba(50, 40, 30, .32); }
+body:has(.ps2-owner) .ps2 .ps2-panel { box-shadow: -24px 0 60px rgba(50, 40, 30, .18); }
+body:has(.ps2-owner) .ps2 .ps2-trail .is-strong { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-trail .is-good { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-trail .is-total { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-link { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-tag { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-segment button { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-segment button[aria-pressed="true"] { box-shadow: 0 1px 2px rgba(50, 40, 30, .08); }
+body:has(.ps2-owner) .ps2 .ps2-strong { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-month { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-month:hover { box-shadow: 0 4px 14px rgba(50, 40, 30, .06); }
+body:has(.ps2-owner) .ps2 .ps2-pop { box-shadow: 0 24px 60px rgba(50, 40, 30, .18), 0 2px 8px rgba(50, 40, 30, .06); }
+body:has(.ps2-owner) .ps2 .ps2-pop-title b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pop-title span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pop-rows dd { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pop-more summary { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pick { font-weight: 500; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-pick[aria-checked="true"] { color: #141414; }
+body:has(.ps2-owner) .ps2 .ps2-signal-icon { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-signal-title { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-signal b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-tile-chips span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-meter-track { background: rgba(31, 157, 87, .14); }
+body:has(.ps2-owner) .ps2 .ps2-meter-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-scale-line { background: rgba(43, 41, 39, .2); }
+body:has(.ps2-owner) .ps2 .ps2-scale-goal b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-scale-dot.is-jev i { border-color: #f1b76a; }
+body:has(.ps2-owner) .ps2 .ps2-scale-dot em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-diverge-row em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-diverge-track { background: rgba(194, 80, 14, .1); }
+body:has(.ps2-owner) .ps2 .ps2-scenario b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-scenario.is-jev i { background: #f1b76a; }
+body:has(.ps2-owner) .ps2 .ps2-studio-result b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-studio-gap { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-chain span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-lever-head b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-lever-track::after { box-shadow: 0 2px 6px rgba(50, 40, 30, .18); }
+body:has(.ps2-owner) .ps2 .ps2-reset { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-team-name { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-team-bar b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-team-title { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-compare-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-compare-dot em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-compare-rank { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-wb-row.is-foot { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-wb-name { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-later-track i.is-in { background: var(--ps2-r3); }
+body:has(.ps2-owner) .ps2 .ps2-later-legend i.is-in { background: var(--ps2-r3); }
+body:has(.ps2-owner) .ps2 .ps2-delay b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-stat-stack b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-family-bar i { background: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-lever-value { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-lever-value input { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-unit button { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-unit button[aria-pressed="true"] { box-shadow: 0 1px 2px rgba(50, 40, 30, .1); }
+body:has(.ps2-owner) .ps2 .ps2-leader-text b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-leader-crown { color: #f1b76a; }
+body:has(.ps2-owner) .ps2 .ps2-viz-row em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn > .ps2-switch-pill { box-shadow: 0 2px 8px rgba(50, 40, 30, .12); }
+body:has(.ps2-owner) .ps2 .ps2-cb-row.is-foot { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-cb-head { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-cb-chip { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pgrid-head b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pgrid-head span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pgrid-scale i { background: linear-gradient(90deg, rgb(217, 84, 77), rgb(241, 238, 233), rgb(31, 157, 87)); }
+body:has(.ps2-owner) .ps2 .ps2-gap-head b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-gap-total { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-gap-label b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-fact:hover { box-shadow: 0 12px 28px rgba(50, 40, 30, .08); }
+body:has(.ps2-owner) .ps2 .ps2-fact-status { font-weight: 500; color: var(--blue); }
+body:has(.ps2-owner) .ps2 .ps2-fact-status.is-bad { color: var(--low-strong); background: var(--low-bg); }
+body:has(.ps2-owner) .ps2 .ps2-fact-figure { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-lbar-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-gauge-track > i > span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-gauge-gap { background: repeating-linear-gradient(-45deg, rgba(43, 41, 39, .14) 0 5px, rgba(43, 41, 39, .04) 5px 10px); font-weight: 500; color: var(--blue); }
+body:has(.ps2-owner) .ps2 .ps2-gauge-target small { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-studio-pace b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-calls-text b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-arr-big b { font-weight: 500; color: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-arr-big > span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-table th.is-on,
+body:has(.ps2-owner) .ps2 .ps2-table td.is-on { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-score-name b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-score-dot { color: var(--blue); }
+body:has(.ps2-owner) .ps2 .ps2-score-dot.is-low { background: var(--low-bg); color: var(--low-strong); }
+body:has(.ps2-owner) .ps2 .ps2-score-now { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-score-now.is-bad { color: var(--low-strong); }
+body:has(.ps2-owner) .ps2 .ps2-score-ref b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-score-delta { font-weight: 500; color: var(--blue); }
+body:has(.ps2-owner) .ps2 .ps2-score-delta.is-bad { background: var(--low-bg); color: var(--low-strong); }
+body:has(.ps2-owner) .ps2 .ps2-persales-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-ctable tr.is-total td { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-arr-legend i.is-band { border: 2px dashed var(--low-strong); }
+body:has(.ps2-owner) .ps2 .ps2-arr-scale i { background: linear-gradient(90deg, color-mix(in srgb, var(--navy) 14%, #f4f2ef), var(--navy)); }
+body:has(.ps2-owner) .ps2 .ps2-picker-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-mix-name { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-mix-seg i span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-rdv-delay b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-setter-kpi > b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-target button { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-treact-name { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-treact-row small em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-treact-row small em.is-worst { background: var(--low-bg); color: var(--low-strong); }
+body:has(.ps2-owner) .ps2 .ps2-auto-total { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-ticks-col > b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-lolli-tip { font-weight: 500; box-shadow: 0 4px 12px rgba(50, 40, 30, .18); }
+body:has(.ps2-owner) .ps2 .ps2-lolli-day { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-geo-label text { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-geo-total b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pyr-head { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pyr-age { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-cpl h3 { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-cpl-stem { background: var(--ps2-r3); }
+body:has(.ps2-owner) .ps2 .ps2-cpl-stem::before { border: 2.5px solid var(--ps2-r3); }
+body:has(.ps2-owner) .ps2 .ps2-cpl-stem b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-cpl-col.is-best .ps2-cpl-stem { background: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-cpl-col.is-best .ps2-cpl-stem::before { border-color: var(--good-strong); background: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-cpl-age { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-eng-legend i.is-real,
+body:has(.ps2-owner) .ps2 .ps2-eng-bar i.is-real,
+body:has(.ps2-owner) .ps2 .ps2-fc-bar i.is-real { background: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-eng-legend i.is-off,
+body:has(.ps2-owner) .ps2 .ps2-eng-bar i.is-off { background: repeating-linear-gradient(135deg, rgba(194, 80, 14, .55) 0 2px, rgba(194, 80, 14, .12) 2px 5px); }
+body:has(.ps2-owner) .ps2 .ps2-eng-legend i.is-entry,
+body:has(.ps2-owner) .ps2 .ps2-eng-bar i.is-entry { background: repeating-linear-gradient(135deg, rgba(157, 152, 144, .45) 0 2px, rgba(157, 152, 144, .12) 2px 5px); }
+body:has(.ps2-owner) .ps2 .ps2-conv-band { fill: rgba(43, 41, 39, .16); stroke: rgba(43, 41, 39, .35); }
+body:has(.ps2-owner) .ps2 .ps2-conv-band-future { stroke: rgba(43, 41, 39, .3); }
+body:has(.ps2-owner) .ps2 .ps2-conv-equal { stroke: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-conv-equal-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-conv-line { stroke: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-lost { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-sim-play { box-shadow: 0 6px 16px rgba(50, 40, 30, .22); }
+body:has(.ps2-owner) .ps2 .ps2-sim-play.is-playing { background: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-sim-range { background: linear-gradient(90deg, var(--navy) var(--p), var(--line-2) var(--p)); }
+body:has(.ps2-owner) .ps2 .ps2-sim-range::-webkit-slider-thumb { border: 3px solid var(--navy); box-shadow: 0 2px 6px rgba(50, 40, 30, .25); }
+body:has(.ps2-owner) .ps2 .ps2-sim-range::-moz-range-thumb { border: 3px solid var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-conv-cursor { stroke: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-conv-dot { stroke: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-fc-share { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-eng-group { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-sim-reset { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-lever-sub-head span { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-fc-val em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-adchip { border: 1px dashed color-mix(in srgb, var(--c, var(--navy)) 45%, transparent); font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-adchip-label b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-skpi-tile:hover { box-shadow: 0 10px 24px rgba(50, 40, 30, .08); }
+body:has(.ps2-owner) .ps2 .ps2-skpi-cell.is-total .ps2-skpi-tile { background: linear-gradient(160deg, #f7f5f2 0%, var(--card) 70%); border-color: #e3ded6; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-skpi-cell.is-total .ps2-skpi-tile { background: linear-gradient(160deg, #262626 0%, var(--card) 70%); border-color: #3a3a3a; }
+body:has(.ps2-owner) .ps2 .ps2-skpi-cell.is-r1 .ps2-skpi-tile::before { background: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-skpi-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-skpi-value { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-skpi-share { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-shows-name { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-shows-done b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-shows-pres { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-shows-pres.is-good { background: var(--good-bg); color: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-shows-pres.is-mid { background: var(--blue-bg); color: var(--blue); }
+body:has(.ps2-owner) .ps2 .ps2-shows-pres.is-low { background: var(--low-bg); color: var(--low-strong); }
+body:has(.ps2-owner) .ps2.is-dark .ps2-shows-pres.is-mid { background: #262626; color: #a3a3a3; }
+body:has(.ps2-owner) .ps2 .ps2-flow-block { box-shadow: 0 1px 2px rgba(50, 40, 30, .08); }
+body:has(.ps2-owner) .ps2 .ps2-flow-block:hover,
+body:has(.ps2-owner) .ps2 .ps2-flow-block:focus-visible { box-shadow: 0 6px 18px rgba(50, 40, 30, .18); }
+body:has(.ps2-owner) .ps2 .ps2-flow-block b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-flow-leaf b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-flow-row b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-flow-row.is-strong span:first-child { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-intake-check { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-intake-name { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-intake-stage { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-reclaims-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-reclaims-n { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-reclaims-months b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-intake-why-tag { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-intake-why-note { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-affected-big b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-affected-legend b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-affected-label { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-affected-track i.is-sub { background: repeating-linear-gradient(135deg, rgba(50, 40, 30, .55) 0 3px, transparent 3px 6px); }
+body:has(.ps2-owner) .ps2 .ps2-affected-reason > b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-leads-month b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-leads-view b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-hist-head h2 { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-hist-chips b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-hist-facts b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-hist-body b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-affected-toggle { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-regs-root { background: rgba(241, 183, 106, .12); }
+body:has(.ps2-owner) .ps2 .ps2-regs-root b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-regs-title { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-regs-soon { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-regs-bar i.is-via,
+body:has(.ps2-owner) .ps2 .ps2-regs-stats i.is-via { background: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-regs-bar i.is-out,
+body:has(.ps2-owner) .ps2 .ps2-regs-stats i.is-out { background: rgba(241, 183, 106, .6); }
+body:has(.ps2-owner) .ps2 .ps2-regs-tag { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-regs-stats b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda { box-shadow: 0 30px 80px rgba(50, 40, 30, .28); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-head h2 { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-kind.is-r1 i { background: var(--blue); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-kind.is-r2 i { background: var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-kind.is-direct i { border: 1.5px dashed var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-kind b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-count b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-people button > span:first-child { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-day:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(43, 41, 39, .12); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-day.is-on { box-shadow: 0 0 0 2px rgba(43, 41, 39, .18); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-date { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-chip.is-r1 { background: var(--blue-bg); color: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-chip.is-r2 { background: var(--good-bg); color: var(--good); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-chip.is-direct { color: var(--good); outline: 1.5px dashed var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-chip i { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-more { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-sum .is-r1 { background: var(--blue-bg); color: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-sum .is-r2 { background: var(--good-bg); color: var(--good); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-sum b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-dayview { box-shadow: -18px 0 40px rgba(50, 40, 30, .12); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-tag { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-tag.is-r1 { background: var(--blue-bg); color: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-tag.is-r2 { background: var(--good-bg); color: var(--good); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-tag.is-direct { color: var(--good); outline: 1.5px dashed var(--good-strong); }
+body:has(.ps2-owner) .ps2 .ps2-agenda-who b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-status { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-tabs { box-shadow: 0 1px 2px rgba(50, 40, 30, .04), 0 8px 24px -18px rgba(50, 40, 30, .28); }
+body:has(.ps2-owner) .ps2.is-dark .ps2-tab[aria-selected="true"] { color: #141414; }
+body:has(.ps2-owner) .ps2 .ps2-tab .ps2-tab-pill { box-shadow: 0 4px 12px -5px rgba(50, 40, 30, .55), inset 0 1px 0 rgba(255, 255, 255, .08); }
+body:has(.ps2-owner) .ps2 .ps2-wk-title b,
+body:has(.ps2-owner) .ps2 .ps2-wk-title em { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-wk-stat b { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-wk-stat.is-alert,
+body:has(.ps2-owner) .ps2 .ps2-wk-stat.is-alert b { font-weight: 500; }
+
+/* ── La peau : texte ─────────────────────────────────────────────────────── */
+body:has(.ps2-owner) .ps2 b, body:has(.ps2-owner) .ps2 strong { font-weight: 500; }
+/* Chiffres et libellés dessinés en SVG : leur graisse vient d'un attribut, que le CSS remplace. */
+body:has(.ps2-owner) .ps2 svg text:is([font-weight="600"], [font-weight="650"], [font-weight="700"], [font-weight="800"]) { font-weight: 500; }
+/* Micro-libellé de rubrique (ancienne police machine). */
+body:has(.ps2-owner) .ps2 .ps2-mono,
+body:has(.ps2-owner) .ps2 .ps2-table th, body:has(.ps2-owner) .ps2 .ps2-ctable th, body:has(.ps2-owner) .ps2 .ps2-pop-table th,
+body:has(.ps2-owner) .ps2 .ps2-teams-head, body:has(.ps2-owner) .ps2 .ps2-score-row.is-head, body:has(.ps2-owner) .ps2 .ps2-table tr.is-group td,
+body:has(.ps2-owner) .ps2 .ps2-fc-head, body:has(.ps2-owner) .ps2 .ps2-eng-group span {
+  font-family: var(--sans); font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--ps2-micro);
+}
+body:has(.ps2-owner) .ps2 .ps2-pop-calc, body:has(.ps2-owner) .ps2 .ps2-chip { font-family: var(--sans); letter-spacing: 0; }
+body:has(.ps2-owner) .ps2 :is(button, select, [tabindex]):focus-visible,
+body:has(.ps2-owner) .ps2 .ps2-month:focus-within { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+/* ── En-tête : titre et chiffres clés en tuiles ─────────────────────────── */
+body:has(.ps2-owner) .ps2 .ps2-hero h1 { font-size: 28px; letter-spacing: -.022em; line-height: 1.15; }
+body:has(.ps2-owner) .ps2 .ps2-kpis { gap: 14px; }
+body:has(.ps2-owner) .ps2 .ps2-kpi {
+  margin: 0; min-width: 158px; padding: 14px 18px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--ps2-card-line);
+  transition: box-shadow .3s var(--ease-out), transform .3s var(--ease-out), border-color .2s;
+}
+body:has(.ps2-owner) .ps2 .ps2-kpi:hover { background: var(--card); box-shadow: var(--ps2-shadow-2); transform: translateY(-1px); }
+body:has(.ps2-owner) .ps2 .ps2-kpi:active { transform: scale(.985); }
+body:has(.ps2-owner) .ps2 .ps2-kpi-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+body:has(.ps2-owner) .ps2 .ps2-kpi-value { font-size: 28px; letter-spacing: -.03em; line-height: 1.1; margin-top: 10px; }
+body:has(.ps2-owner) .ps2 .ps2-kpi-value small { font-size: 15px; font-weight: 400; }
+body:has(.ps2-owner) .ps2 .ps2-kpi-note { font-size: 12.5px; margin-top: 6px; }
+body:has(.ps2-owner) .ps2 .ps2-kpi-note.ps2-soft { color: var(--muted); font-weight: 400; }
+
+/* Mois et actualisation : le sélecteur et le bouton rond de la Finance. */
+body:has(.ps2-owner) .ps2 .ps2-month {
+  height: 36px; padding: 0 12px 0 14px; border-radius: 12px; border-color: var(--line); box-shadow: var(--ps2-shadow-1); font-size: 13.5px;
+  transition: border-color .15s, box-shadow .2s, transform .18s var(--ease-out);
+}
+body:has(.ps2-owner) .ps2 .ps2-month.is-small { height: 30px; padding: 0 10px 0 12px; border-radius: 10px; font-size: 12.5px; }
+body:has(.ps2-owner) .ps2 .ps2-month:hover { border-color: #d9d4cc; box-shadow: var(--ps2-shadow-2); }
+body:has(.ps2-owner) .ps2 .ps2-month:active { transform: scale(.98); }
+body:has(.ps2-owner) .ps2 .ps2-refresh { width: 36px; height: 36px; border-color: var(--line); box-shadow: var(--ps2-shadow-1); }
+body:has(.ps2-owner) .ps2 .ps2-refresh:hover { border-color: #d9d4cc; box-shadow: var(--ps2-shadow-2); }
+body:has(.ps2-owner) .ps2.is-dark .ps2-month:hover, body:has(.ps2-owner) .ps2.is-dark .ps2-refresh:hover { border-color: #3a3a3a; }
+
+/* ── Onglets : la bascule à pouce blanc de la Finance ───────────────────── */
+body:has(.ps2-owner) .ps2 .ps2-tabs { gap: 0; padding: 2px; border: 0; border-radius: 13px; background: var(--ps2-track); box-shadow: none; }
+body:has(.ps2-owner) .ps2 .ps2-tab { height: 34px; padding: 0 14px 0 12px; border-radius: 11px; color: var(--muted); font-size: 13.5px; font-weight: 400; }
+body:has(.ps2-owner) .ps2 .ps2-tab:hover { background: transparent; color: var(--soft); }
+body:has(.ps2-owner) .ps2 .ps2-tab[aria-selected="true"],
+body:has(.ps2-owner) .ps2.is-dark .ps2-tab[aria-selected="true"] { color: var(--ink); font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-tab .ps2-tab-pill {
+  border-radius: 11px; background: #faf9f8; box-shadow: inset 0 0 0 1px #fff, 0 1px 2px rgba(50, 40, 30, .12), 0 3px 8px -3px rgba(50, 40, 30, .14);
+}
+body:has(.ps2-owner) .ps2.is-dark .ps2-tab .ps2-tab-pill { background: #343434; box-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+body:has(.ps2-owner) .ps2 .ps2-tab-ico { color: var(--ps2-micro); }
+
+/* ── Cartes ──────────────────────────────────────────────────────────────── */
+body:has(.ps2-owner) .ps2 .ps2-grid { gap: 18px; }
+body:has(.ps2-owner) .ps2 .ps2-card {
+  border-color: var(--ps2-card-line); border-radius: 22px; padding: 22px 24px 24px;
+  box-shadow: 0 1px 2px rgba(50, 40, 30, .03), 0 10px 30px -22px rgba(50, 40, 30, .16); transition: box-shadow .4s var(--ease-out);
+}
+body:has(.ps2-owner) .ps2 .ps2-card:hover { box-shadow: 0 1px 2px rgba(50, 40, 30, .04), 0 18px 40px -24px rgba(50, 40, 30, .26); }
+body:has(.ps2-owner) .ps2.is-dark .ps2-card, body:has(.ps2-owner) .ps2.is-dark .ps2-card:hover { box-shadow: none; }
+body:has(.ps2-owner) .ps2 .ps2-card h2 { font-size: 16px; letter-spacing: -.012em; }
+body:has(.ps2-owner) .ps2 .ps2-card h3 { font-size: 13.5px; }
+body:has(.ps2-owner) .ps2 .ps2-note { color: var(--muted); }
+body:has(.ps2-owner) .ps2 .ps2-empty { color: var(--muted); font-size: 13.5px; }
+body:has(.ps2-owner) .ps2 .ps2-loading i { border-radius: 18px; background: linear-gradient(100deg, var(--line-2) 30%, var(--ps2-hover) 50%, var(--line-2) 70%); background-size: 240% 100%; }
+/* Blocs doux posés dans une carte. */
+body:has(.ps2-owner) .ps2 :is(.ps2-list-box, .ps2-later) { background: var(--ps2-soft-bg); }
+body:has(.ps2-owner) .ps2 .ps2-later:hover { background: var(--line-2); }
+body:has(.ps2-owner) .ps2 :is(.ps2-team, .ps2-calls, .ps2-stage, .ps2-team-kpi):hover { background: var(--ps2-hover); }
+body:has(.ps2-owner) .ps2.is-dark :is(.ps2-team, .ps2-calls, .ps2-stage, .ps2-team-kpi):hover { background: var(--ps2-hover); }
+
+/* ── Étiquettes et pastilles ────────────────────────────────────────────── */
+body:has(.ps2-owner) .ps2 :is(.ps2-chip-soft, .ps2-tag) {
+  height: 24px; padding: 0 8px; margin-left: 0; border-radius: 7px; border: 1px solid #e3ded6; background: #f1eee9; color: #4a4540;
+  font-family: var(--sans); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; display: inline-flex; align-items: center;
+}
+body:has(.ps2-owner) .ps2 .ps2-tag { height: 20px; padding: 0 6px; font-size: 11.5px; margin-left: 6px; }
+body:has(.ps2-owner) .ps2 :is(.ps2-chip-soft, .ps2-tag).is-warn { background: #fbf1c2; color: #7a5a05; border-color: #f0e09a; }
+body:has(.ps2-owner) .ps2 button.ps2-chip-soft:hover { background: #ebe7e1; color: var(--ink); }
+body:has(.ps2-owner) .ps2.is-dark :is(.ps2-chip-soft, .ps2-tag) { background: #262626; color: #a3a3a3; border-color: #2e2e2e; }
+/* Écart et pastille d'indicateur : étiquette bleue (information) ou pêche (en retard), à liseré. */
+body:has(.ps2-owner) .ps2 .ps2-score-delta { border-radius: 7px; padding: 2px 8px; font-weight: 500; background: #e4f0fd; color: #1b6fd0; box-shadow: inset 0 0 0 1px #c9e0fa; }
+body:has(.ps2-owner) .ps2 .ps2-score-delta.is-bad { background: #fde9da; color: #c2500e; box-shadow: inset 0 0 0 1px #f8d4ba; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-score-delta { background: var(--blue-bg); color: var(--blue); box-shadow: none; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-score-delta.is-bad { background: var(--low-bg); color: var(--low); }
+body:has(.ps2-owner) .ps2 .ps2-score-row:hover { background: var(--ps2-hover); }
+body:has(.ps2-owner) .ps2 .ps2-score-now { font-size: 22px; letter-spacing: -.02em; }
+body:has(.ps2-owner) .ps2 .ps2-score-ref b { font-weight: 500; }
+/* Taux de show : étiquettes pastel. */
+body:has(.ps2-owner) .ps2 .ps2-shows-pres.is-good { background: #e2f6ea; color: #0b7a4b; }
+body:has(.ps2-owner) .ps2 .ps2-shows-pres.is-mid { background: #f1eee9; color: #4a4540; }
+body:has(.ps2-owner) .ps2 .ps2-shows-pres.is-low { background: #fde9da; color: #c2500e; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-shows-pres.is-mid { background: #262626; color: #a3a3a3; }
+
+/* ── Bascules, filtres, choix ───────────────────────────────────────────── */
+body:has(.ps2-owner) .ps2 :is(.ps2-switch, .ps2-segment) { padding: 2px; gap: 0; border-radius: 13px; background: var(--ps2-track); }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn { padding: 0 16px; height: 34px; border-radius: 11px; font-size: 13.5px; font-weight: 400; color: var(--muted); transition: color .25s var(--ease-out), transform .18s var(--ease-out); }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn.is-small { height: 28px; padding: 0 12px; font-size: 12.5px; border-radius: 9px; }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn:hover { color: var(--soft); }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn:active { transform: scale(.95); }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn[aria-selected="true"] { color: var(--ink); font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-switch-btn > .ps2-switch-pill,
+body:has(.ps2-owner) .ps2 .ps2-segment button[aria-pressed="true"] {
+  border-radius: inherit; background: #faf9f8; box-shadow: inset 0 0 0 1px #fff, 0 1px 2px rgba(50, 40, 30, .12), 0 3px 8px -3px rgba(50, 40, 30, .14);
+}
+body:has(.ps2-owner) .ps2 .ps2-segment button { height: 30px; padding: 0 12px; border-radius: 11px; font-weight: 400; color: var(--muted); }
+body:has(.ps2-owner) .ps2 .ps2-segment button[aria-pressed="true"] { color: var(--ink); font-weight: 500; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-switch-btn > .ps2-switch-pill,
+body:has(.ps2-owner) .ps2.is-dark .ps2-segment button[aria-pressed="true"] { background: #343434; box-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+/* Pastilles de choix (canal, famille, équipe) : blanches à trait fin, la choisie en anthracite. */
+body:has(.ps2-owner) .ps2 .ps2-pick { border-color: var(--line); color: var(--soft); font-weight: 400; box-shadow: var(--ps2-shadow-1); transition: color .2s, border-color .2s, transform .18s var(--ease-out); }
+body:has(.ps2-owner) .ps2 .ps2-pick:hover { border-color: #d9d4cc; }
+body:has(.ps2-owner) .ps2 .ps2-pick:active { transform: scale(.96); }
+body:has(.ps2-owner) .ps2 .ps2-pick[aria-checked="true"] { font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-pick-pill { background: var(--navy); }
+body:has(.ps2-owner) .ps2 .ps2-pick[aria-checked="true"] { color: #fff; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-pick[aria-checked="true"] { color: #141414; }
+/* Bouton seul (« Leads ADS par effectif ») : le bouton blanc à trait fin de la Finance. */
+body:has(.ps2-owner) .ps2 .ps2-segment:has(> button:only-child) { padding: 0; background: none; }
+body:has(.ps2-owner) .ps2 .ps2-segment > button:only-child,
+body:has(.ps2-owner) .ps2 .ps2-segment > button:only-child[aria-pressed="true"] {
+  height: 34px; padding: 0 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--ink); font-weight: 500;
+  box-shadow: var(--ps2-shadow-1); transition: box-shadow .2s, transform .18s var(--ease-out);
+}
+body:has(.ps2-owner) .ps2 .ps2-segment > button:only-child:hover { box-shadow: var(--ps2-shadow-2); }
+body:has(.ps2-owner) .ps2 .ps2-segment > button:only-child:active { transform: scale(.96); }
+body:has(.ps2-owner) .ps2.is-dark .ps2-pick:hover { border-color: #3a3a3a; }
+
+/* Chiffres de l'onglet Sales : tuiles de la Finance, sans liseré de couleur sur le côté (le carré du libellé dit le groupe). */
+body:has(.ps2-owner) .ps2 .ps2-skpi-tile { border-color: var(--ps2-card-line); border-radius: 18px; transition: box-shadow .3s var(--ease-out), transform .3s var(--ease-out); }
+body:has(.ps2-owner) .ps2 .ps2-skpi-tile:hover { transform: translateY(-1px); box-shadow: var(--ps2-shadow-2); border-color: var(--ps2-card-line); }
+body:has(.ps2-owner) .ps2 .ps2-skpi-tile:active { transform: scale(.985); }
+body:has(.ps2-owner) .ps2 .ps2-skpi-tile::before { display: none; }
+body:has(.ps2-owner) .ps2 .ps2-skpi-cell.is-total .ps2-skpi-tile { background: var(--ps2-soft-bg); border-color: var(--ps2-card-line); }
+body:has(.ps2-owner) .ps2 .ps2-skpi-value { font-size: 28px; }
+body:has(.ps2-owner) .ps2 .ps2-skpi-label { color: var(--muted); font-weight: 400; }
+
+/* ── Tableaux : boîte à filets fins, survol chaud, pied doux ────────────── */
+body:has(.ps2-owner) .ps2 :is(.ps2-table, .ps2-ctable) th { padding-top: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+body:has(.ps2-owner) .ps2 :is(.ps2-table, .ps2-ctable) td { border-top-color: var(--line-2); }
+body:has(.ps2-owner) .ps2 :is(.ps2-table, .ps2-ctable) tbody tr { transition: background .18s; }
+body:has(.ps2-owner) .ps2 .ps2-table tbody tr:not(.is-group):hover td,
+body:has(.ps2-owner) .ps2 .ps2-ctable tbody tr:hover td { background: var(--ps2-hover); }
+body:has(.ps2-owner) .ps2 :is(.ps2-table, .ps2-ctable) tr.is-total td { background: var(--ps2-hover); border-top: 1px solid var(--line); }
+body:has(.ps2-owner) .ps2 .ps2-table tr.is-group td { padding-top: 18px; }
+body:has(.ps2-owner) .ps2 .ps2-table td > span { white-space: nowrap; }
+body:has(.ps2-owner) .ps2 .ps2-table :is(th, td).is-on { background: var(--ps2-soft-bg); font-weight: 500; }
+body:has(.ps2-owner) .ps2 .ps2-cell:hover { background: var(--line-2); color: var(--ink); }
+body:has(.ps2-owner) .ps2 .ps2-pop-table td { border-top-color: var(--line-2); }
+
+/* ── Fenêtre de détail (bulle) et panneaux ──────────────────────────────── */
+body:has(.ps2-owner) .ps2 .ps2-pop { border-color: var(--ps2-card-line); border-radius: 14px; box-shadow: var(--ps2-shadow-menu); }
+body:has(.ps2-owner) .ps2 .ps2-pop-title b { font-size: 14px; }
+body:has(.ps2-owner) .ps2 .ps2-pop-title span { font-size: 22px; letter-spacing: -.03em; }
+body:has(.ps2-owner) .ps2 .ps2-pop-rows dt { color: var(--muted); }
+body:has(.ps2-owner) .ps2 .ps2-pop-calc { background: var(--ps2-soft-bg); border: 0; border-radius: 12px; font-size: 12px; color: var(--soft); }
+body:has(.ps2-owner) .ps2 .ps2-overlay { background: rgba(28, 27, 25, .22); }
+body:has(.ps2-owner) .ps2.is-dark .ps2-overlay { background: rgba(0, 0, 0, .6); }
+body:has(.ps2-owner) .ps2 .ps2-panel { box-shadow: 0 24px 60px rgba(28, 27, 25, .14); }
+body:has(.ps2-owner) .ps2 .ps2-link { font-weight: 500; text-underline-offset: 4px; text-decoration-style: dotted; }
+
+/* ── Repères ─────────────────────────────────────────────────────────────── */
+/* Le seul rose de la vue d'ensemble : le repère du jour sur les barres d'objectif des équipes. */
+body:has(.ps2-owner) .ps2 .ps2-team-bar > span em { background: var(--ps2-accent); opacity: 1; }
+body:has(.ps2-owner) .ps2 .ps2-team-bar > span, body:has(.ps2-owner) .ps2 .ps2-bar, body:has(.ps2-owner) .ps2 .ps2-score-bar { background: var(--line-2); }
+body:has(.ps2-owner) .ps2 .ps2-leader { border-color: var(--ps2-card-line); border-radius: 18px; }
+body:has(.ps2-owner) .ps2 .ps2-leader:hover { box-shadow: var(--ps2-shadow-2); }
+/* Agenda des rendez-vous : R1 en bleu, R2 en vert, en étiquettes pastel. */
+body:has(.ps2-owner) .ps2 :is(.ps2-agenda-chip, .ps2-agenda-tag).is-r1,
+body:has(.ps2-owner) .ps2 .ps2-agenda-sum .is-r1 { background: #e4f0fd; color: #1b6fd0; }
+body:has(.ps2-owner) .ps2 :is(.ps2-agenda-chip, .ps2-agenda-tag).is-r2,
+body:has(.ps2-owner) .ps2 .ps2-agenda-sum .is-r2 { background: #e2f6ea; color: #0b7a4b; }
+body:has(.ps2-owner) .ps2 .ps2-agenda-kind.is-r1 i { background: #1b6fd0; }
+body:has(.ps2-owner) .ps2.is-dark :is(.ps2-agenda-chip, .ps2-agenda-tag).is-r1, body:has(.ps2-owner) .ps2.is-dark .ps2-agenda-sum .is-r1 { background: var(--blue-bg); color: var(--blue); }
+body:has(.ps2-owner) .ps2.is-dark :is(.ps2-agenda-chip, .ps2-agenda-tag).is-r2, body:has(.ps2-owner) .ps2.is-dark .ps2-agenda-sum .is-r2 { background: var(--good-bg); color: var(--good); }
+/* Sombre : le fond anthracite devient clair, le texte posé dessus passe au noir. */
+body:has(.ps2-owner) .ps2.is-dark :is(.ps2-agenda-people button.is-on, .ps2-hist-filters button.is-on, .ps2-agenda-day.is-today .ps2-agenda-date) { color: #141414; }
+body:has(.ps2-owner) .ps2.is-dark .ps2-agenda-people button.is-on .ps2-num { color: rgba(20, 20, 20, .7); }
+
+/* ── Cartes de la Finance reprises dans l'onglet Ventes : lisibles en sombre ── */
+body:has(.ps2-owner) .ps2.is-dark .fst-root {
+  --ink: #f2f2f2; --ink-2: #c4c4c4; --muted: #8f8f8f; --faint: #6b6b6b; --line: #2e2e2e; --line-soft: #262626; --card: #1f1f1f;
+  --hover: #262626; --track: #181818; --rail: #3a3a3a; --bar: #3a3a3a; --charcoal: #ededed;
+}
+body:has(.ps2-owner) .ps2.is-dark .fst-root .fst-card { border-color: #2e2e2e; box-shadow: none; }
+body:has(.ps2-owner) .ps2.is-dark .fst-root :is(.fst-seg-thumb, .fst-pp-btn[data-active="true"]) { background: #343434; box-shadow: none; }
+body:has(.ps2-owner) .ps2.is-dark .fst-root :is(.fst-btn, .fst-pp-panel, .fst-pp-date) { background: #1f1f1f; }
+
+/* ── Barres de défilement : la pilule de 4 px (rail invisible), fenêtres comprises ── */
+html body:has(.ps2-owner) *::-webkit-scrollbar { width: 10px !important; height: 10px !important; }
+html body:has(.ps2-owner) *::-webkit-scrollbar-track,
+html body:has(.ps2-owner) *::-webkit-scrollbar-corner { background: transparent !important; }
+html body:has(.ps2-owner) *::-webkit-scrollbar-thumb {
+  background: #e3ded6 !important; border: 3px solid transparent !important; border-radius: 999px !important; background-clip: padding-box !important;
+}
+html body:has(.ps2-owner) *:hover::-webkit-scrollbar-thumb { background-color: #cfc9c0 !important; }
+html body:has(.ps2-owner) *::-webkit-scrollbar-thumb:hover { background-color: #a8a39b !important; }
+html.dark-mode body:has(.ps2-owner) *::-webkit-scrollbar-thumb { background-color: #3a3a3a !important; }
+html.dark-mode body:has(.ps2-owner) *:hover::-webkit-scrollbar-thumb { background-color: #4a4a4a !important; }
+@supports not selector(::-webkit-scrollbar) {
+  body:has(.ps2-owner) * { scrollbar-width: thin; scrollbar-color: #d8d3cb transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(.ps2-owner) .ps2 :is(.ps2-kpi, .ps2-month, .ps2-card, .ps2-switch-btn, .ps2-pick, .ps2-leader, .ps2-skpi-tile, .ps2-segment > button),
+  body:has(.ps2-owner) .ps2 :is(.ps2-table, .ps2-ctable) tbody tr { transition: none; }
+  body:has(.ps2-owner) .ps2 :is(.ps2-kpi, .ps2-month, .ps2-switch-btn, .ps2-pick, .ps2-skpi-tile, .ps2-segment > button):active,
+  body:has(.ps2-owner) .ps2 .ps2-skpi-tile:hover,
+  body:has(.ps2-owner) .ps2 .ps2-kpi:hover { transform: none; }
+}

@@ -26,7 +26,7 @@ export default function TeamsTab({ model, team: selected, onTeam, avatarFor, per
   }), [model, team]);
   const [src, setSrc] = useState(null);
   if (!team) return <div className="ps2-empty">–</div>;
-  const color = team.color || '#1e3a7b';
+  const color = team.color || 'var(--navy)';
   const sources = SOURCES.filter((x) => teams.some((t) => channelValues(t, model.byPerson, x.key).leads + channelValues(t, model.byPerson, x.key).sales > 0));
   const cmpTeams = src ? teams.map((t) => ({ ...t, ...channelTeam(t, model.byPerson, src) })) : teams;
   const cmpTeam = cmpTeams.find((t) => t.team === team.team);
@@ -117,7 +117,7 @@ function ChannelMix({ teams, team, byPerson }) {
     <div className="ps2-mix">
       {mix.map(({ t, parts, total }, i) => (
         <div key={t.team} className={`ps2-mix-row${t.team === team.team ? ' is-me' : ''}`}>
-          <span className="ps2-mix-name"><i style={{ background: t.color || '#1e3a7b' }} />{t.team.replace('Équipe ', '')}<small className="ps2-num">{fr(total)} leads · {t.people} sales</small></span>
+          <span className="ps2-mix-name"><i style={{ background: t.color || 'var(--navy)' }} />{t.team.replace('Équipe ', '')}<small className="ps2-num">{fr(total)} leads · {t.people} sales</small></span>
           <span className="ps2-mix-bar">
             {parts.map((x, k) => {
               const share = total ? (x.value / total) * 100 : 0;
@@ -188,10 +188,10 @@ function TeamReactivity({ period, team }) {
               const flag = pnl.flag(t) === top && top > 0;
               return (
                 <Info key={t.team} className={`ps2-treact-row${t.team === team.team ? ' is-me' : ''}`} label={`${t.team} : ${pnl.text(t)}`} detail={pnl.detail(t)}>
-                  <span className="ps2-treact-name"><i style={{ background: t.color || '#1e3a7b' }} />{t.team.replace('Équipe ', '')}
+                  <span className="ps2-treact-name"><i style={{ background: t.color || 'var(--navy)' }} />{t.team.replace('Équipe ', '')}
                     </span>
                   <span className="ps2-treact-bar"><Motion.i initial={{ width: 0 }} animate={{ width: `${(v / max) * 100}%` }} transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.08 }}
-                    style={{ background: t.color || '#1e3a7b' }} /></span>
+                    style={{ background: t.color || 'var(--navy)' }} /></span>
                   <b className="ps2-num">{pnl.text(t)}</b>
                   <small>{pnl.sub(t)}{flag && <em className={pnl.tone}>{pnl.flagText}</em>}</small>
                 </Info>
@@ -220,7 +220,7 @@ function TeamHead({ team, model, avatarFor }) {
             rows={basis ? [['Objectif du mois', fr(basis.month)], ['Sales de l’équipe', fr(basis.people)], ['Sales des équipes', fr(basis.headcount)]] : []}
             lines={basis ? [`${basis.month} × ${basis.people} ÷ ${basis.headcount} = ${obj}`] : []}
             source="Part de l’objectif du mois au prorata des sales" />}>
-          <Ring value={reach} size={104} stroke={10} track="var(--line-2)" color={team.color || '#1e3a7b'} label={`${sold} ventes sur ${obj}`}>
+          <Ring value={reach} size={104} stroke={10} track="var(--line-2)" color={team.color || 'var(--navy)'} label={`${sold} ventes sur ${obj}`}>
             <b className="ps2-num" style={{ fontSize: 22 }}>{sold}</b><small>/ {obj ?? '–'}</small>
           </Ring>
         </Info>
@@ -301,7 +301,7 @@ function PerSales({ team, teams }) {
             <span className="ps2-persales-label">{label}</span>
             <span className="ps2-persales-bars">
               <span><Motion.i initial={{ width: 0 }} animate={{ width: drawn ? `${(mine / max) * 100}%` : 0 }} transition={{ duration: 0.8, ease: EASE, delay: 0.2 + i * 0.1 }} style={{ background: color }} /><b className="ps2-num">{fmt(mine)}</b></span>
-              <span><Motion.i initial={{ width: 0 }} animate={{ width: drawn ? `${(theirs / max) * 100}%` : 0 }} transition={{ duration: 0.8, ease: EASE, delay: 0.3 + i * 0.1 }} style={{ background: '#cfd6e3' }} /><b className="ps2-num ps2-soft">{fmt(theirs)}</b></span>
+              <span><Motion.i initial={{ width: 0 }} animate={{ width: drawn ? `${(theirs / max) * 100}%` : 0 }} transition={{ duration: 0.8, ease: EASE, delay: 0.3 + i * 0.1 }} style={{ background: 'var(--ps2-r4)' }} /><b className="ps2-num ps2-soft">{fmt(theirs)}</b></span>
             </span>
             {delta != null && <span className={`ps2-score-delta${delta < 0 ? ' is-bad' : ''}`}>{delta > 0 ? '+' : ''}{delta} %</span>}
           </Info>
@@ -343,7 +343,7 @@ function Compare({ teams, team }) {
                 if (v == null) return null;
                 const me = t.team === team.team;
                 return (
-                  <Motion.span key={t.team} className={`ps2-compare-dot${me ? ' is-me' : ''}`} style={{ '--c': t.color || '#1e3a7b', zIndex: me ? 2 : 1 }}
+                  <Motion.span key={t.team} className={`ps2-compare-dot${me ? ' is-me' : ''}`} style={{ '--c': t.color || 'var(--navy)', zIndex: me ? 2 : 1 }}
                     initial={{ left: '50%', opacity: 0 }} animate={drawn ? { left: x(v), opacity: 1 } : {}} transition={{ duration: 0.9, ease: EASE, delay: 0.15 + row * 0.06 + i * 0.05 }}
                     title={`${t.team} : ${c.format(v)}`}>
                     <i />{me && <em className="ps2-num">{c.format(v)}</em>}
@@ -356,7 +356,7 @@ function Compare({ teams, team }) {
         );
       })}
       <div className="ps2-compare-legend">
-        {teams.map((t) => <span key={t.team}><i style={{ background: t.color || '#1e3a7b' }} />{t.team.replace('Équipe ', '')}</span>)}
+        {teams.map((t) => <span key={t.team}><i style={{ background: t.color || 'var(--navy)' }} />{t.team.replace('Équipe ', '')}</span>)}
       </div>
     </div>
   );

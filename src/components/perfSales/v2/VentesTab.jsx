@@ -9,7 +9,7 @@ import { isPerformanceSalesPerson } from '../../../utils/performanceSales.js';
 // déclarées du mois : tranches d'effectif et mode de paiement DÉCLARÉS sur la fiche client (n°806 en annuel), canal de
 // chaque vente selon la règle de la page (source du lead vendu), et le détail par commercial.
 const BRACKETS = [['1-2', '1-2 salariés'], ['3-5', '3-5'], ['6-10', '6-10'], ['11-19', '11-19'], ['20+', '20 et plus'], ['autre', 'Non renseigné']];
-const BRACKET_COLORS = ['#cfdaf0', '#9fb3df', '#7f9ad9', '#3d5ba8', '#1e3a7b', '#c9cfda'];
+const BRACKET_COLORS = ['var(--ps2-r5)', 'var(--ps2-r4)', 'var(--ps2-r3)', 'var(--ps2-r2)', 'var(--ps2-r1)', '#dedad3'];
 
 export default function VentesTab({ breakdown, model, onOpen }) {
   if (!breakdown) return <div className="ps2-loading" aria-label="Chargement"><i /><i /><i /><i /></div>;
@@ -49,7 +49,7 @@ export default function VentesTab({ breakdown, model, onOpen }) {
         <Motion.div className="ps2-card-head" variants={ITEM}><h2 id="ps2-sellers-title">Par commercial</h2>
           <span className="ps2-legend">{channels.map((s) => <span key={s.key}><i style={{ borderColor: s.color, borderTopWidth: 6, borderRadius: 3, width: 10 }} />{s.label}</span>)}</span></Motion.div>
         <div className="ps2-ctable-wrap" style={{ marginTop: 12 }}>
-          <table className="ps2-ctable" style={{ '--c': '#1e3a7b', minWidth: 980 }}>
+          <table className="ps2-ctable" style={{ '--c': 'var(--navy)', minWidth: 980 }}>
             <thead><tr><th>#</th><th style={{ textAlign: 'left' }}>Commercial</th><th className="is-key">Ventes</th><th style={{ textAlign: 'left', width: 200 }}>Canaux</th>
               <th style={{ textAlign: 'left', width: 200 }}>Tranches</th><th>Mensuel</th><th>Annuel</th><th>CA déclaré</th></tr></thead>
             <tbody>

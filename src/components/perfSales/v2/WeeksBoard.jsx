@@ -8,7 +8,7 @@ import { dm, fr, initials } from './model';
 // d'une manière différente, pour vraiment faire dashboard ») : une bulle par semaine, sa surface proportionnelle au volume
 // de l'indicateur choisi ; la colonne de droite fait le total du mois. Les bulles changent de taille quand on change
 // d'indicateur ; une semaine à venir reste un point vide. Chaque bulle s'ouvre sur la semaine de ce sales.
-const METRICS = [['sales', 'Ventes', '#2c6448'], ['r2e', 'R2 effectués', '#1e3a7b'], ['r1e', 'R1 effectués', '#5d79c2'], ['leads', 'Leads', '#8b95a7']];
+const METRICS = [['sales', 'Ventes', '#1f9d57'], ['r2e', 'R2 effectués', '#2b2927'], ['r1e', 'R1 effectués', '#8f8a83'], ['leads', 'Leads', '#c9c4bc']];
 const R = 17;
 
 export default function WeeksBoard({ people, weeks, avatarFor }) {
