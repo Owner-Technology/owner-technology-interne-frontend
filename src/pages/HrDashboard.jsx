@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../services/apiClient";
+import { homeRouteFor } from "../navigation/home.js";
 import Leaderboard from "./Leaderboard.jsx";
 import { CEO_TAB_ROUTES } from "../utils/dashboardNavigation";
 import { SIDEBAR_SECTIONS, getColors } from "./CeoDashboard.jsx";
@@ -61,8 +62,9 @@ export default function HrDashboard() {
   const [userRole, setUserRole] = useState(null);
   useEffect(() => {
     const u = apiClient.getUser();
+    // Audit du 23/11/2026 : un rôle que cette page refuse revient à sa page d'arrivée (l'écran de connexion faisait croire à une déconnexion).
     if (!u || !ALLOWED_ROLES.includes(u.role)) {
-      navigate("/login");
+      navigate(u ? homeRouteFor(u.role) : "/login", { replace: true });
       return;
     }
     setUserRole(u.role);
