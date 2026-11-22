@@ -36,7 +36,7 @@ export default function SettersTab({ month, figures, calls, error, avatarFor, da
           </span>
         </Motion.div>
         <div className="ps2-ctable-wrap" style={{ marginTop: 12 }}>
-          <table className="ps2-ctable ps2-setters-table" style={{ '--c': '#2c6448' }}>
+          <table className="ps2-ctable ps2-setters-table" style={{ '--c': 'var(--charcoal)' }}>
             <thead>
               <tr><th style={{ textAlign: 'left' }}>Setter</th><th>Appels</th><th>Appels / j</th><th>Répondus</th><th>RDV posés</th><th title="RDV posés dans le mois (date de la pose) ÷ jours ouvrés écoulés">RDV / j</th><th>Honorés</th><th>No-show</th><th>Ventes</th><th>CA</th>
                 <th style={{ textAlign: 'left', width: 220 }}>Parcours</th><th className="is-key">Appels / vente</th><th className="is-key">Pour l’objectif</th></tr>

@@ -12,8 +12,9 @@ import { useAutoAssignData } from '../perfSales/v2/autoAssignData';
 // de l'onglet Auto-affectation de la Performance Sales (30/10/2026) : mêmes données (/monitoring/performance/v2/auto-assign),
 // mêmes calculs, mêmes composants (briques partagées dans perfSales/v2/autoAssignParts.jsx) ; la vue « Leads ADS → sales » reste dans Perf Sales.
 
-const REASONS = [['owner', 'Déjà suivi', '#1e3a7b'], ['priority', 'Prioritaire', '#3e7d5a'], ['preference', 'Préférence', '#d4834a'], ['equity', 'Équité', '#9fb3df']];
-const STATES = [['held', 'Honorés', '#2c6448'], ['no_show', 'No-show', '#c2410c'], ['cancelled', 'Annulés', '#8a93a6'], ['moved', 'Déplacés', '#b8c0cf'], ['to_qualify', 'À qualifier', '#6b7a99'], ['upcoming', 'À venir', '#9fb3df']];
+// Couleurs : les pastels des graphiques des Statistiques Finance (origines pour les raisons, états de paiement pour ce que les RDV sont devenus).
+const REASONS = [['owner', 'Déjà suivi', '#aaa5ee'], ['priority', 'Prioritaire', '#86d3a6'], ['preference', 'Préférence', '#f4b183'], ['equity', 'Équité', '#8fbdf3']];
+const STATES = [['held', 'Honorés', '#6cc493'], ['no_show', 'No-show', '#ee8f8a'], ['cancelled', 'Annulés', '#b5b0a8'], ['moved', 'Déplacés', '#dedad3'], ['to_qualify', 'À qualifier', '#f1b76a'], ['upcoming', 'À venir', '#8fbdf3']];
 
 export default function RdvSetterSales({ month, avatarFor, refreshKey = 0 }) {
   const { period, setPeriod, state, analytics } = useAutoAssignData(month, refreshKey);
@@ -81,7 +82,7 @@ function SetterEngine({ d, avatarFor }) {
               <div key={s.name} className="ps2-vbars-row" style={{ gridTemplateColumns: '180px minmax(0, 1fr) 36px' }}>
                 <span className="ps2-vbars-label"><Face name={s.name} url={avatarFor?.(s.name)} /><span>{s.name}</span></span>
                 <span className="ps2-vbars-track"><Motion.i initial={{ width: 0 }} animate={{ width: on ? `${(s.total / maxSetter) * 100}%` : 0 }}
-                  transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.06 }} style={{ background: '#2c6448' }} /></span>
+                  transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.06 }} style={{ background: 'var(--charcoal)' }} /></span>
                 <b className="ps2-num">{fr(s.total)}</b>
               </div>
             ))}
@@ -92,7 +93,7 @@ function SetterEngine({ d, avatarFor }) {
         <Motion.div className="ps2-card-head" variants={ITEM}><h2 id="ps2-auto-ssales">Par sales</h2>
           <Legend parts={REASONS} /></Motion.div>
         <div className="ps2-ctable-wrap" style={{ marginTop: 12 }}>
-          <table className="ps2-ctable" style={{ '--c': '#2c6448', minWidth: 900 }}>
+          <table className="ps2-ctable" style={{ '--c': 'var(--charcoal)', minWidth: 900 }}>
             <thead><tr><th style={{ textAlign: 'left' }}>Sales</th><th style={{ textAlign: 'left', width: 220 }}>Raison de l’attribution</th><th className="is-key">RDV</th>
               <th style={{ textAlign: 'left', width: 200 }}>Devenus</th><th>Honorés</th><th>No-show</th><th>À venir</th></tr></thead>
             <tbody>

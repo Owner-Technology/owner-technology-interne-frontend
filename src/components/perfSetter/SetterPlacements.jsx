@@ -22,13 +22,18 @@ const SOURCE = { 'setter-place': 'posés depuis le CRM', 'notification-backfill'
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const dayName = (s) => new Date(`${s}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
 const weekend = (s) => [0, 6].includes(new Date(`${s}T12:00:00`).getDay());
-// Teinte d'une case : du bleu clair Owner au marine, selon la pose la plus forte de la grille.
-const shade = (n, max) => {
+// Teinte d'une case, selon la pose la plus forte de la grille : du grège clair à l'anthracite (palette des Statistiques Finance) ; en mode sombre,
+// du gris foncé au clair. Le chiffre passe en blanc (en noir en sombre) sur les cases foncées.
+const RAMP = { light: [[235, 232, 227], [43, 41, 39]], dark: [[52, 52, 52], [237, 237, 237]] };
+const shade = (n, max, dark = false) => {
   if (!n) return null;
   const t = Math.min(1, n / Math.max(1, max));
-  const mix = (a, b) => Math.round(a + (b - a) * (0.25 + 0.75 * t));
-  return `rgb(${mix(219, 30)}, ${mix(227, 58)}, ${mix(241, 123)})`;
+  const [from, to] = RAMP[dark ? 'dark' : 'light'];
+  const mix = (k) => Math.round(from[k] + (to[k] - from[k]) * (0.25 + 0.75 * t));
+  return `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
 };
+const THUMB = { type: 'spring', stiffness: 520, damping: 40 };   // le pouce de la période glisse comme celui des bascules de la page Finance
+const ink = (n, max, dark = false) => (n / max > 0.45 ? (dark ? '#141414' : '#ffffff') : (dark ? '#f2f2f2' : '#1c1b19'));
 
 export default function SetterPlacements({ period, dark, avatarFor, rdvMonth, refreshKey = 0 }) {
   const today = parisToday();
@@ -77,7 +82,7 @@ export default function SetterPlacements({ period, dark, avatarFor, rdvMonth, re
         <span className="ps2-place-periods" role="group" aria-label="Période">
           {PRESETS.map(([k, l]) => (
             <button type="button" key={k} className={!day && preset === k ? 'is-on' : ''} onClick={() => { setDay(''); setPreset(k); }}>
-              {!day && preset === k && <Motion.span layoutId="ps2-place-pill" className="ps2-place-pill" transition={{ duration: 0.35, ease: EASE }} />}
+              {!day && preset === k && <Motion.span layoutId="ps2-place-pill" className="ps2-place-pill" transition={THUMB} />}
               <span>{l}</span>
             </button>
           ))}
@@ -132,11 +137,11 @@ export default function SetterPlacements({ period, dark, avatarFor, rdvMonth, re
                       <td className="is-name"><span><Face name={s.name} url={avatarFor?.(s.name)} />{s.name}</span></td>
                       {days.map((d, k) => {
                         const n = s.by_day[d] || 0;
-                        const bg = shade(n, max);
+                        const bg = shade(n, max, dark);
                         return (
                           <td key={d} className={weekend(d) ? 'is-we' : ''}>
                             {n ? (
-                              <Motion.button type="button" className="ps2-place-cell" style={{ background: bg, color: n / max > 0.45 ? '#fff' : '#1e3a7b' }}
+                              <Motion.button type="button" className="ps2-place-cell" style={{ background: bg, color: ink(n, max, dark) }}
                                 onClick={(e) => open(e.currentTarget, cellDetail(s, d))} aria-label={`${s.name}, ${dayName(d)} : ${n} RDV posés`}
                                 initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3, ease: EASE, delay: Math.min(0.6, 0.05 + i * 0.03 + k * 0.008) }}>
                                 {n}</Motion.button>

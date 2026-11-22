@@ -60,6 +60,8 @@ export default function CeoSettersView() {
   }, [navigate]);
 
   const C = useMemo(() => getColors(darkMode), [darkMode]);
+  // Toile de la page : celle des Statistiques Finance (grège en clair, noir neutre en sombre), comme le dashboard Leads ; le menu garde sa palette.
+  const canvas = darkMode ? "#141414" : "#f4f2ef";
   const visibleSections = useMemo(() => getVisibleSections(SIDEBAR_SECTIONS, userRole), [userRole]);
 
   // ── SIDEBAR NAVIGATION HANDLER ──────────────────────────────────────
@@ -90,7 +92,7 @@ export default function CeoSettersView() {
     return (
       <div style={{
         minHeight: "100vh",
-        background: C.surface,
+        background: canvas,
         display: "flex", alignItems: "center", justifyContent: "center",
         color: C.muted, fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         fontSize: 14,
@@ -106,7 +108,7 @@ export default function CeoSettersView() {
       style={{
         display: "flex",
         minHeight: "100vh",
-        background: C.surface,
+        background: canvas,
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",

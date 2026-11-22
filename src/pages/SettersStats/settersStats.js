@@ -81,9 +81,10 @@ export const ORIGIN_LABELS = {
   webinar: 'Webinaire', ads: 'Ads', cold_call_sales: 'Cold call sales', cold_call_setter: 'Cold call setter',
   partners: 'Partenaires', other: 'Autre',
 };
+// Ton de l'étiquette d'une origine : les tons des étiquettes pastel de la page Finance (même famille que ses origines de vente).
 export const ORIGIN_TONES = {
-  webinar: '#8b5cf6', ads: '#3b82f6', cold_call_sales: '#f97316', cold_call_setter: '#14b8a6',
-  partners: '#64748b', other: '#94a3b8',
+  webinar: 'lime', ads: 'blue', cold_call_sales: 'beige', cold_call_setter: 'yellow',
+  partners: 'peach', other: 'beige',
 };
 
 // Répartition par origine, la plus fréquente d'abord : [[clé, nombre], …].

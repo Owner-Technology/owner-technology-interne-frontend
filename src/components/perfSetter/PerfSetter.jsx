@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion as Motion } from 'framer-motion';
 import { EASE, ITEM, Reveal } from '../perfSales/motion';
 import ErrorBoundary from '../ErrorBoundary.jsx';
 import { PopLayer } from '../perfSales/v2/Pop';
@@ -35,7 +35,7 @@ const SettersStats = lazy(() => import('../../pages/SettersStats/index.jsx'));
 const RdvSetterSales = lazy(() => import('./RdvSetterSales'));
 const TabLoading = <div className="ps2-loading" aria-label="Chargement"><i /><i /><i /><i /></div>;
 
-// Couleurs de la fiche et du classement : les jetons de la charte Owner (même vocabulaire que la Performance Sales), qui suivent le mode sombre.
+// Couleurs de la fiche et du classement : les jetons de la page (perfSetter.css : palette des Statistiques Finance), qui suivent le mode sombre.
 const PS2_COLORS = { bg: 'var(--card)', surface: 'var(--bg)', border: 'var(--line)', text: 'var(--ink)', muted: 'var(--muted)', subtle: 'var(--grey-bg)', secondary: 'var(--soft)', accent: 'var(--navy)', shadow: 'none' };
 
 function Orbits() {
@@ -61,37 +61,39 @@ export default function PerfSetter({ darkMode = false }) {
   const controls = { value: month, options, onChange: setMonth, onRefresh: () => setRefreshKey((k) => k + 1), loading: !data && !error };
 
   return (
-    <div className="pst-page">
-      <div className={`ps2 pst${darkMode ? ' is-dark' : ''}`}>
-        <PopLayer>
-          <Reveal as="section" className="pst-hero" aria-label="Résumé du mois">
-            <Orbits />
-            <div className="pst-hero-top">
-              <Motion.div variants={ITEM}>
-                <p className="pst-kicker">Acquisition · Setters</p>
-                <h1>Perf Setters</h1>
-                <p className="pst-sub">Appels, rendez-vous posés et clients amenés par chaque setter, du premier appel à la vente.</p>
+    <MotionConfig reducedMotion="user">
+      <div className="pst-page">
+        <div className={`ps2 pst${darkMode ? ' is-dark' : ''}`}>
+          <PopLayer>
+            <Reveal as="section" className="pst-hero" aria-label="Résumé du mois">
+              <Orbits />
+              <div className="pst-hero-top">
+                <Motion.div variants={ITEM}>
+                  <p className="pst-kicker">Acquisition · Setters</p>
+                  <h1>Perf Setters</h1>
+                  <p className="pst-sub">Appels, rendez-vous posés et clients amenés par chaque setter, du premier appel à la vente.</p>
+                </Motion.div>
+                <Motion.div className="pst-hero-tools" variants={ITEM}>
+                  <Controls controls={controls} />
+                  {days && <span className="ps2-mono">jour ouvré {days.elapsed} / {days.total}</span>}
+                </Motion.div>
+              </div>
+              <SetterKpis figures={figures} callsState={calls} error={error} />
+            </Reveal>
+            <Tabs tabs={TABS} tab={tab} onTab={setTab} label="Vues de Perf Setters" />
+            <AnimatePresence mode="wait">
+              <Motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.35, ease: EASE }}>
+                {/* Une charge utile inattendue n'efface pas la page : la vue concernée le dit, le bandeau et les autres onglets restent. « Actualiser » (refreshKey) relance la vue. */}
+                <ErrorBoundary key={tab} resetKey={refreshKey} fallback={<div className="ps2-empty" role="alert">Cette vue n’a pas pu être chargée. Utilisez « Actualiser » pour réessayer.</div>}>
+                  {tab === 'setters' && <SettersTab month={month} figures={figures} calls={calls} error={error} avatarFor={avatarFor} dark={darkMode} refreshKey={refreshKey} />}
+                  {tab === 'ranking' && <Suspense fallback={TabLoading}><SettersStats C={PS2_COLORS} darkMode={darkMode} refreshKey={refreshKey} cache={rankingCache.current} avatarFor={avatarFor} /></Suspense>}
+                  {tab === 'rdv' && <Suspense fallback={TabLoading}><RdvSetterSales month={month} avatarFor={avatarFor} refreshKey={refreshKey} /></Suspense>}
+                </ErrorBoundary>
               </Motion.div>
-              <Motion.div className="pst-hero-tools" variants={ITEM}>
-                <Controls controls={controls} />
-                {days && <span className="ps2-mono">jour ouvré {days.elapsed} / {days.total}</span>}
-              </Motion.div>
-            </div>
-            <SetterKpis figures={figures} callsState={calls} error={error} />
-          </Reveal>
-          <Tabs tabs={TABS} tab={tab} onTab={setTab} label="Vues de Perf Setters" />
-          <AnimatePresence mode="wait">
-            <Motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.35, ease: EASE }}>
-              {/* Une charge utile inattendue n'efface pas la page : la vue concernée le dit, le bandeau et les autres onglets restent. « Actualiser » (refreshKey) relance la vue. */}
-              <ErrorBoundary key={tab} resetKey={refreshKey} fallback={<div className="ps2-empty" role="alert">Cette vue n’a pas pu être chargée. Utilisez « Actualiser » pour réessayer.</div>}>
-                {tab === 'setters' && <SettersTab month={month} figures={figures} calls={calls} error={error} avatarFor={avatarFor} dark={darkMode} refreshKey={refreshKey} />}
-                {tab === 'ranking' && <Suspense fallback={TabLoading}><SettersStats C={PS2_COLORS} darkMode={darkMode} refreshKey={refreshKey} cache={rankingCache.current} avatarFor={avatarFor} /></Suspense>}
-                {tab === 'rdv' && <Suspense fallback={TabLoading}><RdvSetterSales month={month} avatarFor={avatarFor} refreshKey={refreshKey} /></Suspense>}
-              </ErrorBoundary>
-            </Motion.div>
-          </AnimatePresence>
-        </PopLayer>
+            </AnimatePresence>
+          </PopLayer>
+        </div>
       </div>
-    </div>
+    </MotionConfig>
   );
 }
