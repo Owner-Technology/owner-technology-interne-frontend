@@ -141,7 +141,18 @@ export const DASHBOARD_TAB_ROUTES = {
 
 // Les rôles qui ont un tableau de bord (leur page d'arrivée en est un, et l'admin) : leur menu reste le même sur
 // toutes les pages, y compris hors tableau de bord. Les autres rôles gardent « Mes pages ».
-export const hasDashboardMenu = (role) => role === "admin" || Object.prototype.hasOwnProperty.call(HOME_BY_ROLE, role);
+const DASHBOARD_HOMES = new Set(["/ceo", "/ceo/leaderboard", "/acquisition-director", "/rh-dashboard"]);
+export const hasDashboardMenu = (role) => role === "admin" || DASHBOARD_HOMES.has(HOME_BY_ROLE[role]);
+
+// « Autres pages » (audit du 22/11/2026) : les pages de « Mes pages » qu'aucun onglet du tableau de bord n'ouvre (End of Day,
+// Power Dialer, Dashboard RH…). Repliée par défaut pour garder le menu court ; la même sur toutes les pages.
+export function otherPagesSection(role, pages, sections) {
+  if (!hasDashboardMenu(role)) return null;
+  const tabs = new Set(sections.flatMap((s) => (s.items || []).map((i) => i.id)));
+  const items = pages.filter((p) => !(p.tab && tabs.has(p.tab)) && !Object.values(DASHBOARD_TAB_ROUTES).includes(p.path))
+    .map((p) => ({ id: p.id, label: p.label, icon: p.icon, path: p.path }));
+  return items.length ? { key: "autres-pages", label: "Autres pages", collapsed: true, items } : null;
+}
 
 // Le menu du tableau de bord tel que le rôle le voit, mêmes règles que les vues /ceo/*.
 export const dashboardMenuSections = (role) => getVisibleSections(SIDEBAR_SECTIONS, role);

@@ -78,6 +78,7 @@ export default function SheetSidebar({ title = "Ma Tracking Sheet", views: allVi
   return (
     <Sidebar width={collapsed ? 56 : 260} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)}
       sections={sections} activeTab={`view:${activeView}`} setActiveTab={onTab}
-      C={C} darkMode={darkMode} setDarkMode={setDarkMode} headerExtra={headerExtra} />
+      C={C} darkMode={darkMode} setDarkMode={setDarkMode} headerExtra={headerExtra}
+      onSamePageView={(key) => { if (!views.some((v) => v.key === key)) return false; onView(key); return true; }} />
   );
 }

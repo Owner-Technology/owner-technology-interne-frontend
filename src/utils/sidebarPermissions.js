@@ -74,6 +74,12 @@ const ITEM_ROLE_GATE = {
   optilex_automation: new Set(["ceo", "admin"]),
   // « Ma Tracking Sheet » : la page n'ouvre sans permission qu'aux rôles ceo et admin.
   my_tracking_sheet: new Set(["ceo", "admin"]),
+  // Audit du 22/11/2026 : un onglet ne s'affiche plus pour un rôle que sa page refuse (le clic menait à la connexion).
+  // « Absence » et « Heures de travail » : mêmes rôles que CeoCongesView et CeoWorkHoursView.
+  conges: new Set(["ceo", "admin", "hr"]),
+  work_hours: new Set(["ceo", "admin", "hr"]),
+  // « Campagnes » : mêmes rôles que CeoCampaignsView.
+  campaigns: new Set(["ceo", "admin", "marketing", "finance_director", "head_of_acquisition", ...READ_ONLY_DIRECTION_ROLES]),
 };
 
 // ── Scope de navigation persistant (sessionStorage) ────────────────

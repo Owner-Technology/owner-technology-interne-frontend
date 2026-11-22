@@ -71,3 +71,13 @@ test("une mention dans une note Finance mène à la note exacte (21/11/2026)", (
   assert.equal(notificationTarget({ type: 'finance_note_mention', data: { path: '/tracking-finance?client=1&note=x' } }), '/tracking-finance?client=1&note=x');
   assert.equal(notificationTarget({ type: 'finance_note_mention', data: {} }), '/tracking-finance');
 });
+
+test("audit du 22/11/2026 : un bouton seulement vers une page ouverte au rôle", () => {
+  assert.equal(notificationTarget({ type: 'pool_lead', data: { pool: 'traitement' } }, 'sales'), '/tracking-sheet?view=common_pool');
+  assert.equal(notificationTarget({ type: 'pool_lead', data: {} }, 'finance_team'), null);
+  assert.equal(notificationTarget({ type: 'absence_declared', data: {} }, 'hr'), '/ceo/conges');
+  assert.equal(notificationTarget({ type: 'absence_declared', data: {} }, 'finance_director'), null);
+  assert.equal(notificationTarget({ type: 'lead_transferred', data: { lead_id: 1 } }, 'sales'), '/tracking-sheet');
+  assert.equal(notificationTarget({ type: 'perf_alert', data: {} }, 'head_of_sales'), '/tracking-sheet?view=kpis');
+  assert.equal(notificationTarget({ type: 'perf_alert', data: {} }, 'sales'), null);
+});

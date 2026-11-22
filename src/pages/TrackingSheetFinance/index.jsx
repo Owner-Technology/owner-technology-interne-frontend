@@ -31,7 +31,7 @@ import { createLatestRequestTracker, withConfirmedEtat } from '../../utils/board
 
 import React, { useEffect, useLayoutEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, ChevronDown, RefreshCw, Search, Calendar,
   AlertCircle, CheckCircle2, Home, MessageSquare, Mail, PanelLeft,
@@ -68,7 +68,9 @@ import { parisToday } from '../../utils/parisDates.js';
 import {
   initialPeriodState, choosePeriodState, followCurrentMonth, withPeriodParam, parisCurrentPeriod,
 } from './periodFollow.js';
-import OwnerMark from '../../components/shared/Sidebar/OwnerMark.jsx';
+import SharedSidebar from '../../components/shared/Sidebar/Sidebar.jsx';
+import { myPages } from '../../navigation/myPages.js';
+import { getColors } from '../../utils/ceoColors.js';
 import '../../index.css';
 
 import TableView from './TableView.jsx';
@@ -991,16 +993,6 @@ export default function TrackingSheetFinance() {
     });
   }, []);
 
-  // Menu de gauche : réduit à ses icônes par défaut, pour laisser toute la largeur au tableau.
-  // Il s'ouvre au survol, par-dessus la page ; le bouton du bas l'épingle (choix gardé d'une visite à l'autre).
-  const [sideCollapsed, setSideCollapsed] = useState(() => {
-    const stored = localStorage.getItem('tsfSideCollapsed');
-    return stored === null ? true : stored === 'true';
-  });
-  useEffect(() => {
-    localStorage.setItem('tsfSideCollapsed', String(sideCollapsed));
-  }, [sideCollapsed]);
-
   // DetailPanel (slide-in right) — caller-controlled
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelClientId, setPanelClientId] = useState(null);
@@ -1515,13 +1507,7 @@ export default function TrackingSheetFinance() {
       {/* ═══ LEFT SIDEBAR (Notion-style) ═══════════════════════════════
           En mode embed (CEO Dispatch), la sidebar interne est masquée :
           la CeoSidebar de CeoDispatchView prend le relais à gauche. */}
-      {!embedMode && (
-        <Sidebar
-          pinned={!sideCollapsed}
-          onTogglePin={() => setSideCollapsed((v) => !v)}
-          sections={sidebarSections}
-        />
-      )}
+      {!embedMode && <FinanceMenu sections={sidebarSections} />}
 
       {/* ═══ MAIN AREA ═════════════════════════════════════════════════
           When the DetailPanel slide-in is open, we reserve space on the right
@@ -1549,8 +1535,7 @@ export default function TrackingSheetFinance() {
           period={period}
           lastModif={lastModif}
           syncedLabel={syncedLabel}
-          onShowSidebar={() => setSideCollapsed(false)}
-          showSidebarToggle={!embedMode && sideCollapsed}
+          showSidebarToggle={false}
         />
 
         {/* Main content area — flex column pour que le tableau prenne tout
@@ -1786,346 +1771,38 @@ const SIDE_OPEN_DELAY = 70;    // un passage rapide vers le bord de l'écran ne 
 const SIDE_CLOSE_DELAY = 200;  // un écart d'un instant hors du menu ne le referme pas
 const SIDE_MOVE_MS = 300;
 
-function Sidebar({ pinned, onTogglePin, sections }) {
-  const [peek, setPeek] = useState(false);
-  const reduced = useReducedMotion();
-  const timer = useRef(null);
-  const inside = useRef(false);
-  // Après « réduire », la souris est encore sur le menu : on attend qu'elle en sorte avant de le rouvrir.
-  const held = useRef(false);
-  const plan = (next, delay) => {
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setPeek(next), delay);
+// Menu de gauche de la page Finance seule (audit du 22/11/2026) : le menu partagé de la plateforme, avec la cloche des
+// notifications (la facturation n'en avait pas sur sa page de travail) et « Mes pages », plus les vues de la Finance
+// comme avant (Suivi, Vues du tableau, Outils) et leurs compteurs.
+function FinanceMenu({ sections }) {
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(() => {
+    try { const v = localStorage.getItem('ceoSideCollapsed_v2'); return v === null ? true : v === 'true'; } catch { return true; }
+  });
+  useEffect(() => { try { localStorage.setItem('ceoSideCollapsed_v2', String(collapsed)); } catch { /* stockage indisponible */ } }, [collapsed]);
+  const pages = useMemo(() => myPages(), []);
+  const shared = useMemo(() => [
+    ...sections.map((sec) => ({ key: `finance-${sec.key}`, label: sec.label, items: sec.items.map((it) => ({
+      id: it.id, label: it.label, icon: it.Icon ? <it.Icon size={16} strokeWidth={1.9} /> : null,
+      badge: it.count ? { value: it.count, tone: 'muted' } : undefined,
+    })) })),
+    ...(pages.length ? [{ key: 'pages', label: 'Mes pages', items: pages.map((p) => ({ id: p.id, label: p.label, icon: p.icon })) }] : []),
+  ], [sections, pages]);
+  const all = sections.flatMap((sec) => sec.items);
+  const active = all.find((it) => it.active)?.id || null;
+  const open = (id) => {
+    const item = all.find((it) => it.id === id);
+    if (item) { if (!item.disabled) item.action?.(); return; }
+    const page = pages.find((p) => p.id === id);
+    if (page) navigate(page.path);
   };
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const open = pinned || peek;
-  // Le contenu garde sa forme ouverte pendant la fermeture, puis se range en icônes : pas de saut en chemin.
-  const [settled, setSettled] = useState(!open);
-  useEffect(() => {
-    const id = setTimeout(() => setSettled(!open), open || reduced ? 0 : SIDE_MOVE_MS);
-    return () => clearTimeout(id);
-  }, [open, reduced]);
-  const collapsed = !open && settled;
-  const floating = !pinned && (peek || !settled);
-  const move = { duration: reduced ? 0 : SIDE_MOVE_MS / 1000, ease: [0.22, 1, 0.36, 1] };
-
-  const togglePin = () => {
-    if (pinned) {
-      held.current = inside.current;
-      clearTimeout(timer.current);
-      setPeek(false);
-    }
-    onTogglePin();
-  };
-
+  const dark = typeof document !== 'undefined' && document.body.classList.contains('dark-mode');
   return (
-    <motion.div
-      animate={{ width: pinned ? SIDE_FULL : SIDE_RAIL }}
-      initial={false}
-      transition={move}
-      // Au-dessus des blocs de la page (rang 40 au plus), sous la fiche client (50).
-      style={{ flexShrink: 0, position: 'relative', zIndex: floating ? 45 : undefined }}
-    >
-      <motion.aside
-        className="tsf-side tsf-sidebar-in"
-        data-floating={!pinned && peek ? 'true' : undefined}
-        animate={{ width: open ? SIDE_FULL : SIDE_RAIL }}
-        initial={false}
-        transition={move}
-        onMouseEnter={() => { inside.current = true; if (!held.current) plan(true, SIDE_OPEN_DELAY); }}
-        onMouseLeave={() => { inside.current = false; held.current = false; plan(false, SIDE_CLOSE_DELAY); }}
-        // Au clavier, le menu s'ouvre dès qu'on y entre et se referme quand on en sort.
-        onFocus={(e) => { if (e.target.matches(':focus-visible')) plan(true, 0); }}
-        onBlur={(e) => { if (!inside.current && !e.currentTarget.contains(e.relatedTarget)) plan(false, SIDE_CLOSE_DELAY); }}
-        style={{
-          position: 'absolute', top: 0, bottom: 0, left: 0,
-          background: N.sideBg,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Workspace header */}
-        <WorkspaceHeader collapsed={collapsed} />
-
-        {/* Icon row : Home / Chat / Mail / Search */}
-        <IconRow collapsed={collapsed} />
-
-        {/* Sections */}
-        <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '4px 0' }} className="tsf-scroll">
-          {sections.map((sec) => (
-            <SidebarSection key={sec.key} section={sec} collapsed={collapsed} />
-          ))}
-        </nav>
-
-        {/* Footer composer */}
-        <SidebarFooter collapsed={collapsed} pinned={pinned} onToggle={togglePin} />
-      </motion.aside>
-    </motion.div>
+    <SharedSidebar width={collapsed ? 56 : 260} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)}
+      sections={shared} activeTab={active} setActiveTab={open} C={getColors(dark)} darkMode={dark} setDarkMode={() => {}} />
   );
 }
 
-function WorkspaceHeader({ collapsed }) {
-  return (
-    <div style={{
-      padding: collapsed ? '10px 8px' : '10px 8px 6px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: 6,
-    }}>
-      <button
-        className="tsf-icon-btn"
-        style={{
-          flex: 1,
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '5px 6px',
-          borderRadius: 4,
-          border: 'none', background: 'transparent', cursor: 'pointer',
-          fontFamily: 'inherit', textAlign: 'left',
-          minWidth: 0,
-        }}
-      >
-        <OwnerMark size={24} style={{ color: N.text }} />
-        {!collapsed && (
-          <>
-            <span style={{
-              fontSize: 14, fontWeight: 500, color: N.text,
-              letterSpacing: '-0.01em',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              Owner Technology
-            </span>
-            <ChevronDown size={14} style={{ color: N.textMuted, flexShrink: 0, marginLeft: 'auto' }} />
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
-
-function IconRow({ collapsed }) {
-  const items = [
-    { key: 'home',   icon: <Home size={16} />,          label: 'Accueil' },
-    { key: 'inbox',  icon: <MessageSquare size={16} />, label: 'Discussions' },
-    { key: 'mail',   icon: <Mail size={16} />,          label: 'Boîte de réception' },
-    { key: 'search', icon: <Search size={16} />,        label: 'Recherche' },
-  ];
-  return (
-    <div style={{
-      display: collapsed ? 'flex' : 'grid',
-      flexDirection: collapsed ? 'column' : undefined,
-      gridTemplateColumns: collapsed ? undefined : 'repeat(4, 1fr)',
-      gap: 2,
-      padding: collapsed ? '4px 8px 8px' : '0 8px 6px',
-    }}>
-      {items.map((it) => (
-        <button
-          key={it.key}
-          className="tsf-icon-btn"
-          title={it.label}
-          style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            gap: 8,
-            padding: '6px 0',
-            borderRadius: 4,
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            color: N.textMuted, fontFamily: 'inherit',
-          }}
-        >
-          {it.icon}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function SidebarSection({ section, collapsed }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div style={{ padding: collapsed ? '4px 6px' : '4px 8px' }}>
-      {!collapsed && (
-        <button
-          onClick={() => setOpen((o) => !o)}
-          style={{
-            width: '100%',
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 6px',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            fontFamily: 'inherit',
-            color: N.textFaint,
-            fontSize: 12, fontWeight: 500,
-            letterSpacing: '0.01em',
-            borderRadius: 4,
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = N.sideHover}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-        >
-          <ChevronDown
-            size={12}
-            style={{
-              transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
-              transition: 'transform 0.15s ease',
-              color: N.textFaint,
-            }}
-          />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {section.label}
-          </span>
-        </button>
-      )}
-
-      <AnimatePresence initial={false}>
-        {(open || collapsed) && (
-          <motion.div
-            key="items"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
-              {section.items.map((item) => (
-                <SidebarItem key={item.id} item={item} collapsed={collapsed} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function SidebarItem({ item, collapsed }) {
-  const disabled = !!item.disabled;
-  return (
-    <button
-      className="tsf-side-item"
-      data-active={item.active ? 'true' : undefined}
-      title={collapsed ? item.label : undefined}
-      onClick={disabled ? undefined : item.action}
-      disabled={disabled}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 9,
-        padding: collapsed ? '7px 0' : '7px 9px',
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        border: 'none',
-        background: item.active ? N.sideActive : 'transparent',
-        boxShadow: item.active ? N.shadowTile : 'none',
-        cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.45 : 1,
-        borderRadius: 11,
-        fontFamily: 'inherit',
-        color: N.text,
-        fontSize: 13.5,
-        textAlign: 'left',
-        width: '100%',
-        minWidth: 0,
-        transition: 'background 0.12s',
-      }}
-    >
-      {item.Icon ? (
-        // Filaire, monochrome : gris au repos, accent sur l'entrée active.
-        <span style={{
-          width: 20, height: 20, flexShrink: 0,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          color: item.active ? N.text : N.textMuted,
-        }}>
-          <item.Icon size={17} strokeWidth={1.6} />
-        </span>
-      ) : (
-        <PageEmblem kind={item.icon} size={18} />
-      )}
-      {!collapsed && (
-        <>
-          <span style={{
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            fontWeight: item.active ? 500 : 400,
-            color: item.active ? N.text : N.textMuted,
-            flex: 1,
-          }}>
-            {item.label}
-          </span>
-          {item.count !== undefined && (
-            <span style={{
-              fontSize: 11, fontWeight: 500, color: N.textFaint,
-              fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-            }}>
-              {item.count}
-            </span>
-          )}
-        </>
-      )}
-    </button>
-  );
-}
-
-function SidebarFooter({ collapsed, pinned, onToggle }) {
-  return (
-    <div style={{
-      borderTop: `1px solid ${N.border}`,
-      padding: collapsed ? '6px 6px' : '6px 8px',
-      display: 'flex',
-      flexDirection: collapsed ? 'column' : 'row',
-      alignItems: 'center',
-      gap: 6,
-    }}>
-      {!collapsed && (
-        <button
-          className="tsf-side-item"
-          style={{
-            flex: 1,
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '6px 8px',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            borderRadius: 4,
-            fontFamily: 'inherit',
-            color: N.text,
-            fontSize: 13,
-            textAlign: 'left',
-            minWidth: 0,
-          }}
-        >
-          <Sparkles size={14} style={{ color: N.textMuted }} />
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Nouvelle discussion
-          </span>
-          <span style={{
-            fontSize: 11, color: N.textFaint,
-            background: '#fff',
-            border: `1px solid ${N.border}`,
-            borderRadius: 3,
-            padding: '0 4px',
-            fontFamily: 'inherit',
-          }}>
-            ⌘O
-          </span>
-        </button>
-      )}
-
-      {/* Collapse / expand toggle */}
-      <button
-        onClick={onToggle}
-        title={pinned ? 'Réduire le menu' : 'Garder le menu ouvert'}
-        aria-pressed={pinned}
-        className="tsf-icon-btn"
-        style={{
-          width: 28, height: 28,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          border: 'none', background: 'transparent', cursor: 'pointer',
-          borderRadius: 4,
-          color: N.textMuted,
-        }}
-      >
-        <PanelLeft size={15} />
-      </button>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// TOP BAR (breadcrumb + last-modif + share)
-// ════════════════════════════════════════════════════════════════════════════
 function TopBar({ period, lastModif, syncedLabel, onShowSidebar, showSidebarToggle }) {
   return (
     <div style={{
