@@ -405,7 +405,7 @@ export default function SharedNavbar({ session, darkMode, setDarkMode, notificat
 
   const openGlobalNotification = (notif) => {
     setGlobalPreview(null);
-    const target = notificationTarget(notif);
+    const target = notificationTarget(notif, apiClient.getUser()?.role);
     if (!notif.read) markNotifsRead([notif.id]);
     if (target) {
       setNotifIslandOpen(false);

@@ -42,6 +42,9 @@ const actionOf = (n) => {
   if (n.type === "board_mention" || n.type === "finance_note_mention") return { target, label: "Voir le commentaire", Icon: MessageSquare };
   if (n.type === "owner_rating_regression") return { target, label: "Voir la météo", Icon: TrendingDown };
   if (CLIENT_NOTIFICATION_TYPES.includes(n.type)) return { target, label: "Voir le client", Icon: User };
+  if (n.type === "pool_lead") return { target, label: "Voir le pool", Icon: FileText };
+  if (n.type === "absence_declared") return { target, label: "Voir les absences", Icon: FileText };
+  if (n.type === "perf_alert") return { target, label: "Voir les KPI", Icon: TrendingDown };
   return { target, label: "Ouvrir", Icon: FileText };
 };
 // Titre ou texte coupé (mesuré, pas deviné à la longueur) : « Lire la suite » affiche tout.
@@ -136,7 +139,7 @@ function dayLabel(key) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export function NotificationsPanel({ items, unreadCount, total, view, onView, onMore, loading, onOpen, onMarkRead, onReadAll, onDismiss, toast, onClose }) {
+export function NotificationsPanel({ items, unreadCount, total, view, onView, onMore, loading, failed, onRetry, onOpen, onMarkRead, onReadAll, onDismiss, toast, onClose }) {
   const reduce = useReducedMotion();
   const [expanded, setExpanded] = useState({});
   const [selecting, setSelecting] = useState(false);
@@ -250,7 +253,14 @@ export function NotificationsPanel({ items, unreadCount, total, view, onView, on
           })}
         </AnimatePresence>
         {!shown.length && loading && <NotificationSkeleton reduce={reduce} />}
-        {!shown.length && !loading && (
+        {!shown.length && !loading && failed && (
+          <div className="sb-notif-empty is-failed" role="alert">
+            <ShieldAlert size={22} aria-hidden="true" />
+            <p>Les notifications n’ont pas pu être chargées.</p>
+            <button type="button" className="sb-notif-retry" onClick={onRetry}>Réessayer</button>
+          </div>
+        )}
+        {!shown.length && !loading && !failed && (
           <motion.div className="sb-notif-empty" initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: EASE, delay: 0.12 }}>
             {view === "unread" ? (

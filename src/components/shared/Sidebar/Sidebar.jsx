@@ -30,7 +30,7 @@
 // `<style>` de chaque page hôte).
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, Home, MessageSquare, Search, Sparkles, PanelLeft } from "lucide-react";
@@ -42,6 +42,8 @@ import apiClient from "../../../services/apiClient";
 import useGlobalNotifications from "./useGlobalNotifications.js";
 import { NotificationsPanel, NotificationsRow } from "./SidebarNotifications.jsx";
 import { panelMemory } from "./panelMemory.js";
+import { myPages } from "../../../navigation/myPages.js";
+import { otherPagesSection } from "../../../navigation/dashboardMenu.jsx";
 import SidebarProfile from "./SidebarProfile.jsx";
 import SidebarAvailability from "./SidebarAvailability.jsx";
 import { usesDashboardOnlyNavbar } from "../../../utils/dashboardAudience.js";
@@ -95,7 +97,7 @@ function buildLayout(sections) {
   };
 }
 
-export default function Sidebar({ width, collapsed, onToggle, sections, activeTab, setActiveTab, C: pageC, darkMode, setDarkMode, headerExtra }) {
+export default function Sidebar({ width, collapsed, onToggle, sections, activeTab, setActiveTab, C: pageC, darkMode, setDarkMode, headerExtra, onSamePageView }) {
   // Les tableaux de bord n'affichent que leurs propres onglets, sans « Mes pages » (dev 10/11/2026 : « mon menu de
   // gauche est hyper long »). « Mes pages » vit sur les pages hors tableau de bord (PageWithSidebar, SheetSidebar).
   // Survol = dépliage automatique (réactif) : si la barre est repliée, la survoler
@@ -121,7 +123,14 @@ export default function Sidebar({ width, collapsed, onToggle, sections, activeTa
   const effWidth = notifOpen ? NOTIF_W : (collapsed && hovered) ? EXPANDED_W : width;
   useEffect(() => {
     if (!notifOpen) return undefined;
-    const onKey = (e) => { if (e.key === "Escape") setNotifOpen(false); };
+    // Échap ferme la liste seulement si la personne y est (ou nulle part) : fermer une fenêtre de la page ne la ferme plus.
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const at = document.activeElement;
+      if (at && at !== document.body && !asideRef.current?.contains(at)) return;
+      focusIntent.current = "bell";
+      setNotifOpen(false);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [notifOpen]);
@@ -145,11 +154,33 @@ export default function Sidebar({ width, collapsed, onToggle, sections, activeTa
   // Chaque ouverture repart sur « Non lues » (dev 21/11/2026).
   const toggleNotifs = () => {
     if (!notifOpen && notifs.view !== "unread") notifs.setView("unread");
+    focusIntent.current = notifOpen ? "bell" : "panel";
     setNotifOpen((o) => !o);
   };
+  // Clavier : à l'ouverture le focus entre dans la liste (onglet choisi), à la fermeture il revient sur la cloche. Pas au
+  // retour de la liste sur une nouvelle page (le focus n'est pas volé).
+  const focusIntent = useRef(null);
+  useEffect(() => {
+    const intent = focusIntent.current;
+    focusIntent.current = null;
+    if (intent === "panel") requestAnimationFrame(() => document.querySelector(".sb-notif-tabs .is-on")?.focus());
+    if (intent === "bell") requestAnimationFrame(() => document.querySelector(".sb-notif-btn")?.focus());
+  }, [notifOpen]);
+  // « Autres pages » des rôles à tableau de bord : repliée, ouverte d'elle-même quand on est sur l'une d'elles.
+  const { pathname } = useLocation();
+  const others = useMemo(() => {
+    const role = apiClient.getUser()?.role;
+    const sec = otherPagesSection(role, myPages(undefined, null), sections);
+    return sec && sec.items.some((i) => i.path === pathname) ? { ...sec, collapsed: false } : sec;
+  }, [sections, pathname]);
   const openNotification = (n, target) => {
     if (!n.read) notifs.markRead([n.id]);
-    if (target) navigate(target);   // la liste reste ouverte sur la notification
+    if (!target) return;
+    // Une vue de la page où l'on est déjà (ex. « Voir le pool » depuis la sheet) : la page change de vue elle-même, car
+    // elle ne relit l'adresse qu'à son ouverture (`onSamePageView`, fourni par le menu des sheets).
+    const url = new URL(target, window.location.origin);
+    if (url.pathname === window.location.pathname && url.searchParams.get("view") && onSamePageView?.(url.searchParams.get("view"))) return;
+    navigate(target);   // la liste reste ouverte sur la notification
   };
   // Mode sombre : l'état de la page (setDarkMode) et la préférence partagée (localStorage + classe dark-mode,
   // que les pages relisent).
@@ -290,8 +321,9 @@ export default function Sidebar({ width, collapsed, onToggle, sections, activeTa
 
       {notifOpen ? (
         <NotificationsPanel items={notifs.items} unreadCount={notifs.unreadCount} total={notifs.total} view={notifs.view}
-          onView={notifs.setView} onMore={notifs.showMore} loading={notifs.loading} onOpen={openNotification}
-          onMarkRead={notifs.markRead} onReadAll={notifs.markAllRead} onDismiss={notifs.dismiss} toast={notifs.toast} onClose={() => setNotifOpen(false)} />
+          onView={notifs.setView} onMore={notifs.showMore} loading={notifs.loading} failed={notifs.failed} onRetry={notifs.retry} onOpen={openNotification}
+          onMarkRead={notifs.markRead} onReadAll={notifs.markAllRead} onDismiss={notifs.dismiss} toast={notifs.toast}
+          onClose={() => { focusIntent.current = "bell"; setNotifOpen(false); }} />
       ) : (
       <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 0' }} className="ceo-side-scroll">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -310,6 +342,11 @@ export default function Sidebar({ width, collapsed, onToggle, sections, activeTa
             ))}
           </SortableContext>
         </DndContext>
+        {others && !renderCollapsed && (
+          <SidebarSection key={others.key} section={others} collapsed={false} activeTab={others.items.find((i) => i.path === pathname)?.id || null}
+            setActiveTab={(id) => { const page = others.items.find((i) => i.id === id); if (page && page.path !== pathname) navigate(page.path); }}
+            C={C} darkMode={darkMode} draggable={false} />
+        )}
       </nav>
       )}
 
@@ -401,7 +438,7 @@ function IconRow({ collapsed, C, onHome }) {
 }
 
 function SidebarSection({ section, collapsed, activeTab, setActiveTab, C, darkMode, draggable = false }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => !section.collapsed);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: 'sec:' + section.key, disabled: !draggable });
   const dragStyle = draggable ? { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1, position: 'relative', zIndex: isDragging ? 50 : undefined } : undefined;
   const handleProps = draggable ? { ...attributes, ...listeners } : {};

@@ -7,6 +7,9 @@ export const HOME_BY_ROLE = {
   head_of_acquisition: "/acquisition-director",
   hr: "/ceo", // RH : les pages de la direction financière, en lecture seule (06/11/2026)
   customer_success_manager: "/ceo/leaderboard",
+  // Audit du 22/11/2026 : la facturation et le cabinet arrivaient sur le classement interne des ventes.
+  finance_team: "/tracking-finance",
+  optilex: "/optilex-board",
 };
 
 export const homeRouteFor = (role) => HOME_BY_ROLE[role] || "/";

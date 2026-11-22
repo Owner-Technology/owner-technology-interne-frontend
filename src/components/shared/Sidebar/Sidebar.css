@@ -139,6 +139,12 @@
 .sb-notif-item.is-fresh { animation: sbFresh 2.4s cubic-bezier(.22, 1, .36, 1); }
 @keyframes sbFresh { 0%, 30% { background: rgba(34,163,90,.10); } 100% { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .sb-notif-skel-lines i, .sb-notif-item.is-fresh { animation: none; } }
+.sb-notif-retry { margin-top: 4px; padding: 6px 14px; border: 0; border-radius: 999px; background: var(--sb-text); color: var(--sb-bg); font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: transform .15s; }
+.sb-notif-retry:active { transform: scale(.97); }
+/* La corbeille reste visible sur écran tactile (pas de survol) ; le point « Marquer comme lue » a un focus visible. */
+@media (hover: none) { .sb-notif-del { opacity: 1; } }
+.sb-notif-dot:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
+.sb-notif-tabs button:focus-visible, .sb-notif-btn:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
 .sb-notif-empty .sb-notif-done { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(34,163,90,.12); color: #22a35a; }
 @media (prefers-reduced-motion: reduce) { .sb-notif-bell.is-ringing svg, .sb-notif-panel, .sb-notif-body p.is-open { animation: none; } .sb-notif-del:active { transform: none; } }
 

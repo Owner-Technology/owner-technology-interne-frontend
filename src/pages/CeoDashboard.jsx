@@ -3,8 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import apiClient from "../services/apiClient";
-import { getVisibleSections, setNavScope } from "../utils/sidebarPermissions";
-import { withoutHiddenTabs } from "../utils/hiddenPages";
+import { setNavScope } from "../utils/sidebarPermissions";
 import { isReadOnlyViewer } from "../utils/readOnlyRoles";
 import Sidebar from "../components/shared/Sidebar";
 // Onglet « Équipe Sales » : même page que /ceo/sales-team (components/equipe/), chargée à l'ouverture de l'onglet.
@@ -27,7 +26,7 @@ import { getColors } from '../utils/ceoColors.js';
 export { getColors };
 
 // ── SIDEBAR : la liste vit dans navigation/dashboardMenu.jsx (partagée avec les pages hors tableau de bord) ──
-import { SIDEBAR_SECTIONS, DASHBOARD_TAB_ROUTES } from "../navigation/dashboardMenu.jsx";
+import { SIDEBAR_SECTIONS, DASHBOARD_TAB_ROUTES, dashboardMenuSections } from "../navigation/dashboardMenu.jsx";
 export { SIDEBAR_SECTIONS };
 
 // Onglets qui sont des routes à part entière : navigation/dashboardMenu.jsx (DASHBOARD_TAB_ROUTES).
@@ -185,12 +184,9 @@ export default function CeoDashboard() {
   const [savingPeriod, setSavingPeriod] = useState(null);
   const [objectiveError, setObjectiveError] = useState(null);
   const canEditObjectives = user?.role === 'ceo' || user?.role === 'admin' || user?.role === 'finance_director';
-  // Barre latérale : les rôles en lecture seule (RH) ont celle de la direction financière, onglets
-  // réservés retirés (sidebarPermissions) ; les autres rôles gardent la barre complète, moins les pages retirées des menus.
-  const sidebarSections = useMemo(
-    () => (isReadOnlyViewer(user?.role) ? getVisibleSections(SIDEBAR_SECTIONS, user.role) : withoutHiddenTabs(SIDEBAR_SECTIONS, user?.role)),
-    [user],
-  );
+  // Barre latérale : la même que sur toutes les vues /ceo/* (audit du 22/11/2026 : la direction financière voyait ici une
+  // barre non filtrée, dont 6 onglets menaient à la connexion). Identique pour l'admin et le CEO.
+  const sidebarSections = useMemo(() => dashboardMenuSections(user?.role), [user]);
   const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
   const rollingMonths = useMemo(() => {
     const now = new Date();

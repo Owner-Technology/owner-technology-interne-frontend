@@ -17,15 +17,21 @@ export const PAGE = 30;
 export const UNDO_MS = 4500;
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 const byDate = (a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""));
+// Dernière liste connue, gardée d'une page à l'autre (audit du 22/11/2026) : le menu remonte à chaque page et repart de
+// là, au lieu d'une liste vide qui affichait « Tout est lu. » le temps du chargement.
+const cache = { key: null, items: [], unread: 0, total: 0 };
 
 export default function useGlobalNotifications() {
-  const [items, setItems] = useState([]);
+  const sameAsCache = cache.key === `${lastView}|${PAGE}`;
+  const [items, setItems] = useState(() => (sameAsCache ? cache.items : []));
   // Compteurs du serveur : toutes les non lues visibles, et combien la liste demandée en contient en tout.
-  const [unread, setUnread] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [unread, setUnread] = useState(() => cache.unread);
+  const [total, setTotal] = useState(() => (sameAsCache ? cache.total : 0));
   const [view, setView] = useState(() => lastView);   // "all" | "unread" — la liste s'ouvre sur les non lues (dev 21/11/2026)
   const [limit, setLimit] = useState(PAGE);
-  const [loading, setLoading] = useState(false);
+  // En chargement tant qu'aucune liste n'est connue pour cet onglet ; `failed` : le premier chargement a échoué.
+  const [loading, setLoading] = useState(() => !sameAsCache);
+  const [failed, setFailed] = useState(false);
   const alive = useRef(true);
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -68,9 +74,17 @@ export default function useGlobalNotifications() {
       setItems(shown.list);
       setUnread(shown.unreadCount);
       setTotal(Number.isFinite(data.total_count) ? data.total_count : data.notifications.length);
-    } catch { /* réseau : on garde la liste affichée, le prochain passage réessaie */ }
+      setFailed(false);
+    } catch {
+      // Réseau : la liste affichée reste ; sans liste du tout, l'échec se dit (« Réessayer ») au lieu de « Tout est lu. ».
+      if (alive.current && !itemsRef.current.length) setFailed(true);
+    }
     finally { if (alive.current) setLoading(false); }
   }, [limit, view, overlay]);
+
+  // La liste du moment, pour la page suivante.
+  useEffect(() => { Object.assign(cache, { key: `${view}|${limit}`, items, unread, total }); }, [view, limit, items, unread, total]);
+  const retry = useCallback(() => { setFailed(false); setLoading(true); load(); }, [load]);
 
   useEffect(() => {
     alive.current = true;
@@ -203,5 +217,5 @@ export default function useGlobalNotifications() {
     return true;
   }, [fail, offerUndo]);
 
-  return { items, unreadCount: unread, total, view, setView: changeView, showMore, loading, markRead, markAllRead, dismiss, toast };
+  return { items, unreadCount: unread, total, view, setView: changeView, showMore, loading, failed, retry, markRead, markAllRead, dismiss, toast };
 }

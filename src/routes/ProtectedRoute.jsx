@@ -1,7 +1,17 @@
 // src/routes/ProtectedRoute.jsx - NOUVELLE VERSION POUR JWT
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import apiClient from '../services/apiClient';
+import { homeRouteFor } from '../navigation/home.js';
+
+// Audit du 22/11/2026 :
+// - Session vérifiée il y a moins d'une minute : la page s'ouvre sans nouvel aller-retour au serveur (avant, chaque
+//   changement de page affichait « Chargement... » en plein écran, notamment en ouvrant une notification). Le serveur
+//   reste juge de chaque appel de la page.
+// - Page refusée à une personne connectée : retour à sa page d'arrivée, plus à l'écran de connexion (qui faisait croire
+//   à une déconnexion).
+const VERIFIED_FOR_MS = 60000;
+const verified = { at: 0, token: null };
 
 // Mapping des rôles vers les pages autorisées
 const ROLE_PERMISSIONS = {
@@ -12,50 +22,60 @@ const ROLE_PERMISSIONS = {
   finance: ['/', '/reports'],
 };
 
-export default function ProtectedRoute({ children, allowedRoles = null }) {
-  const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
-  const [connectionError, setConnectionError] = useState(false);
+const roleAllowed = (user, allowedRoles) => !allowedRoles || allowedRoles.includes(user.role) || user.role === 'admin';
+const recentlyVerified = () => {
+  const token = apiClient.getToken();
+  return !!token && verified.token === token && Date.now() - verified.at < VERIFIED_FOR_MS;
+};
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+// Toutes les routes passent par ce composant au même endroit de l'arbre : React le garde d'une page à l'autre. Le rôle est
+// donc relu à chaque rendu (jamais un état hérité de la page précédente), et la session revérifiée à chaque changement
+// de page si la dernière vérification a plus d'une minute.
+export default function ProtectedRoute({ children, allowedRoles = null }) {
+  const { pathname } = useLocation();
+  const token = apiClient.getToken();
+  const user = apiClient.getUser();
+  // checking | ok | error | out
+  const [status, setStatus] = useState(() => (token && user && recentlyVerified() ? 'ok' : 'checking'));
 
   const checkAuth = async () => {
-    setLoading(true);
-    setConnectionError(false);
-    const token = apiClient.getToken();
-    const user = apiClient.getUser();
-
-    if (!token || !user) {
-      setAllowed(false);
-      setLoading(false);
-      return;
-    }
-
-    // Vérifier si le rôle est autorisé (si spécifié)
-    if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== 'admin') {
-      setAllowed(false);
-      setLoading(false);
-      return;
-    }
-
+    if (!apiClient.getToken() || !apiClient.getUser()) { setStatus('out'); return; }
+    if (recentlyVerified()) { setStatus('ok'); return; }
+    setStatus('checking');
     // getMe renouvelle la session si le jeton d'accès a expiré.
     try {
       await apiClient.getMe();
-      setAllowed(true);
+      verified.at = Date.now();
+      verified.token = apiClient.getToken();
+      setStatus('ok');
     } catch (e) {
       console.error("getMe failed:", e);
-      setAllowed(false);
       // Une panne réseau/serveur n'est pas une déconnexion. Garder la session
       // et permettre de réessayer, sans afficher de page protégée non vérifiée.
-      setConnectionError(e.status !== 401 && e.status !== 403);
+      setStatus(e.status !== 401 && e.status !== 403 ? 'error' : 'out');
     }
-
-    setLoading(false);
   };
 
-  if (loading) {
+  useEffect(() => {
+    checkAuth();
+  }, [pathname]);
+
+  if (!token || !user || status === 'out') {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!roleAllowed(user, allowedRoles)) {
+    const home = homeRouteFor(user.role);
+    if (home !== pathname) return <Navigate to={home} replace state={{ refusedFrom: pathname }} />;
+    return (
+      <div role="alert" style={{ padding: '3rem', textAlign: 'center' }}>
+        <p>Cette page n’est pas ouverte à votre compte.</p>
+        <a href="/login">Se reconnecter avec un autre compte</a>
+      </div>
+    );
+  }
+
+  if (status === 'checking') {
     const isDark = document.body.classList.contains('dark-mode') ||
                    document.documentElement.classList.contains('dark-mode');
     return (
@@ -72,17 +92,13 @@ export default function ProtectedRoute({ children, allowedRoles = null }) {
     );
   }
 
-  if (connectionError) {
+  if (status === 'error') {
     return (
       <div role="alert" style={{ padding: '3rem', textAlign: 'center' }}>
         <p>Connexion momentanément indisponible. Votre session est conservée.</p>
         <button type="button" onClick={checkAuth}>Réessayer</button>
       </div>
     );
-  }
-
-  if (!allowed) {
-    return <Navigate to="/login" replace />;
   }
 
   return children;

@@ -34,7 +34,7 @@ export const MY_PAGES = [
   { id: "page:dialer", label: "Power Dialer", path: "/dialer", icon: I(MonitorDot), visible: roleIn("admin", "ceo", "finance_director", "finance_team") },
   { id: "page:optilex-board", tab: "optilex_board", label: "Board Owner", path: "/optilex-board", icon: I(Building2), visible: roleIn("admin", "optilex", "finance_team") },
   { id: "page:leads-dashboard", tab: "leads_dashboard", label: "Leads", path: "/ceo/leads", icon: I(Inbox), visible: roleIn("admin", "ceo", "head_of_acquisition") },
-  { id: "page:meta-ads", tab: "meta_ads", label: "Meta Ads", path: "/meta-ads", icon: I(BarChart3), visible: roleIn("ceo", "admin", "finance_director", "acquisition_director", "head_of_acquisition", "marketing", "hr") },
+  { id: "page:meta-ads", tab: "meta_ads", label: "Meta Ads", path: "/ceo/meta-ads", icon: I(BarChart3), visible: roleIn("ceo", "admin", "finance_director", "acquisition_director", "head_of_acquisition", "marketing", "hr") },
   { id: "page:variables", tab: "variables", label: "Calcul des variables", path: "/ceo/variables", icon: I(Calculator), visible: roleIn("admin", "ceo") },
   { id: "page:variables-setters", label: "Contribution des setters", path: "/variables/setters", icon: I(HeartHandshake), visible: roleIn("admin", "ceo") },
   { id: "page:rh", label: "Dashboard RH", path: "/rh-dashboard", icon: I(UsersRound), visible: roleIn("admin", "ceo", "hr") },

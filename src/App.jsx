@@ -51,7 +51,7 @@ const Marketing = lazy(() => import("./pages/Marketing/index.jsx"));
 const FunnelLeads = lazy(() => import("./pages/FunnelLeads/index.jsx"));
 const Dialer = lazy(() => import("./pages/Dialer/index.jsx"));
 const ContractSplitMonitoring = lazy(() => import("./pages/ContractSplitMonitoring.jsx"));
-const OptilexBoard = lazy(() => import("./pages/OptilexBoard.jsx"));
+const OptilexBoardPage = lazy(() => import("./pages/OptilexBoardPage.jsx"));
 const MetaAds = lazy(() => import("./pages/MetaAds/index.jsx"));
 const CeoMetaAdsView = lazy(() => import("./pages/CeoMetaAdsView.jsx"));
 const CeoSmallLeadsView = lazy(() => import("./pages/CeoSmallLeadsView.jsx"));
@@ -361,7 +361,7 @@ function App() {
           path="/optilex-board"
           element={
             <ProtectedRoute allowedRoles={['admin', 'optilex', 'finance_team']}>
-              <OptilexBoard />
+              <OptilexBoardPage />
             </ProtectedRoute>
           }
         />
