@@ -7,7 +7,7 @@ export const OUTCOME_LABELS = {
   held: 'Honoré',
   no_show: 'No-show',
   to_qualify: 'À qualifier',
-  removed: 'R2 retiré',
+  removed: 'RDV retiré',
 };
 
 export const OUTCOME_HINTS = {
@@ -15,7 +15,7 @@ export const OUTCOME_HINTS = {
   held: 'Le commercial a indiqué que le rendez-vous a eu lieu.',
   no_show: 'Le prospect ne s\'est pas présenté.',
   to_qualify: 'Rendez-vous passé : le commercial n\'a pas encore saisi le résultat.',
-  removed: 'Le commercial a retiré le R2 de la fiche, sans résultat.',
+  removed: 'Le rendez-vous a été retiré de la fiche, sans résultat.',
 };
 
 export const OUTCOME_TONES = {

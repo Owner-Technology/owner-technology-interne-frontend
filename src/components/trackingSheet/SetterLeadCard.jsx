@@ -5,7 +5,7 @@
 // Tout ce dont la carte dépend passe par ses props ; les fonctions de la sheet arrivent dans `actions` (identité
 // stable, voir useStableActions), ses constantes et petits composants dans `kit`.
 import React from 'react';
-import { awaitsSales } from '../../utils/setterJourney.js';
+import { awaitsSales, isOldWebinar } from '../../utils/setterJourney.js';
 import { originDisplay } from '../../utils/sectors';
 import mynoteIcon from '../../assets/mynote.svg';
 import meetIcon from '../../assets/meet.png';
@@ -154,7 +154,7 @@ function SetterLeadCard({
             // Ancien webinaire sans commercial (dev 12/11/2026) : l'origine à la place du prénom du sales.
             const waiting = awaitsSales(lead);
             const ownerColor = waiting ? '#8b5cf6' : getSalesOwnerColor(lead.assigned_to);
-            const firstName = waiting ? 'Ancien webinaire' : (lead.assigned_to_name?.split(' ')[0] || '—');
+            const firstName = waiting ? (isOldWebinar(lead) ? 'Ancien webinaire' : 'Pré-webinaire') : (lead.assigned_to_name?.split(' ')[0] || '—');
             return (
               <span style={{
                 display: 'inline-flex', alignItems: 'center',
@@ -166,7 +166,7 @@ function SetterLeadCard({
                 flexShrink: 0,
                 letterSpacing: '-0.005em',
               }}
-                title={waiting ? 'Ancien webinaire : sans commercial, affecté ensuite dans Gestion des leads' : (lead.assigned_to_name || '')}
+                title={waiting ? `${firstName} : sans commercial, affecté ensuite dans Gestion des leads` : (lead.assigned_to_name || '')}
               >
                 {firstName}
               </span>

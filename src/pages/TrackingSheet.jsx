@@ -21,6 +21,7 @@ import InternalCalendar from "../components/calendar/InternalCalendar";
 import {hasGuidedSalesJourney} from '../utils/guidedSalesJourney';
 import FrenchDateInput from '../components/salesJourney/FrenchDateInput';
 import {parisToday,parisParts,minuteOptions} from '../utils/parisDates';
+import { isSetterLinkR1 } from '../utils/setterJourney.js';
 import React, { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback, useDeferredValue, startTransition } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -1543,6 +1544,8 @@ export default function TrackingSheet() {
   const [r2WebinaireExpanded, setR2WebinaireExpanded] = useState(true);
   // R1 tab — "R1 Webinaire" container (anciens webinaires, dev 12/11/2026) : état plié/déplié distinct de R2.
   const [r1WebinaireExpanded, setR1WebinaireExpanded] = useState(true);
+  // R1 tab — "R1 Pré-webinaire" container (R1 pris sur le lien d'un setter, dev 22/11/2026).
+  const [r1PreWebinaireExpanded, setR1PreWebinaireExpanded] = useState(true);
   // Onglet Signés — conteneurs par mois de signature : { [monthKey]: bool } override
   // du défaut (mois en cours ouvert, autres mois repliés).
   const [signedMonthOpen, setSignedMonthOpen] = useState({});
@@ -5380,9 +5383,13 @@ export default function TrackingSheet() {
             // "R2 Webinaire" ; le lead y reste tant que son R1 n'est pas qualifié, à la place de "Traité par …".
             // L'origine ne commence pas par "webinaire" : ces leads ne vont pas dans "R2 Webinaire".
             const isR1Webinaire = (l) => (l.origin || '').trim().toLowerCase() === 'anciens webinaires' && (!l.r1_result || l.r1_result === 'rescheduled');
-            const isSetApart = (l) => isSetterPlacedUnqualified(l) || isR1Webinaire(l);
+            // R1 pris par un inscrit sur le lien d'un setter (dev 22/11/2026) : affecté à la main, conteneur
+            // "R1 Pré-webinaire" à la place de "Traité par …", tant que son R1 n'est pas qualifié.
+            const isR1PreWebinaire = (l) => isSetterLinkR1(l) && (!l.r1_result || l.r1_result === 'rescheduled');
+            const isSetApart = (l) => isSetterPlacedUnqualified(l) || isR1Webinaire(l) || isR1PreWebinaire(l);
             const r1Webinaire  = isR1Tab ? filteredLeads.filter(isR1Webinaire) : [];
-            const r1SetterPlaced = isR1Tab ? filteredLeads.filter(l => isSetterPlacedUnqualified(l) && !isR1Webinaire(l)) : [];
+            const r1PreWebinaire = isR1Tab ? filteredLeads.filter(l => isR1PreWebinaire(l) && !isR1Webinaire(l)) : [];
+            const r1SetterPlaced = isR1Tab ? filteredLeads.filter(l => isSetterPlacedUnqualified(l) && !isR1Webinaire(l) && !isR1PreWebinaire(l)) : [];
             const r1Landing    = isR1Tab ? filteredLeads.filter(l => !isSetApart(l) && (!l.r1_result || l.r1_result === 'rescheduled') && !isDatePast(l.r1) && isLandingLead(l)) : [];
             const r1Scheduled  = isR1Tab ? filteredLeads.filter(l => !isSetApart(l) && (!l.r1_result || l.r1_result === 'rescheduled') && !isDatePast(l.r1) && !isLandingLead(l)) : [];
             const r1Pending    = isR1Tab ? filteredLeads.filter(l => !isSetApart(l) && (l.r1_result === 'no_show' || l.r1_result === 'to_reschedule' || ((!l.r1_result || l.r1_result === 'rescheduled') && isDatePast(l.r1)))) : [];
@@ -5436,6 +5443,12 @@ export default function TrackingSheet() {
               // setter (dev 12/11/2026). Même couleur et même mécanique que "R2 Webinaire". Affiché si non vide.
               ...(r1Webinaire.length > 0 ? [{
                 key: 'webinaire', leads: r1Webinaire, label: 'R1 Webinaire',
+                color: '#8b5cf6',
+              }] : []),
+              // Container "R1 Pré-webinaire" : R1 pris par l'inscrit sur le lien de réservation d'un setter avant le live
+              // (dev 22/11/2026), affecté à la main. Même couleur et même mécanique que "R1 Webinaire".
+              ...(r1PreWebinaire.length > 0 ? [{
+                key: 'pre_webinaire', leads: r1PreWebinaire, label: 'R1 Pré-webinaire',
                 color: '#8b5cf6',
               }] : []),
               // Container "R1 Landing" en TÊTE : leads Broad LP, RDV R1 pris directement
@@ -5543,10 +5556,11 @@ export default function TrackingSheet() {
                           const isSetterPlacedGrp = grp.key === 'setter_placed';
                           const isWebinaireGrp = grp.key === 'webinaire';
                           const isLandingGrp = grp.key === 'landing';
+                          const isPreWebinaireGrp = grp.key === 'pre_webinaire';
                           // Conteneurs collapsibles (mirror du pattern "Annulé") :
-                          // cancelled + setter_placed + webinaire + landing → toggle œil/chevron au click.
-                          const isCollapsible = isCancelled || isSetterPlacedGrp || isWebinaireGrp || isLandingGrp;
-                          const isExpanded = isCancelled
+                          // cancelled + setter_placed + webinaire + pré-webinaire + landing → toggle œil/chevron au click.
+                          const isCollapsible = isCancelled || isSetterPlacedGrp || isWebinaireGrp || isLandingGrp || isPreWebinaireGrp;
+                          const isExpanded = isPreWebinaireGrp ? r1PreWebinaireExpanded : isCancelled
                             ? cancelledExpanded
                             : isSetterPlacedGrp
                               ? setterPlacedExpanded
@@ -5555,7 +5569,7 @@ export default function TrackingSheet() {
                                 : isLandingGrp
                                   ? (isR1Tab ? r1LandingExpanded : r2LandingExpanded)
                                   : true;
-                          const toggleCollapse = isCancelled
+                          const toggleCollapse = isPreWebinaireGrp ? () => setR1PreWebinaireExpanded(prev => !prev) : isCancelled
                             ? () => setCancelledExpanded(prev => !prev)
                             : isSetterPlacedGrp
                               ? () => setSetterPlacedExpanded(prev => !prev)

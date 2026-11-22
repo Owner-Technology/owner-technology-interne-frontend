@@ -141,6 +141,18 @@ test('an old webinar lead waits for a sales only under that exact origin', async
  assert.equal(awaitsSales({ origin: 'Anciens webinaires', assigned_to: 'a@example.com' }), false);
  assert.equal(awaitsSales({ origin: 'setter', assigned_to: null }), false);
 });
+// R1 pris sur le lien d'un setter (dev 22/11/2026) : il attend son commercial comme un ancien webinaire.
+test('a setter link R1 waits for its sales, a webinar R2 does not', async () => {
+ const { isSetterLinkR1, awaitsSales } = await import('./setterJourney.js');
+ const lead = { origin: 'Webinaire Lien', r1: '2026-11-25T10:00:00', assigned_to: null };
+ assert.equal(isSetterLinkR1(lead), true);
+ assert.equal(awaitsSales(lead), true);
+ assert.equal(awaitsSales({ ...lead, assigned_to: 'a@example.com' }), false);
+ assert.equal(isSetterLinkR1({ ...lead, r1: null, r1_date: '2026-11-25T10:00:00' }), true);
+ assert.equal(isSetterLinkR1({ ...lead, r2: '2026-11-27T10:00:00' }), false);
+ assert.equal(isSetterLinkR1({ origin: 'Webinaire 11/24', r2: '2026-11-25T10:00:00' }), false);
+ assert.equal(isSetterLinkR1({ ...lead, origin: 'Broad LP' }), false);
+});
 test('a booking without a sales says where the assignment happens', async () => {
  const { bookedMessage } = await import('./setterJourney.js');
  assert.equal(bookedMessage('r1', { manual_assignment: true, sales_email: null }), 'R1 placé. L’affectation à un commercial se fait dans Gestion des leads.');

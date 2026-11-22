@@ -88,7 +88,7 @@ export default function SetterWebinarRdv({ C, darkMode, data, loading, error, on
                         {r.company && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 2 }}>{r.company}</div>}
                       </td>
                       <td style={{ ...cell, whiteSpace: 'nowrap' }}>
-                        <div style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtRdv(r.rdv_at)}</div>
+                        <div style={{ fontVariantNumeric: 'tabular-nums' }}>{r.kind ? `${r.kind.toUpperCase()} · ` : ''}{fmtRdv(r.rdv_at)}</div>
                         {r.booked_at && <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>Réservé le {fmtBooked(r.booked_at)}</div>}
                       </td>
                       <td style={cell}>

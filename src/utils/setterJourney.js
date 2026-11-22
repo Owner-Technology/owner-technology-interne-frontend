@@ -4,7 +4,11 @@ export const setterOutcomes = ['r1', 'r2', 'voicemail', 'callback', 'disqualify'
 // du lendemain ; l'affectation se fait ensuite à la main dans Gestion des leads. Le serveur décide (old_webinar) : ces
 // fonctions ne servent qu'aux libellés et à l'accès au report.
 export const isOldWebinar = lead => (lead?.origin || '').trim().toLowerCase() === 'anciens webinaires';
-export const awaitsSales = lead => isOldWebinar(lead) && !(lead?.assigned_to || '').trim();
+// R1 pris par un inscrit sur le lien de réservation d'un setter (dev 22/11/2026) : origine « Webinaire … », un R1, pas de
+// R2 ; sans commercial, il attend son affectation comme un ancien webinaire (même règle côté serveur : old_webinar).
+export const isSetterLinkR1 = lead => (lead?.origin || '').trim().toLowerCase().startsWith('webinaire')
+  && Boolean(lead?.r1 || lead?.r1_date) && !(lead?.r2 || lead?.r2_date);
+export const awaitsSales = lead => (isOldWebinar(lead) || isSetterLinkR1(lead)) && !(lead?.assigned_to || '').trim();
 // Disqualifier en un clic (dev 12/11/2026 : « il faut qu'ils puissent facilement les archiver ») : les raisons les plus
 // fréquentes remplissent le champ, qui reste modifiable. La fiche disqualifiée quitte la sheet du setter.
 export const disqualifyReasons = ['Pas intéressé', 'Ne veut plus être appelé', 'Faux numéro', 'Injoignable', 'Hors cible', 'Déjà client'];
