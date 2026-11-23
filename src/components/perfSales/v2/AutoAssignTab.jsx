@@ -7,6 +7,7 @@ import { PeriodBar } from './Reactivity';
 import { fr } from './model';
 import { Face, Legend, Lollipops, TickBreakdown } from './autoAssignParts';
 import { useAutoAssignData } from './autoAssignData';
+import { inkFor, mixHex, owner } from './ink';
 
 // Onglet Auto-affectation (dev 14/10/2026 : « l'auto-affectation setter et l'auto-affectation sales, deux types, qu'on
 // puisse sélectionner une période ; propre, clean, dans le même style »). Il garde le moteur qui distribue les leads ADS aux
@@ -15,7 +16,7 @@ import { useAutoAssignData } from './autoAssignData';
 const SALES_PARTS = [['assigned', 'Affectés', 'var(--ps2-r1)'], ['excluded_small', '< 100 k€', 'var(--ps2-r3)'], ['duplicate_skipped', 'Doublons', 'var(--ps2-r4)'], ['non_classifiable', 'Sans effectif', 'var(--ps2-r2)']];
 const CAT_COLORS = ['var(--ps2-r5)', 'var(--ps2-r4)', 'var(--ps2-r3)', 'var(--ps2-r2)', 'var(--ps2-r1)'];
 
-export default function AutoAssignTab({ month, avatarFor }) {
+export default function AutoAssignTab({ month, avatarFor, dark = false }) {
   const { period, setPeriod, state, analytics } = useAutoAssignData(month);
   const data = state.data;
   return (
@@ -28,7 +29,7 @@ export default function AutoAssignTab({ month, avatarFor }) {
         <div className="ps2-span-12">
           <AnimatePresence mode="wait" initial={false}>
             <Motion.div key={`sales-${data.start}-${data.end}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3, ease: EASE }}>
-              <SalesEngine d={{ ...data.sales, engine: data.engine }} avatarFor={avatarFor} />
+              <SalesEngine d={{ ...data.sales, engine: data.engine }} avatarFor={avatarFor} dark={dark} />
             </Motion.div>
           </AnimatePresence>
         </div>
@@ -37,7 +38,7 @@ export default function AutoAssignTab({ month, avatarFor }) {
   );
 }
 
-function SalesEngine({ d, avatarFor }) {
+function SalesEngine({ d, avatarFor, dark }) {
   const on = useRevealed();
   const t = d.totals;
   const cats = Object.entries(d.categories || {});
@@ -85,7 +86,8 @@ function SalesEngine({ d, avatarFor }) {
                     {fates[p.name]?.pool > 0 && <span className="ps2-lost" title="Leads partis au pool">−{fates[p.name].pool} pool</span>}</span></td>
                   {cats.map(([c]) => {
                     const v = p.cats[c] || 0;
-                    return <td key={c}>{v ? <span className={`ps2-cb-chip${v / max > 0.5 ? ' is-strong' : ''}`} style={{ '--c': 'var(--navy)', '--a': `${Math.round(10 + 80 * (v / max))}%` }}>{v}</span>
+                    const a = Math.round(10 + 80 * (v / max));   // anthracite (--navy) sur la carte, l'encre suit le fond réel
+                    return <td key={c}>{v ? <span className="ps2-cb-chip" style={{ '--c': 'var(--navy)', '--a': `${a}%`, color: inkFor(mixHex(owner(dark).navy, a / 100, owner(dark).card)) }}>{v}</span>
                       : <span className="ps2-muted">·</span>}</td>;
                   })}
                   <td className="is-key" style={{ textAlign: 'left' }}><span className="ps2-ctable-sales"><span className="ps2-ctable-bar" style={{ width: 110 }}><Motion.i initial={{ width: 0 }}

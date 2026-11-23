@@ -9,7 +9,9 @@ import { isPerformanceSalesPerson } from '../../../utils/performanceSales.js';
 // déclarées du mois : tranches d'effectif et mode de paiement DÉCLARÉS sur la fiche client (n°806 en annuel), canal de
 // chaque vente selon la règle de la page (source du lead vendu), et le détail par commercial.
 const BRACKETS = [['1-2', '1-2 salariés'], ['3-5', '3-5'], ['6-10', '6-10'], ['11-19', '11-19'], ['20+', '20 et plus'], ['autre', 'Non renseigné']];
-const BRACKET_COLORS = ['var(--ps2-r5)', 'var(--ps2-r4)', 'var(--ps2-r3)', 'var(--ps2-r2)', 'var(--ps2-r1)', '#dedad3'];
+// Tranches : cinq pas réguliers de la rampe (r3 → r1, demi-pas compris), tous lisibles sur la piste en clair et en sombre ;
+// « Non renseigné » garde seul le gris le plus pâle (r4), à part de la rampe.
+const BRACKET_COLORS = ['var(--ps2-r3)', 'var(--ps2-r2h)', 'var(--ps2-r2)', 'var(--ps2-r1h)', 'var(--ps2-r1)', 'var(--ps2-r4)'];
 
 export default function VentesTab({ breakdown, model, onOpen }) {
   if (!breakdown) return <div className="ps2-loading" aria-label="Chargement"><i /><i /><i /><i /></div>;

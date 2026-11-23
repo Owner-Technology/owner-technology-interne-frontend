@@ -26,6 +26,9 @@ const ROLE_SECTIONS = {
   // sections, onglets réservés retirés par ITEM_ROLE_GATE, en lecture seule (utils/readOnlyRoles.js).
   // CSM (Vincent) : Leaderboard (page d'arrivée) + Funnel Leads + Board Owner/Opti'Lex.
   customer_success_manager: new Set(["acquisition", "produit"]),
+  // Marketing (audit du 23/11/2026) : Meta Ads lui est ouvert depuis le 22/11 ; le menu de cette page lui montrait tout le
+  // tableau de bord, dont « Dashboard » qui menait à la connexion et des onglets qui renvoyaient à l'accueil.
+  marketing: new Set(["acquisition"]),
 };
 
 // Filtre au niveau ONGLET (optionnel) : certains rôles n'ont qu'une partie des
@@ -38,6 +41,10 @@ const ROLE_ITEMS = {
   customer_success_manager: {
     acquisition: new Set(["leaderboard", "funnel_leads", "bot_ia"]),
     produit: new Set(["optilex_board"]),
+  },
+  // Les pages que leur garde ouvre au marketing (CeoWebinarView, CeoMetaAdsView, CeoCampaignsView).
+  marketing: {
+    acquisition: new Set(["webinar", "meta_ads", "campaigns"]),
   },
 };
 
@@ -99,7 +106,7 @@ export function setNavScope(scope) {
 /**
  * Retourne la liste des sections autorisées pour ce rôle (ou le navScope
  * actif s'il est posé). Si aucune restriction, on retourne la liste complète
- * (admin / ceo / marketing voient tout).
+ * (admin et ceo voient tout ; la direction financière et les RH, tout sauf les onglets réservés).
  */
 export function getVisibleSections(allSections, role) {
   let effective = role;

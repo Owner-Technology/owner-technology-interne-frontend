@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion as Motion } from 'framer-motion';
 import { EASE, useRevealed } from '../motion';
 import { fr } from './model';
+import { inkFor } from './ink';
 
 // Présence par jour et heure (dev 14/10/2026 : « tu peux faire mieux, même le code couleur »). Un rond par créneau :
 // sa surface dit combien de RDV y sont passés, sa couleur leur présence, sur une seule échelle aux couleurs Owner
@@ -18,11 +19,6 @@ export function presenceColor(rate) {
   const k = (t - a) / (b - a);
   const c = ca.map((v, j) => Math.round(v + (cb[j] - v) * k));
   return `rgb(${c.join(',')})`;
-}
-
-// Couleur du texte d'une case : clair sur les teintes foncées.
-function inkFor(rate) {
-  return rate != null && (rate < 0.25 || rate > 0.72) ? '#fff' : 'var(--ink)';
 }
 
 // `untimed` : RDV passés sans heure saisie (00:00), sans case dans la grille mais comptés dans la présence du titre, pour
@@ -77,7 +73,7 @@ export default function PresenceGrid({ cells = [], title, untimed = null }) {
                     stroke={hover?.d === d && hover?.h === h ? 'var(--ink)' : 'none'} strokeWidth="2"
                     initial={{ opacity: 0, scale: 0.6 }} animate={on ? { opacity: 1, scale: 1 } : {}} style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
                     transition={{ duration: 0.45, ease: EASE, delay: on ? 0.05 + (i + j) * 0.03 : 0 }} />
-                  {v && <Motion.text x={x + (S - G) / 2} y={y + (S - G) / 2 + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={inkFor(r)}
+                  {v && <Motion.text x={x + (S - G) / 2} y={y + (S - G) / 2 + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={inkFor(presenceColor(r)) || "var(--ink)"}
                     initial={{ opacity: 0 }} animate={{ opacity: on ? 1 : 0 }} transition={{ delay: on ? 0.35 + (i + j) * 0.03 : 0 }} pointerEvents="none">{Math.round(r * 100)}</Motion.text>}
                 </g>
               );

@@ -2,6 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { EASE } from '../motion';
 import { AD_SOURCES, SOURCES, fr } from './model';
+import { inkFor } from './ink';
 
 // Filtre par canal d'acquisition, puis par publicité pour les canaux ADS (dev 15/10/2026 : « filtrer par canaux
 // d'acquisition, voir quels canaux font le plus de nos shows » ; « parmi les ads, filtrer par pub : Général, interne… »).
@@ -12,6 +13,7 @@ export default function ChannelFilter({ model, value, onChange, steps, countStep
   const ads = withAds && AD_SOURCES.includes(value.source)
     ? (model?.ads?.[value.source] || []).filter((a) => steps.some((st) => a.steps?.[st])) : [];
   const color = SOURCES.find((s) => s.key === value.source)?.color;
+  const pillInk = color ? inkFor(color) : undefined;   // pub choisie : texte sur la pastille pleine teinte du canal
   return (
     <div className="ps2-cfilter">
       <div className="ps2-picker" role="radiogroup" aria-label="Canal d’acquisition" style={{ marginTop: 0 }}>
@@ -33,7 +35,7 @@ export default function ChannelFilter({ model, value, onChange, steps, countStep
             </svg>
             {[{ key: null, label: 'Toutes les pubs' }, ...ads].map((a, i) => (
               <Motion.button type="button" key={a.key || 'all'} role="radio" aria-checked={value.ad === a.key} className="ps2-adchip"
-                onClick={() => onChange({ ...value, ad: a.key })}
+                style={value.ad === a.key ? { color: pillInk } : undefined} onClick={() => onChange({ ...value, ad: a.key })}
                 initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: EASE, delay: 0.05 + i * 0.035 }}>
                 {value.ad === a.key && <Motion.span layoutId={`${id}-ad`} className="ps2-adchip-pill" transition={{ duration: 0.35, ease: EASE }} />}
                 <span className="ps2-adchip-label">{a.label}{a.key && (a.steps?.[countStep] || 0) > 0 && <b className="ps2-num">{fr(a.steps[countStep])}</b>}</span>

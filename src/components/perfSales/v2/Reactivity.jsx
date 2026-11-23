@@ -12,7 +12,7 @@ const BUCKETS = [['d0', 'Jour même', '#6cc493'], ['d1', 'J+1', '#ecd36a'], ['d2
 const FAMILIES = { ads: 'ADS', setters: 'Setters', cold_call: 'Cold call sales', linkedin: 'LinkedIn', webinar: 'Webinaire', referral: 'Parrainage', other: 'Autres' };
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 const fmtMin = (m) => (m == null ? '–' : m < 60 ? `${Math.round(m)} min` : `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}`);
-const pctTone = (v, good, mid) => (v == null ? 'var(--ps2-r3)' : v >= good ? 'var(--good-strong)' : v >= mid ? '#a05a05' : '#d9544d');
+const pctTone = (v, good, mid) => (v == null ? 'var(--ps2-r3)' : v >= good ? 'var(--good-strong)' : v >= mid ? 'var(--warn)' : '#d9544d');
 
 // Choix de la période (mois affiché, 7 ou 30 jours, mois précédent, dates libres) ; repris par la présence par jour et heure.
 export function PeriodBar({ period, onPeriod, analytics, warning, loading }) {

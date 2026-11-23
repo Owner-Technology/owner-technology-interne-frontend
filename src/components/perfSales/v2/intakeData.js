@@ -6,9 +6,9 @@ export const monthOf = (ym) => `${MONTHS[Number(String(ym).slice(5, 7)) - 1] || 
 // Pourquoi un lead a quitté le sales choisi par le moteur (serveur : perf_intake.departure), dans l'ordre des règles.
 export const REASONS = {
   kept: { label: 'Gardé par le sales affecté', short: 'Gardés', color: 'var(--ps2-r1)', icon: 'check' },
-  sla_given: { label: '6 min ratées → redonné à un autre sales', short: '6 min · redonnés', color: '#4a4540', icon: 'clock' },
+  sla_given: { label: '6 min ratées → redonné à un autre sales', short: '6 min · redonnés', color: 'var(--ps2-r1h)', icon: 'clock' },
   sla_pool: { label: '6 min ratées → pool réactivité', short: '6 min · pool', color: 'var(--ps2-r2)', icon: 'clock' },
-  barrier: { label: '3 jours sans RDV → barrage', short: '3 jours', color: '#8f8a83', icon: 'calendar' },
+  barrier: { label: '3 jours sans RDV → barrage', short: '3 jours', color: 'var(--ps2-r2h)', icon: 'calendar' },
   manual: { label: 'Réaffecté à la main', short: 'À la main', color: 'var(--ps2-r3)', icon: 'hand' },
   other: { label: 'Autre', short: 'Autre', color: 'var(--ps2-r4)', icon: 'dot' },
 };

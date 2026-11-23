@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
 import { motion } from 'framer-motion';
 import apiClient from '../../services/apiClient';
+import { homeRouteFor } from '../../navigation/home.js';
 import SharedNavbar from '../../components/SharedNavbar.jsx';
 
 import { buildTheme, fmtInt, fmtPct } from './theme';
@@ -144,8 +145,9 @@ export default function Marketing() {
     // uniquement la présence du user et son role. L'apiClient gère lui-même
     // les 401 sur les requêtes (refresh token, redirect login si nécessaire).
     const user = apiClient.getUser();
+    // Audit du 23/11/2026 : un rôle que cette page refuse revient à sa page d'arrivée (l'écran de connexion faisait croire à une déconnexion).
     if (!user || !ALLOWED_ROLES.includes(user.role)) {
-      navigate('/login');
+      navigate(user ? homeRouteFor(user.role) : '/login', { replace: true });
       return;
     }
     setUserRole(user.role);

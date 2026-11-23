@@ -18,7 +18,7 @@ const CLAIM = { barrier: 'barrage, R1 posé', callback: 'barrage, rappel', react
 const POOL = { traitement: '3 jours sans RDV', reactivite: '6 min ratées' };
 // Teintes Owner : le mois en cours reprend la couleur de sa case du schéma, les mois anciens du marine au plus clair.
 export const RECLAIM_MONTH = '#7fd3df';
-const OLDER = ['var(--ps2-r1)', '#4a4540', 'var(--ps2-r2)', '#8f8a83', 'var(--ps2-r3)'];
+const OLDER = ['var(--ps2-r1)', 'var(--ps2-r1h)', 'var(--ps2-r2)', 'var(--ps2-r2h)', 'var(--ps2-r3)'];
 const olderColor = (i) => OLDER[Math.min(i, OLDER.length - 1)];
 
 // Horodatage réel (journal de réactivité, timestamptz) : affiché à l'heure de Paris.
@@ -309,6 +309,8 @@ export function PoolReclaims({ reclaims, month, onLeads }) {
 // intention… après il s'est passé des trucs… on veut le détail : pourquoi ils sont repartis dans le pool ») : les fiches
 // ADS du mois données à un sales (les trois cases du schéma), ce qu'elles sont devenues et pourquoi, par sales.
 const FATE_BAR = [['ads_affectation', 'Chez le sales affecté', '#8fbdf3'], ['ads_pool', 'Repris du pool', '#7fd3df'], ['pool_waiting', 'Au pool', 'var(--ps2-r4)']];
+// « À la main » et « Autre » : leurs gris (r3, r4) s'effacent sur la pastille de l'icône, qui passe au gris de texte.
+const PALE_ICON = new Set(['manual', 'other']);
 
 export function AffectedCard({ period, month, intake, onLeads }) {
   const on = useRevealed();
@@ -359,7 +361,7 @@ export function AffectedCard({ period, month, intake, onLeads }) {
           {!a && !error && <div className="ps2-loading" aria-label="Chargement"><i /><i /><i /><i /></div>}
           {reasons.map((r, i) => (
             <button type="button" key={r.key} className="ps2-affected-reason" onClick={() => onLeads(affectedLeads(month, { reason: r.key, expected: r.value }))}>
-              <span className="ps2-affected-icon" style={{ color: r.color }}><ReasonIcon kind={r.icon} size={15} /></span>
+              <span className="ps2-affected-icon" style={{ color: PALE_ICON.has(r.key) ? 'var(--soft)' : r.color }}><ReasonIcon kind={r.icon} size={15} /></span>
               <span className="ps2-affected-label">{r.label}
                 {r.key === 'barrier' && (r.answering > 0 || a.opt_out > 0) && (
                   <small>{[r.answering ? `${fr(r.answering)} répondeurs` : null, a.opt_out ? `${fr(a.opt_out)} retirés du pool` : null].filter(Boolean).join(' · ')}</small>)}</span>
