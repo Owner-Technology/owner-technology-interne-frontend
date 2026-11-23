@@ -131,7 +131,9 @@ test('les onglets-route sans gestion propre dans une vue ne retombent plus sur u
 // La page d'arrivée de chaque rôle vit dans navigation/home.js depuis le 09/11/2026 (connexion et bouton « Accueil »).
 test('Login envoie hr sur /ceo, comme finance_director', async () => {
   const login = readFileSync(new URL('../pages/Login.jsx', import.meta.url), 'utf8');
-  assert.match(login, /navigate\(homeRouteFor\(user\.role\)\)/);
+  // Sans page demandée avant la connexion (23/11/2026 : un lien ouvert ramène à sa page), c'est la page d'arrivée du rôle.
+  assert.match(login, /navigate\(internal \? from : homeRouteFor\(user\.role\)/);
+  assert.match(login, /from\.startsWith\('\/'\) && !from\.startsWith\('\/\/'\)/);
   const { homeRouteFor } = await import('../navigation/home.js');
   assert.equal(homeRouteFor('hr'), '/ceo');
   assert.equal(homeRouteFor('finance_director'), '/ceo');
