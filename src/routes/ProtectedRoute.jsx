@@ -32,7 +32,7 @@ const recentlyVerified = () => {
 // donc relu à chaque rendu (jamais un état hérité de la page précédente), et la session revérifiée à chaque changement
 // de page si la dernière vérification a plus d'une minute.
 export default function ProtectedRoute({ children, allowedRoles = null }) {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const token = apiClient.getToken();
   const user = apiClient.getUser();
   // checking | ok | error | out
@@ -68,7 +68,8 @@ export default function ProtectedRoute({ children, allowedRoles = null }) {
   }, [pathname]);
 
   if (!token || !user || status === 'out') {
-    return <Navigate to="/login" replace />;
+    // La page demandée suit la connexion (dev 23/11/2026 : un lien ouvert sur téléphone ramène à sa page).
+    return <Navigate to="/login" replace state={{ from: `${pathname}${search}` }} />;
   }
 
   if (!roleAllowed(user, allowedRoles)) {

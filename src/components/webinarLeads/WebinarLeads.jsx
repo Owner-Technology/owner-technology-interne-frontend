@@ -32,6 +32,20 @@ const REFRESH_MS = 60_000;
 // Dev 23/11/2026 : « on comprend pas vraiment qui on a sélectionné ». Après une affectation, la ligne reste un instant
 // en vert avec le nom du sales choisi, puis s'en va : on voit ce qui s'est passé, et pour qui.
 const DONE_MS = 1100;
+// Téléphone (dev 23/11/2026 : « qu'il puisse l'utiliser facilement sur téléphone pour faire les affectations ») :
+// la liste passe en cartes et le créneau s'ouvre dans une feuille qui monte du bas, avec le même contenu.
+const PHONE = '(max-width: 760px)';
+function useIsPhone() {
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.(PHONE).matches));
+  useEffect(() => {
+    const media = window.matchMedia?.(PHONE);
+    if (!media) return undefined;
+    const update = () => setPhone(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return phone;
+}
 const firstName = (name) => String(name || '').split(' ')[0];
 const parisToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 const errorText = (e, fallback) => (e?.message && !/^HTTP \d+/.test(e.message) ? e.message : fallback);
@@ -179,6 +193,59 @@ function PersonRow({ person, free, active, pending, onShow, onAssign }) {
   );
 }
 
+// ── Téléphone : une carte par lead ───────────────────────────────────────────────────────────────────────────────
+function LeadCard({ lead, index, tone, free, loading, soon, selected, pending, onOpen }) {
+  const slot = slotOf(lead.r1_date);
+  return (
+    <Motion.li layout="position" className="wl-mcard" style={{ '--i': index }} data-selected={selected || undefined}
+      data-phase={pending?.phase} exit={{ opacity: 0, x: 28, transition: { duration: 0.32, ease: EASE } }}>
+      <button type="button" className="wl-mcard-hit" onClick={onOpen} aria-label={`Ouvrir ${lead.full_name || 'ce lead'}`} />
+      <div className="wl-mcard-top">
+        <span className="wl-mcard-name">{lead.full_name || '–'}</span>
+        <Tag tone={tone}>{lead.origin || 'Sans origine'}</Tag>
+      </div>
+      <div className="wl-mcard-mid">
+        {slot && <span className="wl-r1" data-soon={soon || undefined}>R1 {slotLabel(slot)}</span>}
+        <span className="wl-mcard-meta">{[lead.headcount && `${lead.headcount} sal.`, lead.revenue].filter(Boolean).join(' · ')}</span>
+      </div>
+      <div className="wl-mcard-bottom">
+        <FreeStack sales={free} loading={loading} />
+        {pending ? <AssignStatus pending={pending} /> : <span className="wl-mcard-go">Affecter<ChevronRight size={15} /></span>}
+      </div>
+    </Motion.li>
+  );
+}
+
+// ── Téléphone : feuille qui monte du bas, se ferme en la tirant vers le bas, d'un tap sur le fond ou par Échap ─────
+function Sheet({ open, onClose, children }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const esc = (e) => { if (e.key === 'Escape') onClose(); };
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', esc);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', esc); };
+  }, [open, onClose]);
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <Motion.div key="veil" className="wl-veil" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }} />
+          <Motion.section key="sheet" className="wl-sheet fst-root" role="dialog" aria-modal="true" aria-label="Créneau du R1"
+            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', stiffness: 420, damping: 42 }}
+            drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
+            onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 600) onClose(); }}>
+            <div className="wl-sheet-grip" aria-hidden="true" />
+            <button type="button" className="wl-sheet-close" onClick={onClose}>Fermer</button>
+            <div className="wl-sheet-body" onPointerDown={(e) => e.stopPropagation()}>{children}</div>
+          </Motion.section>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function WebinarLeads() {
   const today = parisToday();
   const [list, setList, reloadList] = useRemote(LIST_URL);
@@ -193,6 +260,9 @@ export default function WebinarLeads() {
   const agendaRef = useRef(null);
   const [notice, setNotice] = useState(null);
   const [othersOpen, setOthersOpen] = useState(false);
+  const phone = useIsPhone();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
 
   const leads = useMemo(() => {
     const rows = list.data?.leads || [];
@@ -207,6 +277,7 @@ export default function WebinarLeads() {
   const shown = useMemo(() => visibleLeads(leads, { view, origin, query, today, freeByLead }), [leads, view, origin, query, today, freeByLead]);
 
   const selected = leads.find((l) => l.id === selectedId) || null;
+  const sheetShown = phone && sheetOpen && Boolean(selected);
   const target = selected ? slotOf(selected.r1_date) : null;
   const groups = useMemo(() => salesForSlot(sales, selected ? freeByLead?.[String(selected.id)] : []), [sales, selected, freeByLead]);
   const agenda = byEmail.get(salesEmail) || groups.free[0] || sales[0] || null;
@@ -279,102 +350,8 @@ export default function WebinarLeads() {
 
   const listState = { ...list, data: list.data ? leads : null, retry: () => reloadList() };
 
-  return (
-    <div className="wl-page">
-      <Page title="Leads webinaire">
-        <div className="wl-kpis">
-          <Stats>
-            <Stat label="À affecter" value={leads.length} Icon={Inbox} title="R1 sans sales" onClick={() => setView('all')} pressed={view === 'all'} />
-            <Stat label="R1 d’ici demain" value={soon} Icon={Clock3} title="Les premiers à affecter" tone={soon ? 'amber' : undefined}
-              onClick={() => setView(view === 'soon' ? 'all' : 'soon')} pressed={view === 'soon'} />
-            <Stat label="Personne de libre" value={nobody ?? 0} Icon={CalendarX} title="Aucun sales libre sur le créneau"
-              tone={nobody ? 'red' : undefined} onClick={() => setView(view === 'none' ? 'all' : 'none')} pressed={view === 'none'} />
-            <Stat label="Agendas lus" text={agendas.data ? `${readable}/${sales.length}` : '–'} Icon={CalendarCheck}
-              title="Google, RDV du CRM, absences" />
-          </Stats>
-        </div>
-
-        <AnimatePresence>
-          {notice && (
-            <Motion.div className="wl-notice" data-tone={notice.tone} role="status" initial={{ opacity: 0, y: -6, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: EASE }}>
-              <span className="wl-notice-in">{notice.tone === 'green' ? <Check size={15} /> : <AlertCircle size={15} />}{notice.text}
-                <button type="button" onClick={() => setNotice(null)}>Fermer</button></span>
-            </Motion.div>
-          )}
-        </AnimatePresence>
-
-        <Reveal className="fst-grid wl-grid">
-          <Card title="À affecter" Icon={UsersRound} state={listState} skeleton={360}
-            hint="Cliquez une ligne pour voir qui est libre sur son R1 et ouvrir son agenda."
-            actions={(
-              <label className="fst-search wl-search">
-                <Search size={14} />
-                <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher" aria-label="Rechercher un lead" />
-              </label>
-            )}>
-            {origins.length > 1 && (
-              <div className="wl-origins">
-                <Segmented small value={origin} onChange={setOrigin} label="Origine"
-                  options={[{ key: 'all', label: `Toutes · ${leads.length}` }, ...origins.map((o) => ({ key: o.origin, label: `${o.origin} · ${o.count}` }))]} />
-              </div>
-            )}
-            {shown.length ? (
-              <TableBox>
-                <thead>
-                  <tr>
-                    <Th Icon={UsersRound}>Origine</Th>
-                    <Th Icon={CalendarDays}>Reçu le</Th>
-                    <Th Icon={UserRound}>Nom et R1</Th>
-                    <Th num>Salariés</Th>
-                    <Th num>CA</Th>
-                    <Th Icon={CalendarCheck}>Libres sur le R1</Th>
-                    <Th>Sales</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <AnimatePresence initial={false}>
-                    {shown.map((lead, i) => {
-                      const slot = slotOf(lead.r1_date);
-                      const free = freeOf(lead);
-                      const leadGroups = salesForSlot(sales, freeByLead?.[String(lead.id)]);
-                      return (
-                        <Motion.tr key={lead.id} layout="position" style={{ '--i': i }} data-open="true"
-                          data-selected={lead.id === selectedId || undefined} data-phase={pending[lead.id]?.phase} onClick={() => select(lead)}
-                          exit={{ opacity: 0, x: 28, transition: { duration: 0.32, ease: EASE } }}>
-                          <td className="wl-first">
-                            {lead.id === selectedId && <Motion.span layoutId="wl-row-mark" className="wl-row-mark" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
-                            <Tag tone={toneOf.get(String(lead.origin || '').trim() || 'Sans origine')}>{lead.origin || 'Sans origine'}</Tag></td>
-                          <td className="fst-cell-muted fst-num">{receivedLabel(lead.created_at)}</td>
-                          <td>
-                            <div className="wl-name">{lead.full_name || '–'}
-                              <AnimatePresence>{lead.id === selectedId && (
-                                <Motion.span className="wl-picked" initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                                  transition={{ duration: 0.2, ease: EASE }}>Sélectionné</Motion.span>
-                              )}</AnimatePresence>
-                            </div>
-                            {slot && <span className="wl-r1" data-soon={isSoon(lead, today) || undefined}>R1 {slotLabel(slot)}</span>}
-                          </td>
-                          <td className="is-num fst-num">{lead.headcount || '–'}</td>
-                          <td className="is-num fst-num">{lead.revenue || '–'}</td>
-                          <td><FreeStack sales={free} loading={!agendas.data} /></td>
-                          <td>
-                            <AssignMenu lead={lead} groups={leadGroups} pending={pending[lead.id]} onAssign={assign} onAgenda={select} />
-                          </td>
-                        </Motion.tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </tbody>
-              </TableBox>
-            ) : (
-              <Empty boxed>{leads.length ? 'Aucun lead ne correspond à ce filtre.' : 'Tous les R1 webinaire ont un sales. Rien à affecter.'}</Empty>
-            )}
-          </Card>
-
-          <Card title="Agenda des sales" Icon={CalendarDays} className="wl-side"
-            state={{ ...agendas, retry: () => reloadAgendas() }} skeleton={420}
-            hint="Créneaux libres de chaque sales : horaires de RDV, RDV du CRM, absences et agenda Google.">
+  const panel = (
+    <>
             <AnimatePresence mode="wait" initial={false}>
               {selected ? (
                 <Motion.div key={selected.id} className="wl-slot" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -457,8 +434,119 @@ export default function WebinarLeads() {
                 </p>
               </div>
             )}
+    </>
+  );
+
+  return (
+    <div className="wl-page">
+      <Page title="Leads webinaire">
+        <div className="wl-kpis">
+          <Stats>
+            <Stat label="À affecter" value={leads.length} Icon={Inbox} title="R1 sans sales" onClick={() => setView('all')} pressed={view === 'all'} />
+            <Stat label="R1 d’ici demain" value={soon} Icon={Clock3} title="Les premiers à affecter" tone={soon ? 'amber' : undefined}
+              onClick={() => setView(view === 'soon' ? 'all' : 'soon')} pressed={view === 'soon'} />
+            <Stat label="Personne de libre" value={nobody ?? 0} Icon={CalendarX} title="Aucun sales libre sur le créneau"
+              tone={nobody ? 'red' : undefined} onClick={() => setView(view === 'none' ? 'all' : 'none')} pressed={view === 'none'} />
+            <Stat label="Agendas lus" text={agendas.data ? `${readable}/${sales.length}` : '–'} Icon={CalendarCheck}
+              title="Google, RDV du CRM, absences" />
+          </Stats>
+        </div>
+
+        <AnimatePresence>
+          {notice && (
+            <Motion.div className="wl-notice" data-tone={notice.tone} role="status" initial={{ opacity: 0, y: -6, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: EASE }}>
+              <span className="wl-notice-in">{notice.tone === 'green' ? <Check size={15} /> : <AlertCircle size={15} />}{notice.text}
+                <button type="button" onClick={() => setNotice(null)}>Fermer</button></span>
+            </Motion.div>
+          )}
+        </AnimatePresence>
+
+        <Reveal className="fst-grid wl-grid">
+          <Card title="À affecter" Icon={UsersRound} state={listState} skeleton={360}
+            hint="Cliquez une ligne pour voir qui est libre sur son R1 et ouvrir son agenda."
+            actions={(
+              <label className="fst-search wl-search">
+                <Search size={14} />
+                <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher" aria-label="Rechercher un lead" />
+              </label>
+            )}>
+            {origins.length > 1 && (
+              <div className="wl-origins">
+                <Segmented small value={origin} onChange={setOrigin} label="Origine"
+                  options={[{ key: 'all', label: `Toutes · ${leads.length}` }, ...origins.map((o) => ({ key: o.origin, label: `${o.origin} · ${o.count}` }))]} />
+              </div>
+            )}
+            {shown.length && phone ? (
+              <ul className="wl-mlist">
+                <AnimatePresence initial={false}>
+                  {shown.map((lead, i) => (
+                    <LeadCard key={lead.id} lead={lead} index={i} tone={toneOf.get(String(lead.origin || '').trim() || 'Sans origine')}
+                      free={freeOf(lead)} loading={!agendas.data} soon={isSoon(lead, today)} selected={lead.id === selectedId}
+                      pending={pending[lead.id]} onOpen={() => { select(lead); setSheetOpen(true); }} />
+                  ))}
+                </AnimatePresence>
+              </ul>
+            ) : shown.length ? (
+              <TableBox>
+                <thead>
+                  <tr>
+                    <Th Icon={UsersRound}>Origine</Th>
+                    <Th Icon={CalendarDays}>Reçu le</Th>
+                    <Th Icon={UserRound}>Nom et R1</Th>
+                    <Th num>Salariés</Th>
+                    <Th num>CA</Th>
+                    <Th Icon={CalendarCheck}>Libres sur le R1</Th>
+                    <Th>Sales</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <AnimatePresence initial={false}>
+                    {shown.map((lead, i) => {
+                      const slot = slotOf(lead.r1_date);
+                      const free = freeOf(lead);
+                      const leadGroups = salesForSlot(sales, freeByLead?.[String(lead.id)]);
+                      return (
+                        <Motion.tr key={lead.id} layout="position" style={{ '--i': i }} data-open="true"
+                          data-selected={lead.id === selectedId || undefined} data-phase={pending[lead.id]?.phase} onClick={() => select(lead)}
+                          exit={{ opacity: 0, x: 28, transition: { duration: 0.32, ease: EASE } }}>
+                          <td className="wl-first">
+                            {lead.id === selectedId && <Motion.span layoutId="wl-row-mark" className="wl-row-mark" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
+                            <Tag tone={toneOf.get(String(lead.origin || '').trim() || 'Sans origine')}>{lead.origin || 'Sans origine'}</Tag></td>
+                          <td className="fst-cell-muted fst-num">{receivedLabel(lead.created_at)}</td>
+                          <td>
+                            <div className="wl-name">{lead.full_name || '–'}
+                              <AnimatePresence>{lead.id === selectedId && (
+                                <Motion.span className="wl-picked" initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.2, ease: EASE }}>Sélectionné</Motion.span>
+                              )}</AnimatePresence>
+                            </div>
+                            {slot && <span className="wl-r1" data-soon={isSoon(lead, today) || undefined}>R1 {slotLabel(slot)}</span>}
+                          </td>
+                          <td className="is-num fst-num">{lead.headcount || '–'}</td>
+                          <td className="is-num fst-num">{lead.revenue || '–'}</td>
+                          <td><FreeStack sales={free} loading={!agendas.data} /></td>
+                          <td>
+                            <AssignMenu lead={lead} groups={leadGroups} pending={pending[lead.id]} onAssign={assign} onAgenda={select} />
+                          </td>
+                        </Motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                </tbody>
+              </TableBox>
+            ) : (
+              <Empty boxed>{leads.length ? 'Aucun lead ne correspond à ce filtre.' : 'Tous les R1 webinaire ont un sales. Rien à affecter.'}</Empty>
+            )}
           </Card>
+
+          {!phone && <Card title="Agenda des sales" Icon={CalendarDays} className="wl-side"
+            state={{ ...agendas, retry: () => reloadAgendas() }} skeleton={420}
+            hint="Créneaux libres de chaque sales : horaires de RDV, RDV du CRM, absences et agenda Google.">
+            {panel}
+          </Card>}
         </Reveal>
+        <Sheet open={sheetShown} onClose={closeSheet}>{panel}</Sheet>
       </Page>
     </div>
   );

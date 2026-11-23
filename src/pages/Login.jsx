@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { homeRouteFor } from "../navigation/home.js";
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import myLogoDark from '../assets/my_image2.png';
 import './Login.css';
@@ -11,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,8 +32,12 @@ export default function Login() {
         throw new Error("Login OK mais token/user non stockés (apiClient incohérent).");
       }
 
-      // Page d'arrivée selon le rôle (même règle que le bouton « Accueil » du menu de gauche).
-      navigate(homeRouteFor(user.role));
+      // La page demandée avant la connexion (lien partagé, session expirée), sinon la page d'arrivée du rôle (même
+      // règle que le bouton « Accueil » du menu de gauche). Un chemin interne seulement ; la garde de la page décide
+      // ensuite si le rôle y a droit.
+      const from = location.state?.from;
+      const internal = typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/login');
+      navigate(internal ? from : homeRouteFor(user.role), { replace: true });
     } catch (err) {
       setError(err.message || 'Email ou mot de passe incorrect');
     } finally {

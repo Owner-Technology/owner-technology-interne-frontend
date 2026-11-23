@@ -174,3 +174,52 @@ html.dark-mode .ab-root .wl-stack-faces > span { box-shadow: 0 0 0 2px #1c1c1c; 
 html.dark-mode .ab-root .wl-person-hl { background: #262626; box-shadow: inset 0 0 0 1px #333; }
 html.dark-mode .ab-root .fst-table tbody tr[data-done="true"], html.dark-mode .ab-root .fst-table tbody tr[data-phase="done"] { background: rgba(31, 157, 87, .14); }
 html.dark-mode .ab-root .wl-status { background: #232323; border-color: #333; color: #ddd; }
+
+/* ── Téléphone (dev 23/11/2026) : cartes, feuille qui monte du bas ─────────────────────────────────────────────────── */
+.wl-mlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.wl-mcard { position: relative; padding: 14px 14px 12px; border-radius: 18px; background: #fff; border: 1px solid #ece9e4;
+  animation: fstRow .5s var(--ease) both; animation-delay: calc(min(var(--i, 0), 14) * 22ms); transition: border-color .2s, background .3s var(--ease), transform .15s var(--ease); }
+.wl-mcard:active { transform: scale(.985); }
+.wl-mcard[data-selected="true"] { border-color: var(--charcoal); box-shadow: 0 0 0 1px var(--charcoal); }
+.wl-mcard[data-phase="done"] { background: #eef9f2; border-color: #c3ebd3; box-shadow: none; }
+.wl-mcard-hit { position: absolute; inset: 0; border-radius: 18px; z-index: 1; }
+.wl-mcard-top, .wl-mcard-mid, .wl-mcard-bottom { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; pointer-events: none; }
+.wl-mcard-name { font-size: 15px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-mcard-mid { margin-top: 4px; }
+.wl-mcard-mid .wl-r1 { margin-top: 0; }
+.wl-mcard-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.wl-mcard-bottom { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.wl-mcard-go { display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 0 10px 0 14px; border-radius: 10px; background: var(--charcoal); color: #fff;
+  font-size: 13px; font-weight: 500; }
+
+.wl-veil { position: fixed; inset: 0; z-index: 70; background: rgba(28, 27, 25, .32); backdrop-filter: blur(2px); }
+.wl-sheet.fst-root { position: fixed; left: 0; right: 0; bottom: 0; z-index: 71; flex: none; max-height: 90dvh; display: flex; flex-direction: column;
+  padding: 8px 16px calc(18px + env(safe-area-inset-bottom)); overflow: hidden; border-radius: 22px 22px 0 0; background: #fff;
+  box-shadow: 0 -12px 40px -18px rgba(50, 40, 30, .35); touch-action: none; }
+.wl-sheet-grip { width: 40px; height: 5px; border-radius: 999px; background: #e3ded6; margin: 4px auto 6px; flex: none; }
+.wl-sheet-close { position: absolute; top: 10px; right: 14px; font-size: 13px; font-weight: 500; color: var(--ink-2); padding: 6px 4px; }
+.wl-sheet-body { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 6px 2px 4px; }
+.wl-sheet .wl-cell { font-size: 0; }
+.wl-sheet .wl-cell[data-target="true"]::after { content: 'R1'; font-size: 10.5px; }
+.wl-sheet .wl-cell-mark { font-size: 9px; }
+.wl-sheet .wl-week { max-height: none; grid-template-columns: 40px repeat(var(--cols), minmax(0, 1fr)); }
+.wl-sheet .wl-agenda-head { flex-direction: column; align-items: stretch; }
+.wl-sheet .wl-agenda-select { max-width: none; height: 42px; }
+.wl-sheet .fst-nav { justify-content: space-between; }
+.wl-sheet .wl-person { padding: 6px 4px; }
+.wl-sheet .fst-btn.is-small { height: 36px; padding: 0 14px; font-size: 13px; }
+
+@media (max-width: 760px) {
+  .wl-page .fst-root { padding: 12px 12px 72px; border-radius: 0; }
+  .wl-page .fst-head { padding: 10px 0 8px; top: -12px; }
+  .wl-page .fst-title { font-size: 22px; }
+  .wl-page .fst-card { padding: 14px 12px 14px; border-radius: 18px; }
+  .wl-page .fst-card-head { flex-wrap: wrap; }
+  .wl-search, .wl-search input, .wl-search input:focus { width: 100%; margin-left: 0; }
+  .wl-kpis .fst-stat { padding: 9px 12px; }
+  .wl-kpis .fst-stat-value { font-size: 18px; }
+  .wl-notice-in { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .wl-mcard { animation: none; transition: none; } }
+html.dark-mode .ab-root .wl-mcard, html.dark-mode .ab-root .wl-sheet.fst-root { background: #1c1c1c; border-color: #2e2e2e; }
+html.dark-mode .ab-root .wl-mcard[data-phase="done"] { background: rgba(31, 157, 87, .14); }
