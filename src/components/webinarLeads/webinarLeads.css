@@ -6,6 +6,13 @@
 .wl-side { position: sticky; top: 76px; }
 @media (max-width: 1180px) { .wl-side { position: static; } }
 .wl-search input { width: 200px; }
+
+/* Chiffres clés compacts (dev 23/11/2026 : « ce qui compte, c'est d'affecter ») : une ligne par tuile, libellé et chiffre. */
+.wl-kpis .fst-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .wl-kpis .fst-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wl-kpis .fst-stat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 14px; }
+.wl-kpis .fst-stat-label { font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wl-kpis .fst-stat-value { margin-top: 0; font-size: 20px; letter-spacing: -.02em; }
 .wl-origins { margin: -2px 0 14px; overflow-x: auto; scrollbar-width: none; }
 .wl-origins::-webkit-scrollbar { display: none; }
 

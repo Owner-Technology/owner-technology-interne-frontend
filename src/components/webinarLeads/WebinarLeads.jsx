@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import {
-  Avatar, Card, Collapse, Empty, Page, RefreshButton, Reveal, Segmented, Stat, Stats, TableBox, Tag, Th, Who,
+  Avatar, Card, Collapse, Empty, Page, Reveal, Segmented, Stat, Stats, TableBox, Tag, Th, Who,
 } from '../../pages/TrackingSheetFinance/components/PageKit.jsx';
 import { EASE } from '../perfSales/motion.jsx';
 import {
@@ -26,20 +26,30 @@ import './webinarLeads.css';
 const LIST_URL = '/api/v1/leads/webinar-awaiting';
 const AGENDAS_URL = '/api/v1/leads/webinar-awaiting/agendas';
 const TONES = ['lilac', 'cyan', 'lime', 'peach', 'blue', 'yellow'];
+// Actualisation automatique (dev 23/11/2026 : « l'actualisation devrait être automatique ») : toutes les minutes tant que
+// l'onglet est visible, et au retour sur l'onglet. Sans clignotement : la liste reste affichée pendant la relecture.
+const REFRESH_MS = 60_000;
 const parisToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 const errorText = (e, fallback) => (e?.message && !/^HTTP \d+/.test(e.message) ? e.message : fallback);
 
 function useRemote(url) {
   const [state, setState] = useState({ loading: true, data: null, error: null });
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setState((s) => ({ ...s, loading: true, error: null }));
     try {
       setState({ loading: false, data: await apiClient.get(url), error: null });
     } catch (e) {
-      setState((s) => ({ ...s, loading: false, error: errorText(e, 'La lecture a échoué.') }));
+      // Une relecture silencieuse ratée garde l'écran tel quel ; la suivante réessaie.
+      if (!silent) setState((s) => ({ ...s, loading: false, error: errorText(e, 'La lecture a échoué.') }));
     }
   }, [url]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const tick = () => { if (!document.hidden) load(true); };
+    const timer = setInterval(tick, REFRESH_MS);
+    document.addEventListener('visibilitychange', tick);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', tick); };
+  }, [load]);
   return [state, setState, load];
 }
 
@@ -208,7 +218,7 @@ export default function WebinarLeads() {
       } : s));
       if (selectedId === lead.id) setSelectedId(null);
       setNotice({ tone: 'green', text: `${lead.full_name || 'Le lead'} est affecté à ${person.name} (R1 ${slotLabel(slot)}).` });
-      reloadAgendas();
+      reloadAgendas(true);
     } catch (e) {
       setNotice({ tone: 'red', text: errorText(e, `${lead.full_name || 'Le lead'} n’a pas pu être affecté. Réessayez.`) });
     } finally {
@@ -216,24 +226,22 @@ export default function WebinarLeads() {
     }
   }, [leads, reloadAgendas, selectedId, setAgendas, setList]);
 
-  const refresh = () => { setNotice(null); reloadList(); reloadAgendas(); };
-  const busyRefresh = list.loading || agendas.loading;
-  const listState = { ...list, data: list.data ? leads : null, retry: reloadList };
+  const listState = { ...list, data: list.data ? leads : null, retry: () => reloadList() };
 
   return (
     <div className="wl-page">
-      <Page title="Leads webinaire"
-        sub="Les R1 posés par les setters pour le webinaire, encore sans sales. Chaque ligne montre qui est libre sur le créneau."
-        actions={<RefreshButton onClick={refresh} busy={busyRefresh} />}>
-        <Stats>
-          <Stat label="À affecter" value={leads.length} Icon={Inbox} note="R1 sans sales" onClick={() => setView('all')} pressed={view === 'all'} />
-          <Stat label="R1 d’ici demain" value={soon} Icon={Clock3} note="les premiers à affecter" tone={soon ? 'amber' : undefined}
-            onClick={() => setView(view === 'soon' ? 'all' : 'soon')} pressed={view === 'soon'} />
-          <Stat label="Personne de libre" value={nobody ?? 0} Icon={CalendarX} note="aucun sales libre sur le créneau"
-            tone={nobody ? 'red' : undefined} onClick={() => setView(view === 'none' ? 'all' : 'none')} pressed={view === 'none'} />
-          <Stat label="Agendas lus" text={agendas.data ? `${readable}/${sales.length}` : '–'} Icon={CalendarCheck}
-            note="Google, RDV du CRM, absences" />
-        </Stats>
+      <Page title="Leads webinaire">
+        <div className="wl-kpis">
+          <Stats>
+            <Stat label="À affecter" value={leads.length} Icon={Inbox} title="R1 sans sales" onClick={() => setView('all')} pressed={view === 'all'} />
+            <Stat label="R1 d’ici demain" value={soon} Icon={Clock3} title="Les premiers à affecter" tone={soon ? 'amber' : undefined}
+              onClick={() => setView(view === 'soon' ? 'all' : 'soon')} pressed={view === 'soon'} />
+            <Stat label="Personne de libre" value={nobody ?? 0} Icon={CalendarX} title="Aucun sales libre sur le créneau"
+              tone={nobody ? 'red' : undefined} onClick={() => setView(view === 'none' ? 'all' : 'none')} pressed={view === 'none'} />
+            <Stat label="Agendas lus" text={agendas.data ? `${readable}/${sales.length}` : '–'} Icon={CalendarCheck}
+              title="Google, RDV du CRM, absences" />
+          </Stats>
+        </div>
 
         <AnimatePresence>
           {notice && (
@@ -307,7 +315,7 @@ export default function WebinarLeads() {
           </Card>
 
           <Card title="Agenda des sales" Icon={CalendarDays} className="wl-side"
-            state={{ ...agendas, retry: reloadAgendas }} skeleton={420}
+            state={{ ...agendas, retry: () => reloadAgendas() }} skeleton={420}
             hint="Créneaux libres de chaque sales : horaires de RDV, RDV du CRM, absences et agenda Google.">
             <AnimatePresence mode="wait" initial={false}>
               {selected ? (
