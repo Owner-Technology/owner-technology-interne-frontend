@@ -107,6 +107,7 @@ import BoardEtatCell from './components/BoardEtatCell.jsx';
 import ExitClientDialog from './components/ExitClientDialog.jsx';
 import FreeMonthDialog from './components/FreeMonthDialog.jsx';
 import { freeMonthsFromOps } from './freeMonth.js';
+import { modeAtMonth, optilexKeptMode } from './modeSchedule.js';
 import StateReview from './components/StateReview.jsx';
 import { CalendarClockIcon, NoShowIcon, RecoveredIcon } from './components/FinanceIcons.jsx';
 import { noShowInfo, noShowOf } from './boardFollow.js';
@@ -1825,6 +1826,8 @@ function ContractInfoList({
   // quel mois le changement s'applique avant d'écrire (demande dev
   // 2026-08-27). `pending` porte la saisie en attente de ce choix.
   const [pending, setPending] = useState(null);
+  // Mois affiché, pour lire la modalité en vigueur ce mois-là sur le calendrier.
+  const focusedMonth = String(focusedRow?.period || '').slice(0, 7) || currentPeriod();
   const askEffective = useCallback((field, value, label, entity = null) => {
     setPending({ field, value, label, entity });
   }, []);
@@ -1868,13 +1871,14 @@ function ContractInfoList({
     }
   }, [clientId, afterContract, onShowToast]);
 
-  const applyPending = useCallback(async (effective) => {
+  const applyPending = useCallback(async (effective, { keepOptilex = null } = {}) => {
     if (!pending) return;
     const { field, value } = pending;
     setPending(null);
     try {
-      const res = await apiClient.post(`/api/v1/finance-periods/client/${clientId}/contract`,
-        { [field]: value, effective });
+      // Opti'Lex qui suit Owner : le garder à son rythme le date à part (dev 2026-11-23).
+      const body = keepOptilex ? { [field]: value, payment_mode_optilex: keepOptilex, effective } : { [field]: value, effective };
+      const res = await apiClient.post(`/api/v1/finance-periods/client/${clientId}/contract`, body);
       afterContract(res, null);
     } catch (e) {
       onShowToast?.(e?.message || 'Changement impossible', 'error');
@@ -2143,7 +2147,8 @@ function ContractInfoList({
           onCancel={(id) => cancelContractChange('mode', id)}
         >
           <EditableSelect
-            value={normalizePaymentMode(focusedRow?.payment_mode || client?.payment_mode)}
+            value={modeAtMonth(modeSchedule, 'owner', focusedMonth)
+              || normalizePaymentMode(focusedRow?.payment_mode || client?.payment_mode)}
             options={PAYMENT_MODES}
             optionLabels={PAYMENT_MODE_LABELS}
             onCommit={(v) => askEffective('payment_mode', v, `Owner ${paymentModeLabel(v)}`, 'owner')}
@@ -2169,7 +2174,8 @@ function ContractInfoList({
           onCancel={(id) => cancelContractChange('mode', id)}
         >
           <EditableSelect
-            value={normalizePaymentMode(focusedRow?.payment_mode_optilex || client?.payment_mode_optilex || focusedRow?.payment_mode || client?.payment_mode)}
+            value={modeAtMonth(modeSchedule, 'optilex', focusedMonth)
+              || normalizePaymentMode(focusedRow?.payment_mode_optilex || client?.payment_mode_optilex || focusedRow?.payment_mode || client?.payment_mode)}
             options={PAYMENT_MODES}
             optionLabels={PAYMENT_MODE_LABELS}
             onCommit={(v) => askEffective('payment_mode_optilex', v, `Opti'lex ${paymentModeLabel(v)}`, 'optilex')}
@@ -2207,6 +2213,8 @@ function ContractInfoList({
           coverage={pending.entity && normalizePaymentMode(pending.value) !== 'YEARLY'
             ? modeSchedule?.entities?.[pending.entity]?.annual_coverage || null
             : null}
+          optilexMode={optilexKeptMode(modeSchedule, pending.field, normalizePaymentMode(pending.value))}
+          newMode={normalizePaymentMode(pending.value)}
         />
       )}
       {GROUPED.map(({ group, items }) => (
@@ -3164,8 +3172,11 @@ function formulaCheckNotice(check) {
   return `À vérifier : ${formatEUR(check.declared)} déclarés ne correspondent à aucune tranche en ${mode}${other} ; ${used}. Fixez la formule si besoin.`;
 }
 
-function EffectiveMonthPrompt({ label, onPick, onCancel, periods = [], coverage = null }) {
+function EffectiveMonthPrompt({ label, onPick: pick, onCancel, periods = [], coverage = null, optilexMode = null, newMode = null }) {
   const [retro, setRetro] = useState('');
+  // Opti'Lex suit Owner : coché, il change avec lui ; décoché, il garde son rythme.
+  const [optilexToo, setOptilexToo] = useState(true);
+  const onPick = (effective) => pick(effective, { keepOptilex: optilexMode && !optilexToo ? optilexMode : null });
   const [future, setFuture] = useState('');
   const moisProchain = formatMonthLabel(shiftMonth(currentPeriod(), 1));
   const moisCourant = formatMonthLabel(currentPeriod());
@@ -3209,6 +3220,12 @@ function EffectiveMonthPrompt({ label, onPick, onCancel, periods = [], coverage 
         Le montant attendu est recalculé à partir du mois choisi, jusqu’au
         dernier mois de la fiche.
       </div>
+      {optilexMode && (
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: N.text, cursor: 'pointer' }}>
+          <input type="checkbox" checked={optilexToo} onChange={(e) => setOptilexToo(e.target.checked)} />
+          Opti’lex aussi en {(paymentModeLabel(newMode) || '').toLowerCase()}
+        </label>
+      )}
       {endOfPaidYear && (
         <div style={{
           fontSize: 12, color: '#a8480f', background: '#fffbeb',
