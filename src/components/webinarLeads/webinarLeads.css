@@ -138,3 +138,39 @@ html.dark-mode .ab-root .wl-cell { background: #222; }
 html.dark-mode .ab-root .wl-cell[data-free="true"] { background: rgba(31, 157, 87, .18); color: #7fd6a4; box-shadow: none; }
 html.dark-mode .ab-root .wl-cell[data-target="true"] { background: transparent; color: #ededed; }
 html.dark-mode .ab-root .wl-stack-faces > span { box-shadow: 0 0 0 2px #1c1c1c; }
+
+/* Sélection et affectation lisibles (dev 23/11/2026 : « on comprend pas vraiment qui on a sélectionné ») ─────────────── */
+.wl-first { position: relative; }
+.wl-row-mark { position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--charcoal); }
+.wl-page .fst-table tbody tr[data-selected="true"] { background: #f4f2ee; box-shadow: none; }
+.wl-page .fst-table tbody tr[data-phase="done"] { background: #eef9f2; transition: background .3s var(--ease); }
+.wl-page .fst-table tbody tr[data-phase="sending"] { background: #f7f5f2; }
+.wl-name { display: flex; align-items: center; gap: 8px; }
+.wl-picked { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; background: var(--charcoal); color: #fff; font-size: 11px; font-weight: 500; }
+.wl-status { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 10px; font-size: 12.5px; font-weight: 500; white-space: nowrap;
+  background: #f4f2ee; color: var(--ink-2); border: 1px solid var(--line); }
+.wl-status[data-phase="done"] { background: #e2f6ea; color: #0b7a4b; border-color: #c3ebd3; }
+.wl-spin { animation: wlSpin .8s linear infinite; }
+@keyframes wlSpin { to { transform: rotate(360deg); } }
+
+.wl-person { position: relative; isolation: isolate; transition: opacity .2s var(--ease); }
+.wl-person:hover, .wl-person[data-active="true"] { background: transparent; }
+.wl-person:hover::before { content: ''; position: absolute; inset: 0; border-radius: 12px; background: #faf9f7; z-index: -2; }
+.wl-person-hl { position: absolute; inset: 0; border-radius: 12px; background: #f1eee9; box-shadow: inset 0 0 0 1px #e3ded6; z-index: -1; }
+.wl-person[data-dim="true"] { opacity: .4; }
+.wl-person[data-active="true"] .fst-who { border-color: var(--charcoal); box-shadow: 0 0 0 1px var(--charcoal); }
+
+.wl-pulse { border-radius: 12px; animation: wlPulse .7s var(--ease) both; }
+@keyframes wlPulse { from { box-shadow: 0 0 0 0 rgba(43, 41, 39, .18); background: #f4f2ee; } to { box-shadow: 0 0 0 10px rgba(43, 41, 39, 0); background: transparent; } }
+
+.wl-agenda-title { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.wl-agenda-title .fst-micro { margin: 0; }
+.wl-agenda-name { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-spin, .wl-pulse { animation: none; }
+  .wl-person { transition: none; }
+}
+html.dark-mode .ab-root .wl-person-hl { background: #262626; box-shadow: inset 0 0 0 1px #333; }
+html.dark-mode .ab-root .fst-table tbody tr[data-done="true"], html.dark-mode .ab-root .fst-table tbody tr[data-phase="done"] { background: rgba(31, 157, 87, .14); }
+html.dark-mode .ab-root .wl-status { background: #232323; border-color: #333; color: #ddd; }
