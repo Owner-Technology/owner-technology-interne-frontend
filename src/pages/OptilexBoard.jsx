@@ -3577,6 +3577,7 @@ const PROP_ICONS = {
   creances: <><ellipse cx="9" cy="6.5" rx="6" ry="2.5" /><path d="M3 6.5v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4" /><path d="M9 13v4.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V13" /><ellipse cx="15" cy="13" rx="6" ry="2.5" /></>,
   missions: <><rect x="4" y="5" width="16" height="16" rx="3" /><path d="M9 5V3h6v2M8 11l2 2 5-5M8 17h8" /></>,
   ville: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>,
+  sales: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="m16 11 2 2 4-4" /></>,
   csm: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" /></>,
   lettre: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></>,
   trustpilot: <path d="m12 3 2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16.8 6.4 20.1l1.4-6.3L3 9.5l6.4-.6Z" />,
@@ -3724,6 +3725,8 @@ function CsmRows({ row, num, patch, onChanged }) {
   const followEditable = canAssign && !readOnly;
   return (
     <>
+      {/* Sales du client (dev 23/11/2026), servi par le serveur à Owner seulement. */}
+      {row.sales_name && <PropRow icon="sales" label="Sales"><span className="ob-pv-text">{row.sales_name}</span></PropRow>}
       <PropRow icon="csm" label="CSM attitré"><CsmValue row={row} onAssign={(id) => patch(num, { csm_user_id: id })} /></PropRow>
       <PropRow icon="programmes" label="Client Success">
         <span className="ob-pv-line" style={{ gap: 6, padding: "3px 0" }}>
