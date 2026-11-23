@@ -884,6 +884,55 @@ function SalesCard({ state, prev, cmp }) {
   );
 }
 
+// ── Coût d'acquisition client ─────────────────────────────────────────────────────────────────────
+// La dépense Meta de la période divisée par les clients signés venus de Meta, catégorie par catégorie (le serveur range
+// les ventes comme la dépense). Les ventes sans Meta (cold call, parrainage, simulateur…) n'y sont pas.
+
+function CacCard({ state, prev, cmp }) {
+  const a = state.data?.acquisition;
+  const total = a?.total;
+  const before = prev?.acquisition?.status === 'ok' ? prev.acquisition.total : null;
+  const rows = a?.categories || [];
+  return (
+    <Card title="Coût d'acquisition client" Icon={Target} state={state} skeleton={360}>
+      {a && (a.status !== 'ok' ? <div className="fst-empty">Meta pas encore synchronisé sur cette période.</div> : (
+        <>
+          <div className="ld-hero">
+            <span className="ld-eyebrow">Coût par client Meta</span>
+            <BigNumber value={total?.cac_eur} money />
+            <div className="ld-hero-sub"><span>{euros(total?.spend_eur || 0)} dépensés · {plural(total?.clients || 0, 'client', 'clients')} sur {plural(a.sales || 0, 'vente', 'ventes')}</span></div>
+            <div className="ld-hero-sub"><Versus value={total?.cac_eur} previous={before?.cac_eur} cmp={cmp} invert money="whole" /></div>
+          </div>
+          <table className="fst-months ld-recap">
+            <thead><tr><th>Catégorie</th><th>Clients</th><th>CAC</th><th>Dépensé</th></tr></thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.category} data-idle={!c.clients || undefined}>
+                  <td><span className="ld-mark-label" style={{ color: TONE_INK[categoryTone(c.category)] }}><i className="ld-capsule" style={{ background: colorOfCategory(c.category) }} />{c.category}</span></td>
+                  <td className="fst-num is-strong">{count(c.clients)}</td>
+                  <td className="fst-num ld-recap-cpl" style={c.cac_eur != null ? { color: TONE_INK[categoryTone(c.category)] } : undefined}>{c.cac_eur != null ? euros(c.cac_eur) : '—'}</td>
+                  <td className="fst-num">{euros(c.spend_eur)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr><td>Total</td><td className="fst-num">{count(total?.clients)}</td><td className="fst-num">{total?.cac_eur != null ? euros(total.cac_eur) : '—'}</td><td className="fst-num">{euros(total?.spend_eur)}</td></tr>
+              {cmp && before && (
+                <tr className="ld-recap-vs">
+                  <td>{capital(cmp.word)}</td>
+                  <td><Versus value={total?.clients} previous={before.clients} cmp={cmp} inTable bare /></td>
+                  <td><Versus value={total?.cac_eur} previous={before.cac_eur} cmp={cmp} invert money="whole" inTable bare /></td>
+                  <td><Versus value={total?.spend_eur} previous={before.spend_eur} cmp={cmp} money="whole" inTable bare /></td>
+                </tr>
+              )}
+            </tfoot>
+          </table>
+        </>
+      ))}
+    </Card>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────────────────────────
 
 const TABS = [{ key: 'leads', label: 'Canaux et ads' }, { key: 'setters', label: 'Setters' }, { key: 'calls', label: 'Appels' }, { key: 'sales', label: 'Ventes' }];
@@ -977,7 +1026,12 @@ export default function LeadsDashboard() {
         </>
       )}
       {tab === 'calls' && <Reveal><CallsCard state={calls} tooLong={tooLong} /></Reveal>}
-      {tab === 'sales' && <Reveal><SalesCard state={current} prev={p} cmp={cmp} /></Reveal>}
+      {tab === 'sales' && (
+        <Reveal className="fst-grid is-even">
+          <SalesCard state={current} prev={p} cmp={cmp} />
+          <CacCard state={current} prev={p} cmp={cmp} />
+        </Reveal>
+      )}
       <LeadsDrawer open={list.open} range={range} channel={list.channel} onChannel={(channel) => setList((l) => ({ ...l, channel }))}
         onClose={closeLeads} when={when} />
       {d && (
