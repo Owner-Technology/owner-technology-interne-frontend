@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import {
   AlertCircle, CalendarCheck, CalendarDays, CalendarX, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Inbox,
-  Search, UserRound, UsersRound,
+  LoaderCircle, Search, UserRound, UsersRound,
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import {
@@ -29,6 +29,10 @@ const TONES = ['lilac', 'cyan', 'lime', 'peach', 'blue', 'yellow'];
 // Actualisation automatique (dev 23/11/2026 : « l'actualisation devrait être automatique ») : toutes les minutes tant que
 // l'onglet est visible, et au retour sur l'onglet. Sans clignotement : la liste reste affichée pendant la relecture.
 const REFRESH_MS = 60_000;
+// Dev 23/11/2026 : « on comprend pas vraiment qui on a sélectionné ». Après une affectation, la ligne reste un instant
+// en vert avec le nom du sales choisi, puis s'en va : on voit ce qui s'est passé, et pour qui.
+const DONE_MS = 1100;
+const firstName = (name) => String(name || '').split(' ')[0];
 const parisToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 const errorText = (e, fallback) => (e?.message && !/^HTTP \d+/.test(e.message) ? e.message : fallback);
 
@@ -67,8 +71,19 @@ function FreeStack({ sales, loading }) {
   );
 }
 
+// ── Où en est l'affectation d'un lead : en cours vers un sales, puis faite ─────────────────────────────────────────
+function AssignStatus({ pending }) {
+  return (
+    <Motion.span className="wl-status" data-phase={pending.phase} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 520, damping: 32 }}>
+      {pending.phase === 'done' ? <Check size={14} strokeWidth={2.6} /> : <LoaderCircle size={14} className="wl-spin" />}
+      {pending.phase === 'done' ? `Affecté à ${firstName(pending.name)}` : `Vers ${firstName(pending.name)}…`}
+    </Motion.span>
+  );
+}
+
 // ── Menu « Affecter » d'une ligne : libres sur le créneau d'abord ─────────────────────────────────────────────────
-function AssignMenu({ lead, groups, busy, onAssign, onAgenda }) {
+function AssignMenu({ lead, groups, pending, onAssign, onAgenda }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -89,10 +104,12 @@ function AssignMenu({ lead, groups, busy, onAssign, onAgenda }) {
   );
   return (
     <div className="wl-assign" ref={ref} onClick={(e) => e.stopPropagation()}>
-      <button type="button" className="wl-assign-btn" aria-haspopup="menu" aria-expanded={open} disabled={busy}
-        onClick={() => { setOpen((v) => !v); onAgenda(lead); }}>
-        {busy ? 'Affectation…' : 'Affecter'}<ChevronDown size={14} />
-      </button>
+      {pending ? <AssignStatus pending={pending} /> : (
+        <button type="button" className="wl-assign-btn" aria-haspopup="menu" aria-expanded={open}
+          onClick={() => { setOpen((v) => !v); onAgenda(lead); }}>
+          Affecter<ChevronDown size={14} />
+        </button>
+      )}
       <AnimatePresence>
         {open && (
           <Motion.div role="menu" className="wl-menu" initial={{ opacity: 0, y: -6, scale: 0.97 }}
@@ -143,6 +160,25 @@ function WeekAgenda({ agenda, monday, target, markers }) {
   );
 }
 
+// ── Un sales dans la carte de droite : son agenda s'affiche au clic, « Affecter » répond à l'endroit cliqué ────────────
+function PersonRow({ person, free, active, pending, onShow, onAssign }) {
+  const mine = pending && pending.email === person.email;
+  return (
+    <div className="wl-person" data-active={active || undefined} data-dim={(pending && !mine) || undefined}>
+      {active && <Motion.span layoutId="wl-person-hl" className="wl-person-hl" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
+      <button type="button" className="wl-person-who" onClick={onShow} aria-pressed={active} title="Voir son agenda">
+        <Who name={person.name} />
+        {free ? <span className="wl-free-dot">Libre</span> : <span className="wl-menu-note">{person.readable ? 'Pas libre' : 'Agenda illisible'}</span>}
+      </button>
+      {mine ? <AssignStatus pending={pending} /> : (
+        <button type="button" className={`fst-btn is-small${free ? ' is-dark' : ''}`} disabled={Boolean(pending)} onClick={onAssign}>
+          {free ? 'Affecter' : 'Affecter quand même'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function WebinarLeads() {
   const today = parisToday();
   const [list, setList, reloadList] = useRemote(LIST_URL);
@@ -153,7 +189,8 @@ export default function WebinarLeads() {
   const [selectedId, setSelectedId] = useState(null);
   const [salesEmail, setSalesEmail] = useState(null);
   const [monday, setMonday] = useState(() => mondayOf(today));
-  const [assigning, setAssigning] = useState(null);
+  const [pending, setPending] = useState({});
+  const agendaRef = useRef(null);
   const [notice, setNotice] = useState(null);
   const [othersOpen, setOthersOpen] = useState(false);
 
@@ -199,10 +236,18 @@ export default function WebinarLeads() {
 
   const assign = useCallback(async (lead, person) => {
     const slot = slotOf(lead.r1_date);
-    setAssigning(lead.id);
+    const mark = (phase) => setPending((p) => {
+      const next = { ...p };
+      if (phase) next[lead.id] = { email: person.email, name: person.name, phase };
+      else delete next[lead.id];
+      return next;
+    });
+    mark('sending');
     setNotice(null);
     try {
       await apiClient.assignLead(lead.id, person.email);
+      mark('done');
+      await new Promise((resolve) => { setTimeout(resolve, DONE_MS); });
       setList((s) => ({ ...s, data: s.data ? { ...s.data, leads: s.data.leads.filter((l) => l.id !== lead.id) } : s.data }));
       setAgendas((s) => (s.data ? {
         ...s,
@@ -220,11 +265,17 @@ export default function WebinarLeads() {
       setNotice({ tone: 'green', text: `${lead.full_name || 'Le lead'} est affecté à ${person.name} (R1 ${slotLabel(slot)}).` });
       reloadAgendas(true);
     } catch (e) {
-      setNotice({ tone: 'red', text: errorText(e, `${lead.full_name || 'Le lead'} n’a pas pu être affecté. Réessayez.`) });
+      setNotice({ tone: 'red', text: errorText(e, `${lead.full_name || 'Le lead'} n’a pas pu être affecté à ${person.name}. Réessayez.`) });
     } finally {
-      setAssigning(null);
+      mark(null);
     }
   }, [leads, reloadAgendas, selectedId, setAgendas, setList]);
+
+  // Voir l'agenda d'un sales : l'agenda vient sous les yeux s'il est plus bas.
+  const showAgenda = useCallback((email) => {
+    setSalesEmail(email);
+    requestAnimationFrame(() => agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  }, []);
 
   const listState = { ...list, data: list.data ? leads : null, retry: () => reloadList() };
 
@@ -289,19 +340,26 @@ export default function WebinarLeads() {
                       const leadGroups = salesForSlot(sales, freeByLead?.[String(lead.id)]);
                       return (
                         <Motion.tr key={lead.id} layout="position" style={{ '--i': i }} data-open="true"
-                          data-selected={lead.id === selectedId || undefined} onClick={() => select(lead)}
-                          exit={{ opacity: 0, x: 24, transition: { duration: 0.26, ease: EASE } }}>
-                          <td><Tag tone={toneOf.get(String(lead.origin || '').trim() || 'Sans origine')}>{lead.origin || 'Sans origine'}</Tag></td>
+                          data-selected={lead.id === selectedId || undefined} data-phase={pending[lead.id]?.phase} onClick={() => select(lead)}
+                          exit={{ opacity: 0, x: 28, transition: { duration: 0.32, ease: EASE } }}>
+                          <td className="wl-first">
+                            {lead.id === selectedId && <Motion.span layoutId="wl-row-mark" className="wl-row-mark" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
+                            <Tag tone={toneOf.get(String(lead.origin || '').trim() || 'Sans origine')}>{lead.origin || 'Sans origine'}</Tag></td>
                           <td className="fst-cell-muted fst-num">{receivedLabel(lead.created_at)}</td>
                           <td>
-                            <div className="wl-name">{lead.full_name || '–'}</div>
+                            <div className="wl-name">{lead.full_name || '–'}
+                              <AnimatePresence>{lead.id === selectedId && (
+                                <Motion.span className="wl-picked" initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.2, ease: EASE }}>Sélectionné</Motion.span>
+                              )}</AnimatePresence>
+                            </div>
                             {slot && <span className="wl-r1" data-soon={isSoon(lead, today) || undefined}>R1 {slotLabel(slot)}</span>}
                           </td>
                           <td className="is-num fst-num">{lead.headcount || '–'}</td>
                           <td className="is-num fst-num">{lead.revenue || '–'}</td>
                           <td><FreeStack sales={free} loading={!agendas.data} /></td>
                           <td>
-                            <AssignMenu lead={lead} groups={leadGroups} busy={assigning === lead.id} onAssign={assign} onAgenda={select} />
+                            <AssignMenu lead={lead} groups={leadGroups} pending={pending[lead.id]} onAssign={assign} onAgenda={select} />
                           </td>
                         </Motion.tr>
                       );
@@ -319,10 +377,10 @@ export default function WebinarLeads() {
             hint="Créneaux libres de chaque sales : horaires de RDV, RDV du CRM, absences et agenda Google.">
             <AnimatePresence mode="wait" initial={false}>
               {selected ? (
-                <Motion.div key={selected.id} className="wl-slot" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.26, ease: EASE }}>
+                <Motion.div key={selected.id} className="wl-slot" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.28, ease: EASE }}>
                   <p className="fst-micro">R1 sélectionné</p>
-                  <div className="wl-slot-head">
+                  <div className="wl-slot-head wl-pulse">
                     <span className="wl-slot-name">{selected.full_name}</span>
                     <span className="wl-r1" data-soon={isSoon(selected, today) || undefined}>{slotLabel(target)}</span>
                   </div>
@@ -331,13 +389,8 @@ export default function WebinarLeads() {
                   </p>
                   <div className="wl-people">
                     {groups.free.map((s) => (
-                      <div key={s.email} className="wl-person" data-active={agenda?.email === s.email || undefined}>
-                        <button type="button" className="wl-person-who" onClick={() => setSalesEmail(s.email)} title="Voir son agenda">
-                          <Who name={s.name} /><span className="wl-free-dot">Libre</span>
-                        </button>
-                        <button type="button" className="fst-btn is-small is-dark" disabled={assigning === selected.id}
-                          onClick={() => assign(selected, s)}>Affecter</button>
-                      </div>
+                      <PersonRow key={s.email} person={s} free active={agenda?.email === s.email} pending={pending[selected.id]}
+                        onShow={() => showAgenda(s.email)} onAssign={() => assign(selected, s)} />
                     ))}
                   </div>
                   {groups.busy.length > 0 && (
@@ -348,13 +401,8 @@ export default function WebinarLeads() {
                       <Collapse open={othersOpen}>
                         <div className="wl-people is-muted">
                           {groups.busy.map((s) => (
-                            <div key={s.email} className="wl-person" data-active={agenda?.email === s.email || undefined}>
-                              <button type="button" className="wl-person-who" onClick={() => setSalesEmail(s.email)} title="Voir son agenda">
-                                <Who name={s.name} /><span className="wl-menu-note">{s.readable ? 'Pas libre' : 'Agenda illisible'}</span>
-                              </button>
-                              <button type="button" className="fst-btn is-small" disabled={assigning === selected.id}
-                                onClick={() => assign(selected, s)}>Affecter quand même</button>
-                            </div>
+                            <PersonRow key={s.email} person={s} active={agenda?.email === s.email} pending={pending[selected.id]}
+                              onShow={() => showAgenda(s.email)} onAssign={() => assign(selected, s)} />
                           ))}
                         </div>
                       </Collapse>
@@ -369,9 +417,21 @@ export default function WebinarLeads() {
             </AnimatePresence>
 
             {agenda && (
-              <div className="wl-agenda">
+              <div className="wl-agenda" ref={agendaRef}>
+                <div className="wl-agenda-title">
+                  <span className="fst-micro">Agenda de</span>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <Motion.span key={agenda.email} className="wl-agenda-name" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.24, ease: EASE }}>
+                      <Who name={agenda.name} />
+                      {target && (groups.free.some((g) => g.email === agenda.email)
+                        ? <span className="wl-free-dot">Libre sur le R1</span>
+                        : <span className="wl-menu-note">Pas libre sur le R1</span>)}
+                    </Motion.span>
+                  </AnimatePresence>
+                </div>
                 <div className="wl-agenda-head">
-                  <select className="fst-select wl-agenda-select" value={agenda.email} onChange={(e) => setSalesEmail(e.target.value)} aria-label="Sales">
+                  <select className="fst-select wl-agenda-select" value={agenda.email} onChange={(e) => showAgenda(e.target.value)} aria-label="Changer de sales">
                     {groups.free.length > 0 && (
                       <optgroup label="Libres sur le R1">
                         {groups.free.map((s) => <option key={s.email} value={s.email}>{s.name}</option>)}
