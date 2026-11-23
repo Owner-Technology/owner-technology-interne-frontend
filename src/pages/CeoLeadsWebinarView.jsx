@@ -1,48 +1,77 @@
 // src/pages/CeoLeadsWebinarView.jsx
 //
-// Route /ceo/leads-webinaire — page « Leads webinaire » (dev 23/11/2026) : la Gestion des leads réduite aux R1
-// webinaire posés par les setters et encore sans commercial. Le back décide qui la lit (deux comptes) ; le menu
-// la montre aux rôles de ces comptes (ITEM_ROLE_GATE).
-//
-// Copie de CeoLeadsManagementView.
+// « Leads webinaire » dans le dashboard (dev 23/11/2026) : les R1 webinaire posés par les setters et encore sans sales,
+// avec les sales libres sur chaque créneau et leur agenda, au style de la page Finance. Même gabarit que la page Leads.
+// Le back décide qui la lit (deux comptes) ; le menu la montre aux rôles de ces comptes (WEBINAR_LEADS_ROLES).
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../services/apiClient";
 import { navigateBackToDashboard } from "../utils/dashboardNavigation";
-import LeadsManagement from "./LeadsManagement.jsx";
 import { SIDEBAR_SECTIONS, getColors } from "./CeoDashboard.jsx";
 import Sidebar from "../components/shared/Sidebar";
-import { getVisibleSections } from "../utils/sidebarPermissions";
-import { WEBINAR_LEADS_ROLES } from "../utils/sidebarPermissions";
+import { WEBINAR_LEADS_ROLES, getVisibleSections } from "../utils/sidebarPermissions";
+import WebinarLeads from "../components/webinarLeads/WebinarLeads.jsx";
+// Le kit de la page Finance ne porte pas le mode sombre : cette feuille le lui donne sous `.ab-root`.
+import "../components/automationBoard/automation.css";
 
 const ALLOWED_ROLES = new Set(WEBINAR_LEADS_ROLES);
+const TAB_ID = "webinar_leads";
+
+// Routes propres aux onglets de la barre ; les autres passent par navigateBackToDashboard.
+const TAB_ROUTES = {
+  sequences: "/ceo/sequences", webinar: "/ceo/webinar", dispatch: "/ceo/dispatch", leaderboard: "/ceo/leaderboard",
+  perf_sales: "/ceo/perf-sales", autoassign: "/ceo/auto-affectation", variables: "/ceo/variables", conges: "/ceo/conges",
+  work_hours: "/ceo/work-hours", lead_quality: "/ceo/lead-quality", sales_team: "/ceo/sales-team",
+  sales_recordings: "/ceo/sales-recordings", campaigns: "/ceo/campaigns", funnel_leads: "/ceo/funnel-leads",
+  my_tracking_sheet: "/tracking-sheet", optilex_board: "/ceo/optilex-board", leads_management: "/ceo/leads-management",
+};
 
 export default function CeoLeadsWebinarView() {
   const navigate = useNavigate();
 
+  // ── DARK MODE (piloté par le menu de gauche de ce wrapper) ──
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
   useEffect(() => {
-    const onStorage = (e) => { if (e.key === "darkMode") setDarkMode(e.newValue === "true"); };
+    const onStorage = (e) => {
+      if (e.key === "darkMode") setDarkMode(e.newValue === "true");
+    };
     window.addEventListener("storage", onStorage);
     const interval = setInterval(() => {
       const isDark = document.body.classList.contains("dark-mode");
       setDarkMode((prev) => (prev !== isDark ? isDark : prev));
     }, 500);
-    return () => { window.removeEventListener("storage", onStorage); clearInterval(interval); };
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      clearInterval(interval);
+    };
   }, []);
 
+  // La coquille est la source du thème de cette route (même raison que CeoSmallLeadsView).
+  useEffect(() => {
+    localStorage.setItem("darkMode", String(darkMode));
+    document.body.classList.toggle("dark-mode", darkMode);
+    document.documentElement.classList.toggle("dark-mode", darkMode);
+  }, [darkMode]);
+
+  // ── SIDEBAR COLLAPSE ──
   const [sideCollapsed, setSideCollapsed] = useState(() => {
     const stored = localStorage.getItem("ceoSideCollapsed_v2");
     return stored === null ? true : stored === "true";
   });
-  useEffect(() => { localStorage.setItem("ceoSideCollapsed_v2", String(sideCollapsed)); }, [sideCollapsed]);
+  useEffect(() => {
+    localStorage.setItem("ceoSideCollapsed_v2", String(sideCollapsed));
+  }, [sideCollapsed]);
 
+  // ── AUTH GATE ──
   const [authChecked, setAuthChecked] = useState(false);
   const [userRole, setUserRole] = useState(null);
   useEffect(() => {
     const u = apiClient.getUser();
-    if (!u || !ALLOWED_ROLES.has(u.role)) { navigate("/"); return; }
+    if (!u || !ALLOWED_ROLES.has(u.role)) {
+      navigate("/");
+      return;
+    }
     setUserRole(u.role);
     setAuthChecked(true);
   }, [navigate]);
@@ -50,39 +79,39 @@ export default function CeoLeadsWebinarView() {
   const C = useMemo(() => getColors(darkMode), [darkMode]);
   const visibleSections = useMemo(() => getVisibleSections(SIDEBAR_SECTIONS, userRole), [userRole]);
 
-  // ── SIDEBAR NAVIGATION HANDLER ──────────────────────────────────────
   const handleSidebarTabClick = (tabId) => {
-    if (tabId === "webinar_leads") return; // déjà ici
-    if (tabId === "leads_management") { navigate("/ceo/leads-management"); return; }
-    if (tabId === "sequences") { navigate("/ceo/sequences"); return; }
-    if (tabId === "funnel_leads") { navigate("/ceo/funnel-leads"); return; }
-    if (tabId === "webinar") { navigate("/ceo/webinar"); return; }
-    if (tabId === "campaigns") { navigate("/ceo/campaigns"); return; }
-    if (tabId === "dispatch") { navigate("/ceo/dispatch"); return; }
-    if (tabId === "leaderboard") { navigate("/ceo/leaderboard"); return; }
-    if (tabId === "perf_sales") { navigate("/ceo/perf-sales"); return; }
-    if (tabId === "autoassign") { navigate("/ceo/auto-affectation"); return; }
-    if (tabId === "variables") { navigate("/ceo/variables"); return; }
-    if (tabId === "conges") { navigate("/ceo/conges"); return; }
-    if (tabId === "work_hours") { navigate("/ceo/work-hours"); return; }
-    if (tabId === "lead_quality") { navigate("/ceo/lead-quality"); return; }
-    if (tabId === "sales_team") { navigate("/ceo/sales-team"); return; }
-    if (tabId === "sales_recordings") { navigate("/ceo/sales-recordings"); return; }
-    if (tabId === 'my_tracking_sheet') { navigate('/tracking-sheet'); return; }
-    if (tabId === 'optilex_board') { navigate('/ceo/optilex-board'); return; }
+    if (tabId === TAB_ID) return;
+    if (TAB_ROUTES[tabId]) { navigate(TAB_ROUTES[tabId]); return; }
     navigateBackToDashboard(navigate, userRole, tabId);
   };
 
   if (!authChecked) {
     return (
-      <div style={{ minHeight: "100vh", background: C.surface, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif", fontSize: 14 }}>
+      <div style={{
+        minHeight: "100vh",
+        background: C.surface,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: C.muted, fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+        fontSize: 14,
+      }}>
         Chargement…
       </div>
     );
   }
 
   return (
-    <div className="ceo-page" style={{ display: "flex", minHeight: "100vh", background: darkMode ? "#0f1117" : "#ecedf2", fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif", WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", textRendering: "optimizeLegibility" }}>
+    <div
+      className="ceo-page ab-root"
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: darkMode ? "#141414" : "#f4f2ef",
+        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
+      }}
+    >
       <style>{`
         .ceo-side { transition: width 0.22s cubic-bezier(0.4,0,0.2,1); }
         .ceo-side-item { transition: background 0.12s ease; }
@@ -95,13 +124,13 @@ export default function CeoLeadsWebinarView() {
         .ceo-side-scroll::-webkit-scrollbar-track { background: transparent; }
       `}</style>
 
-      <div style={{ position: "sticky", top: 0, alignSelf: "flex-start", height: "100vh", display: "flex" }}>
+      <div style={{ height: "100vh", display: "flex", flexShrink: 0 }}>
         <Sidebar
           width={sideCollapsed ? 56 : 260}
           collapsed={sideCollapsed}
           onToggle={() => setSideCollapsed((v) => !v)}
           sections={visibleSections}
-          activeTab="webinar_leads"
+          activeTab={TAB_ID}
           setActiveTab={handleSidebarTabClick}
           C={C}
           darkMode={darkMode}
@@ -109,8 +138,8 @@ export default function CeoLeadsWebinarView() {
         />
       </div>
 
-      <div style={{ flex: 1, minWidth: 0, position: 'relative', paddingTop: 16 }}>
-        <LeadsManagement embedded={true} darkModeOverride={darkMode} C={C} webinar />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", height: "100vh" }}>
+        <WebinarLeads />
       </div>
     </div>
   );
