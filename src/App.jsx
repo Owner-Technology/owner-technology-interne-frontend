@@ -46,6 +46,7 @@ const CeoSalesRecordingsView = lazy(() => import("./pages/CeoSalesRecordingsView
 const CeoWebinarView = lazy(() => import("./pages/CeoWebinarView.jsx"));
 const CeoFunnelLeadsView = lazy(() => import("./pages/CeoFunnelLeadsView.jsx"));
 const CeoLeadsManagementView = lazy(() => import("./pages/CeoLeadsManagementView.jsx"));
+const CeoLeadsWebinarView = lazy(() => import("./pages/CeoLeadsWebinarView.jsx"));
 const AcquisitionDirectorDashboard = lazy(() => import("./pages/AcquisitionDirectorDashboard.jsx"));
 const Marketing = lazy(() => import("./pages/Marketing/index.jsx"));
 const FunnelLeads = lazy(() => import("./pages/FunnelLeads/index.jsx"));
@@ -74,6 +75,7 @@ const OnboardingTest = lazy(() => import("./pages/OnboardingTest.jsx"));
 
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import { READ_ONLY_DIRECTION_ROLES } from "./utils/readOnlyRoles.js";
+import { WEBINAR_LEADS_ROLES } from "./utils/sidebarPermissions.js";
 import MouseDot from "./components/MouseDot.jsx";
 import CancelReasonPrompt from "./components/CancelReasonPrompt.jsx";
 
@@ -322,6 +324,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin', 'ceo', 'acquisition_director', 'head_of_acquisition', 'hr', 'customer_success_manager', 'finance_director', 'head_of_sales_manager']}>
               <CeoFunnelLeadsView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ceo/leads-webinaire"
+          element={
+            <ProtectedRoute allowedRoles={WEBINAR_LEADS_ROLES}>
+              <CeoLeadsWebinarView />
             </ProtectedRoute>
           }
         />
