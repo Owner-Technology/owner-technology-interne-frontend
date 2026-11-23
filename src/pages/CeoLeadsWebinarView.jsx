@@ -27,8 +27,20 @@ const TAB_ROUTES = {
   my_tracking_sheet: "/tracking-sheet", optilex_board: "/ceo/optilex-board", leads_management: "/ceo/leads-management",
 };
 
+// Sur téléphone, le menu de gauche n'a pas de version mobile : la page prend tout l'écran (dev 23/11/2026).
+const PHONE = "(max-width: 760px)";
+const isPhone = () => typeof window !== "undefined" && Boolean(window.matchMedia?.(PHONE).matches);
+
 export default function CeoLeadsWebinarView() {
   const navigate = useNavigate();
+  const [phone, setPhone] = useState(isPhone);
+  useEffect(() => {
+    const media = window.matchMedia?.(PHONE);
+    if (!media) return undefined;
+    const update = () => setPhone(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   // ── DARK MODE (piloté par le menu de gauche de ce wrapper) ──
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
@@ -104,7 +116,7 @@ export default function CeoLeadsWebinarView() {
       className="ceo-page ab-root"
       style={{
         display: "flex",
-        height: "100vh",
+        height: phone ? "100dvh" : "100vh",
         background: darkMode ? "#141414" : "#f4f2ef",
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         WebkitFontSmoothing: "antialiased",
@@ -124,7 +136,7 @@ export default function CeoLeadsWebinarView() {
         .ceo-side-scroll::-webkit-scrollbar-track { background: transparent; }
       `}</style>
 
-      <div style={{ height: "100vh", display: "flex", flexShrink: 0 }}>
+      {!phone && <div style={{ height: "100vh", display: "flex", flexShrink: 0 }}>
         <Sidebar
           width={sideCollapsed ? 56 : 260}
           collapsed={sideCollapsed}
@@ -136,9 +148,9 @@ export default function CeoLeadsWebinarView() {
           darkMode={darkMode}
           setDarkMode={setDarkMode}
         />
-      </div>
+      </div>}
 
-      <div style={{ flex: 1, minWidth: 0, display: "flex", height: "100vh" }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", height: phone ? "100dvh" : "100vh" }}>
         <WebinarLeads />
       </div>
     </div>
