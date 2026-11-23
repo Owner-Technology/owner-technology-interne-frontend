@@ -18,7 +18,9 @@ const COLORS = {
   tertiary: "#10b981",
 };
 
-export default function LeadsManagement({ embedded = false, darkModeOverride, C: externalC } = {}) {
+// `webinar` (dev 23/11/2026, page « Leads webinaire ») : seulement les R1 webinaire posés par les setters et encore
+// sans commercial (GET /leads/webinar-awaiting). Une fiche affectée quitte la liste ; l'affectation est la même.
+export default function LeadsManagement({ embedded = false, darkModeOverride, C: externalC, webinar = false } = {}) {
   const navigate = useNavigate();
 
   // ── DARK MODE ───────────────────────────────────────────────────────────────
@@ -174,12 +176,12 @@ export default function LeadsManagement({ embedded = false, darkModeOverride, C:
       // Fetch all data in parallel for faster loading
       const [leadsResult, upcomingResult, clientsResult, salesResult, salesTeamResult, assignableResult] = await Promise.all([
         // Les 400 leads les plus récents, doublons compris (dev 22/10/2026 : « même les doublons faut que je les voie »)
-        apiClient.get(`/api/v1/leads?limit=400`).catch(err => {
+        apiClient.get(webinar ? '/api/v1/leads/webinar-awaiting' : `/api/v1/leads?limit=400`).catch(err => {
           console.error("Error fetching leads:", err);
           return { leads: [], items: [], data: [] };
         }),
         // Et tous ceux qui ont un RDV à venir, quel que soit leur âge (un RDV webinaire pris une semaine plus tôt)
-        apiClient.get(`/api/v1/leads?upcoming_rdv=true&limit=1000`).catch(err => {
+        (webinar ? Promise.resolve({ leads: [] }) : apiClient.get(`/api/v1/leads?upcoming_rdv=true&limit=1000`)).catch(err => {
           console.error("Error fetching leads with an upcoming appointment:", err);
           return { leads: [] };
         }),
@@ -541,8 +543,8 @@ export default function LeadsManagement({ embedded = false, darkModeOverride, C:
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
               <div>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>Gestion des Leads</h1>
-                <p style={{ fontSize: 13, color: C.muted, margin: '4px 0 0' }}>{leads.filter(l => !['cc', 'setter'].includes((l.origin || '').toLowerCase())).length} leads</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>{webinar ? 'Leads webinaire' : 'Gestion des Leads'}</h1>
+                <p style={{ fontSize: 13, color: C.muted, margin: '4px 0 0' }}>{leads.filter(l => !['cc', 'setter'].includes((l.origin || '').toLowerCase()) && !(webinar && l.assigned_to)).length} leads</p>
               </div>
               <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{
                 padding: '8px 32px 8px 14px', borderRadius: 10, border: `1px solid ${C.border}`,
@@ -703,7 +705,7 @@ export default function LeadsManagement({ embedded = false, darkModeOverride, C:
                       </thead>
                       <tbody>
                         {(() => {
-                          let filtered = leads.filter(l => !['cc', 'setter'].includes((l.origin || '').toLowerCase()));
+                          let filtered = leads.filter(l => !['cc', 'setter'].includes((l.origin || '').toLowerCase()) && !(webinar && l.assigned_to));
                           // Apply filters
                           if (filterOrigine.length > 0) filtered = filtered.filter(l => filterOrigine.includes((l.origin || '').trim()));
                           if (filterStatut.length > 0) filtered = filtered.filter(l => {

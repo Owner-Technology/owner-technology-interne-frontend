@@ -7,10 +7,11 @@
 import { createElement } from "react";
 import {
   BarChart3, Building2, Calculator, Clock3, Crown, Eye, Filter, Gauge, HeartHandshake, Inbox, LayoutDashboard, LineChart,
-  Megaphone, MonitorDot, NotebookPen, PhoneCall, Sheet, Shuffle, Target, Trophy, UsersRound, Wallet,
+  Megaphone, MonitorDot, MonitorPlay, NotebookPen, PhoneCall, Sheet, Shuffle, Target, Trophy, UsersRound, Wallet,
 } from "lucide-react";
 import apiClient from "../services/apiClient";
 import { isHiddenTab } from "../utils/hiddenPages.js";
+import { WEBINAR_LEADS_ROLES } from "../utils/sidebarPermissions.js";
 
 const I = (icon) => createElement(icon, { size: 16, strokeWidth: 1.9 });
 const roleIn = (...roles) => (u) => roles.includes(u?.role);
@@ -21,6 +22,7 @@ export const MY_PAGES = [
   { id: "page:leaderboard", tab: "leaderboard", label: "Suivi des ventes", path: "/", icon: I(Trophy), visible: access("leaderboard") },
   { id: "page:admin-leads", label: "Monitoring Lead", path: "/admin/leads", icon: I(Eye), visible: access("admin_leads") },
   { id: "page:leads-management", tab: "leads_management", label: "Gestion des leads", path: "/leads-management", icon: I(Shuffle), visible: access("leads_management") },
+  { id: "page:leads-webinaire", tab: "webinar_leads", label: "Leads webinaire", path: "/ceo/leads-webinaire", icon: I(MonitorPlay), visible: roleIn(...WEBINAR_LEADS_ROLES) },
   { id: "page:monitoring-perf", tab: "perf_sales", label: "Monitoring Sales", path: "/monitoring-perf", icon: I(LineChart), visible: access("monitoring_perf") },
   { id: "page:tracking-sheet", tab: "my_tracking_sheet", label: "Tracking Sheet", path: "/tracking-sheet", icon: I(Sheet), visible: access("tracking_sheet") },
   { id: "page:tracking-setter", label: "Tracking Setter", path: "/tracking-setter", icon: I(PhoneCall), visible: access("tracking_sheet_setter") },

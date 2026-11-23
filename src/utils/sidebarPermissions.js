@@ -53,7 +53,11 @@ const ROLE_ITEMS = {
 // Additif : un id absent d'ici garde le comportement précédent.
 // Les rôles en lecture seule de la direction (RH) voient aussi ces onglets, en lecture (dev 06/11/2026 : « il y a des
 // pages qui lui manquent », comme sur le tableau de bord de la direction financière).
+// Page « Leads webinaire » (23/11/2026) : les rôles des deux comptes qui la lisent ; le back garde le compte exact.
+export const WEBINAR_LEADS_ROLES = ["admin", "head_of_sales_manager"];
+
 const ITEM_ROLE_GATE = {
+  webinar_leads: new Set(WEBINAR_LEADS_ROLES),
   sales_recordings: new Set(["ceo", "admin", "acquisition_director", "head_of_acquisition", "head_of_sales_manager", "head_of_sales", ...READ_ONLY_DIRECTION_ROLES]),
   // « Gestion des leads » dans le dashboard acquisition : réservé à head_of_acquisition
   // (Timothy) + admin/ceo. acquisition_director (Gaylord) ne le voit PAS.
