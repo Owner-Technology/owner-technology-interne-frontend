@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import { EASE, useCountUp, useDrawn, useRevealed } from '../perfSales/motion.jsx';
-import { Avatar, Card, Collapse, Num, Page, Pill, Reveal, Segmented, TableBox, Th } from '../../pages/TrackingSheetFinance/components/PageKit.jsx';
+import { Avatar, Card, Collapse, Num, Page, Pill, Reveal, Segmented, TableBox, Tag, Th, Who } from '../../pages/TrackingSheetFinance/components/PageKit.jsx';
 import { Fill, ProgressRing } from '../../pages/TrackingSheetFinance/statistics/parts.jsx';
 import { PeriodPicker } from '../../pages/TrackingSheetFinance/statistics/PeriodPicker.jsx';
 import { barHeights, count, dayShort, eur, originGroups, pct, plural } from '../../pages/TrackingSheetFinance/statistics/model.js';
@@ -962,10 +962,51 @@ function BoardCells({ row, whole: full = true }) {
   );
 }
 
-function BoardCard({ state }) {
+// Les KPI du haut : les leads reçus sur la période, tous canaux d'acquisition, canal par canal.
+function BoardLeadsCard({ state, when, onSeeLeads }) {
+  const d = state.data;
+  const total = d?.total?.leads || 0;
+  const channels = (d?.channels || []).filter((c) => c.total > 0).sort((x, y) => y.total - x.total);
+  return (
+    <Card title="Leads reçus" Icon={Inbox} state={state} skeleton={170} className="ld-glow" data-glow="blue"
+      actions={d && <button type="button" className="fst-btn is-small" onClick={() => onSeeLeads(null)}><List size={14} />Voir les leads</button>}>
+      {d && (
+        <div className="ld-board-top">
+          <div className="ld-hero">
+            <BigNumber value={total} />
+            <div className="ld-hero-sub"><span>{total > 1 ? 'leads reçus' : 'lead reçu'} {when}</span></div>
+          </div>
+          <div className="ld-stats ld-board-kpis">
+            {channels.map((c) => {
+              const ChannelIcon = CHANNEL_ICON[c.key] || CircleDot;
+              return (
+                <button key={c.key} type="button" className="ld-kpi" onClick={() => onSeeLeads(c.key)} title="Voir ces leads">
+                  <StatChip value={c.total} label={c.label} share={total ? c.total / total : 0} sub={`${pct(total ? c.total / total : 0, 0)} des leads`}
+                    color={TONE_INK[channelTone(c.key)]} icon={<ChannelIcon size={15} strokeWidth={2} />} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function BoardCard({ state, leads }) {
   const [open, setOpen] = useState(null);
   const b = state.data;
   const t = b?.totals;
+  // Les leads reçus de chaque canal (même période), et les canaux qui ont reçu des leads sans vente signée.
+  const received = useMemo(() => byKey(leads?.channels || []), [leads]);
+  const rows = useMemo(() => {
+    if (!b) return [];
+    const sold = new Set(b.channels.map((c) => c.key));
+    const silent = (leads?.channels || []).filter((c) => c.total > 0 && !sold.has(c.key))
+      .map((c) => ({ key: c.key, label: c.label, sales: 0, retracted: 0, net: 0, arr_eur: 0, ads_spend_eur: null, commissions_eur: 0, cost_eur: 0, margin_pct: null, cac_eur: null, share_pct: null, origins: [] }));
+    return [...b.channels, ...silent];
+  }, [b, leads]);
+  const leadsOf = (key) => (leads ? count(received[key]?.total || 0) : '—');
   const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
   return (
     <Card title="Board général" Icon={BadgeEuro} state={state} skeleton={460}>
@@ -986,14 +1027,14 @@ function BoardCard({ state }) {
               {t.people != null && <Fact label="Sales" value={t.people} />}
             </div>
           </div>
-          {b.channels.length === 0 ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
+          {rows.length === 0 ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
             <div className="ld-board-scroll">
               <table className="fst-months ld-recap ld-board">
                 <thead>
-                  <tr><th>Canal</th><th>Ventes</th><th>Rétractations</th><th>Clients nets</th><th>ARR Owner</th><th>Budget ads</th><th>Commissions sales</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th></tr>
+                  <tr><th>Canal</th><th>Leads reçus</th><th>Ventes</th><th>Rétractations</th><th>Clients nets</th><th>ARR Owner</th><th>Budget ads</th><th>Commissions sales</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th></tr>
                 </thead>
                 <tbody>
-                  {b.channels.map((c) => (
+                  {rows.map((c) => (
                     <Fragment key={c.key}>
                       <tr data-open={open === c.key || undefined} className="ld-board-row" onClick={() => setOpen(open === c.key ? null : c.key)}>
                         <td>
@@ -1003,19 +1044,20 @@ function BoardCard({ state }) {
                             {c.share_pct != null && <small>{rate(c.share_pct)} de l'ARR</small>}
                           </button>
                         </td>
+                        <td className="fst-num is-strong">{leadsOf(c.key)}</td>
                         <BoardCells row={c} />
                       </tr>
                       {open === c.key && c.origins.map((o) => (
-                        <tr key={o.label} className="ld-board-sub"><td>{o.label}</td><BoardCells row={o} whole={false} /></tr>
+                        <tr key={o.label} className="ld-board-sub"><td>{o.label}</td><td /><BoardCells row={o} whole={false} /></tr>
                       ))}
                     </Fragment>
                   ))}
                 </tbody>
                 <tfoot>
                   {fixed != null && (
-                    <tr className="ld-board-fixed"><td>Fixes et primes des sales</td><td colSpan={6} /><td className="fst-num">{euros(fixed)}</td><td colSpan={2} /></tr>
+                    <tr className="ld-board-fixed"><td>Fixes et primes des sales</td><td colSpan={7} /><td className="fst-num">{euros(fixed)}</td><td colSpan={2} /></tr>
                   )}
-                  <tr><td>Total</td><BoardCells row={t} /></tr>
+                  <tr><td>Total</td><td className="fst-num">{leads ? count(leads.total?.leads || 0) : '—'}</td><BoardCells row={t} /></tr>
                 </tfoot>
               </table>
             </div>
@@ -1026,9 +1068,75 @@ function BoardCard({ state }) {
   );
 }
 
+const BOARD_ORDER = ['meta_ads', 'webinar', 'cold_call', 'ccs', 'referral', 'linkedin', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'partners', 'simulator', 'web', 'other'];
+
+// Les ventes de la période, une par ligne, rangées sales par sales (la feuille « Apports d'affaires » du CEO) : le client,
+// l'origine du lead en couleur, l'effectif, l'ARR Owner, la commission et l'état. `Par sales` ou toutes à la suite.
+const BOARD_VIEWS = [{ key: 'people', label: 'Par sales' }, { key: 'all', label: 'Toutes les ventes' }];
+const saleDay = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+function SaleRow({ sale, who = false }) {
+  return (
+    <tr data-off={sale.retracted || undefined}>
+      <td className="is-nowrap fst-cell-muted">{saleDay(sale.signed_at)}</td>
+      <td className="is-wrap">{sale.client}</td>
+      {who && <td><Who name={sale.sales_person} /></td>}
+      <td className="is-nowrap"><Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag>{sale.origin && <small className="ld-sale-origin">{sale.origin}</small>}</td>
+      <td className="is-nowrap">{sale.headcount || <span className="fst-cell-muted">–</span>}</td>
+      <td className="is-num">{euros(sale.arr_eur)}</td>
+      <td className="is-num">{euros(sale.commission_eur)}</td>
+      <td className="is-nowrap">{sale.retracted ? <Tag tone="red">Rétractation</Tag> : <span className="fst-cell-muted">{sale.finance_status || '–'}</span>}</td>
+    </tr>
+  );
+}
+
+function BoardSalesCard({ state }) {
+  const [view, setView] = useState('people');
+  const sales = state.data?.sales;
+  const people = state.data?.people;
+  const bySeller = useMemo(() => {
+    const map = new Map();
+    (sales || []).forEach((x) => { if (!map.has(x.sales_person)) map.set(x.sales_person, []); map.get(x.sales_person).push(x); });
+    return map;
+  }, [sales]);
+  return (
+    <Card title="Ventes signées, sales par sales" Icon={Users} state={state} skeleton={420}
+      actions={sales?.length ? <Segmented small value={view} onChange={setView} label="Présentation" options={BOARD_VIEWS} /> : null}>
+      {sales && (!sales.length ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
+        <TableBox minWidth={view === 'all' ? 1060 : 940} free={false}>
+          <thead>
+            <tr><Th>Signée le</Th><Th>Client</Th>{view === 'all' && <Th>Sales</Th>}<Th>Origine</Th><Th>Effectif</Th><Th num>ARR Owner</Th><Th num>Commission</Th><Th>État</Th></tr>
+          </thead>
+          <tbody>
+            {view === 'all' ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : (people || []).map((person) => (
+              <Fragment key={person.name}>
+                <tr className="ld-seller">
+                  <td colSpan={4}>
+                    <span className="ld-seller-name"><Who name={person.name} /></span>
+                    <span className="ld-seller-facts">
+                      {plural(person.sales, 'vente')}{person.retracted > 0 && ` · ${plural(person.retracted, 'rétractation')}`}
+                      {BOARD_ORDER.filter((key) => person.by_channel?.[key]).map((key) => (
+                        <i key={key} className="ld-seller-mark" title={key}><i className="ld-capsule" style={{ background: channelColor(key) }} />{person.by_channel[key]}</i>
+                      ))}
+                      {person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
+                    </span>
+                  </td>
+                  <td className="is-num">{euros(person.arr_eur)}</td>
+                  <td className="is-num">{euros(person.commissions_eur)}</td>
+                  <td />
+                </tr>
+                {(bySeller.get(person.name) || []).map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} />)}
+              </Fragment>
+            ))}
+          </tbody>
+        </TableBox>
+      ))}
+    </Card>
+  );
+}
+
 // La vue par mois : le tableau du CEO, un mois par colonne, les lignes rangées comme son classeur (clients signés, ARR
 // Owner, coût, rentabilité, chacun canal par canal). Un clic sur un mois l'ouvre dans le board au-dessus.
-const BOARD_ORDER = ['meta_ads', 'webinar', 'cold_call', 'ccs', 'referral', 'linkedin', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'partners', 'simulator', 'web', 'other'];
 const MONTH_SHORT = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
 
 function BoardMonthsCard({ state, range, onPick }) {
@@ -1189,7 +1297,9 @@ export default function LeadsDashboard() {
 
       {tab === 'board' && (
         <>
-          <Reveal><BoardCard state={board} /></Reveal>
+          <Reveal><BoardLeadsCard state={current} when={when} onSeeLeads={seeLeads} /></Reveal>
+          <Reveal className="ld-gap"><BoardCard state={board} leads={d} /></Reveal>
+          <Reveal className="ld-gap"><BoardSalesCard state={board} /></Reveal>
           <Reveal className="ld-gap"><BoardMonthsCard state={board} range={range} onPick={pickMonth} /></Reveal>
         </>
       )}

@@ -238,3 +238,20 @@
 .ld-sheet tr[data-strong] td { font-weight: 600; color: var(--ink); border-bottom-color: var(--line); }
 .ld-sheet .ld-sheet-section th { padding: 26px 8px 8px; text-align: left; font-size: 11.5px; font-weight: 450; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; border-bottom: 1px solid var(--line); }
 .ld-sheet tbody tr.ld-sheet-section:first-child th { padding-top: 6px; }
+
+/* Ventes signées, sales par sales : une ligne d'en-tête par sales, ses ventes en dessous. */
+.ld-seller td { background: var(--hover); border-top: 1px solid var(--line); font-weight: 500; }
+.ld-seller td + td { border-left-color: transparent; }
+.ld-seller-name { display: inline-flex; vertical-align: middle; margin-right: 14px; }
+.ld-seller-facts { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; font-weight: 400; color: var(--muted); vertical-align: middle; }
+.ld-seller-mark { display: inline-flex; align-items: center; gap: 5px; font-style: normal; color: var(--ink); }
+.ld-seller-mark .ld-capsule { height: 14px; }
+.ld-sale-origin { margin-left: 8px; font-size: 12px; color: var(--muted); }
+.fst-table tr[data-off] td { color: var(--muted); }
+.fst-table tr[data-off] td:nth-child(2) { text-decoration: line-through; }
+
+/* KPI du board : les leads reçus sur la période, canal par canal. */
+.ld-board-kpis { margin-top: 0; justify-content: flex-end; flex: 1; }
+.ld-kpi { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 999px; transition: transform .15s; }
+.ld-kpi:hover { transform: translateY(-1px); }
+.ld-board { min-width: 1020px; }
