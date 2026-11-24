@@ -1071,7 +1071,7 @@ function BoardCard({ state, leads }) {
                         <BoardCells row={c} />
                       </tr>
                       {open === c.key && c.origins.map((o) => (
-                        <tr key={o.label} className="ld-board-sub"><td>{o.label}</td><td /><BoardCells row={o} whole={false} /></tr>
+                        <tr key={o.label} className="ld-board-sub"><td>{originName(o.label)}</td><td /><BoardCells row={o} whole={false} /></tr>
                       ))}
                     </Fragment>
                   ))}
@@ -1096,6 +1096,9 @@ const BOARD_ORDER = ['meta_ads', 'webinar', 'old_webinar', 'cold_call', 'ccs', '
 // Les ventes de la période, une par ligne, rangées sales par sales (la feuille « Apports d'affaires » du CEO) : le client,
 // l'origine du lead en couleur, l'effectif, l'ARR Owner, la commission et l'état. `Par sales` ou toutes à la suite.
 const BOARD_VIEWS = [{ key: 'people', label: 'Par sales' }, { key: 'all', label: 'Toutes les ventes' }];
+// L'origine écrite sur la fiche, en clair : « cc » et « setter » sont des codes du CRM.
+const ORIGIN_NAMES = { cc: 'Cold call sales', 'cold call': 'Cold call sales', 'lien sales': 'Cold call sales', lien_sales: 'Cold call sales', setter: 'Cold call setter', ccs: 'Cold call setter', 'cold call setter': 'Cold call setter' };
+const originName = (origin) => (origin ? ORIGIN_NAMES[String(origin).trim().toLowerCase()] || origin : '–');
 const saleDay = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 function SaleRow({ sale, who = false }) {
@@ -1106,7 +1109,7 @@ function SaleRow({ sale, who = false }) {
       {who && <td className="is-heavy"><Who name={sale.sales_person} /></td>}
       <td className="is-nowrap"><Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag></td>
       <td className="is-nowrap fst-cell-muted">
-        {sale.origin || '–'}
+        {originName(sale.origin)}
         {sale.webinar && <span className="ld-sale-webinar"><Tag tone="lime">{sale.webinar.phase}</Tag><Tag tone={sale.webinar.via.startsWith('Relance') ? 'yellow' : 'green'}>{sale.webinar.via}</Tag></span>}
       </td>
       <td className="is-nowrap is-heavy">{sale.headcount || <span className="fst-cell-muted">–</span>}</td>
