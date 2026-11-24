@@ -220,4 +220,21 @@
 .ld-board-margin[data-tone="low"] { color: var(--red); }
 .ld-board tfoot .ld-board-fixed td { font-weight: 400; color: var(--muted); border-top: 1px solid var(--line); }
 .ld-board tfoot .ld-board-fixed + tr td { border-top: 0; padding-top: 4px; }
-.ld-board-months { min-width: 1040px; }
+
+/* Vue par mois : un mois par colonne, les lignes rangées par famille (clients signés, ARR, coût, rentabilité). */
+.ld-sheet { min-width: 860px; margin-top: 0; }
+.ld-sheet thead th { padding: 0 4px 8px; }
+.ld-sheet thead button { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 6px 10px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--ink); cursor: pointer; transition: background .15s; }
+.ld-sheet thead button:hover { background: var(--hover); }
+.ld-sheet thead th[data-on] button { background: var(--hover); }
+.ld-sheet thead small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.ld-sheet td { padding-top: 8px; padding-bottom: 8px; }
+.ld-sheet td:first-child { white-space: nowrap; color: var(--ink); }
+.ld-sheet td:first-child small { margin-left: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.ld-sheet td[data-on] { background: var(--hover); }
+.ld-sheet td[data-none] { color: var(--faint, var(--muted)); }
+.ld-sheet tbody tr:hover { background: none; }
+.ld-sheet tbody tr:not(.ld-sheet-section):hover td { background: var(--hover); }
+.ld-sheet tr[data-strong] td { font-weight: 600; color: var(--ink); border-bottom-color: var(--line); }
+.ld-sheet .ld-sheet-section th { padding: 26px 8px 8px; text-align: left; font-size: 11.5px; font-weight: 450; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; border-bottom: 1px solid var(--line); }
+.ld-sheet tbody tr.ld-sheet-section:first-child th { padding-top: 6px; }
