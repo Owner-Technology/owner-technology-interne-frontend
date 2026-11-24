@@ -1026,34 +1026,86 @@ function BoardCard({ state }) {
   );
 }
 
-// Les six derniers mois, mêmes règles, un mois par ligne ; un clic ouvre le mois dans le board.
+// La vue par mois : le tableau du CEO, un mois par colonne, les lignes rangées comme son classeur (clients signés, ARR
+// Owner, coût, rentabilité, chacun canal par canal). Un clic sur un mois l'ouvre dans le board au-dessus.
+const BOARD_ORDER = ['meta_ads', 'webinar', 'cold_call', 'ccs', 'referral', 'linkedin', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'partners', 'simulator', 'web', 'other'];
+const MONTH_SHORT = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
+
 function BoardMonthsCard({ state, range, onPick }) {
   const months = state.data?.history;
+  const rows = useMemo(() => {
+    if (!months) return [];
+    const labels = new Map();
+    months.forEach((m) => m.channels.forEach((c) => labels.set(c.key, c.label)));
+    const channels = BOARD_ORDER.filter((key) => labels.has(key)).map((key) => ({ key, label: labels.get(key) }));
+    const of = (m, key, field) => m.channels.find((c) => c.key === key)?.[field];
+    const some = (read) => months.some((m) => read(m));
+    const byChannel = (prefix, field, format, filter = () => true) => channels
+      .filter((c) => filter(c) && some((m) => of(m, c.key, field)))
+      .map((c) => ({ key: `${prefix}-${c.key}`, channel: c, value: (m) => of(m, c.key, field), format }));
+    const fixed = (m) => (m.fixed_eur || 0) + (m.bonuses_eur || 0);
+    return [
+      { section: 'Clients signés' },
+      ...byChannel('sales', 'sales', count),
+      { key: 'sales-total', label: 'Total des ventes', strong: true, value: (m) => m.sales, format: count },
+      { key: 'retracted', label: 'Rétractations', value: (m) => m.retracted, format: count },
+      { key: 'net', label: 'Clients nets', strong: true, value: (m) => m.net, format: count },
+      { key: 'people', label: 'Sales', value: (m) => m.people, format: count },
+      { section: 'ARR Owner généré' },
+      ...byChannel('arr', 'arr_eur', euros),
+      { key: 'arr-total', label: 'Total', strong: true, value: (m) => m.arr_eur, format: euros },
+      { section: "Coût d'acquisition" },
+      ...channels.filter((c) => some((m) => of(m, c.key, 'ads_spend_eur')))
+        .map((c) => ({ key: `ads-${c.key}`, channel: c, suffix: 'budget ads', value: (m) => of(m, c.key, 'ads_spend_eur'), format: euros })),
+      ...channels.filter((c) => some((m) => of(m, c.key, 'commissions_eur')))
+        .map((c) => ({ key: `com-${c.key}`, channel: c, suffix: 'commissions', value: (m) => of(m, c.key, 'commissions_eur'), format: euros })),
+      { key: 'fixed', label: 'Fixes et primes des sales', value: fixed, format: euros },
+      { key: 'cost-total', label: 'Total', strong: true, value: (m) => m.cost_eur, format: euros },
+      { key: 'cac', label: 'Coût par client', value: (m) => m.cac_eur, format: euros },
+      { section: 'Rentabilité' },
+      ...byChannel('margin', 'margin_pct', rate).map((r) => ({ ...r, margin: true })),
+      { key: 'margin-total', label: 'Total', strong: true, margin: true, value: (m) => m.margin_pct, format: rate },
+    ];
+  }, [months]);
+  const shown = range.from.slice(0, 7) === range.to.slice(0, 7) ? range.from.slice(0, 7) : null;
   return (
-    <Card title="Mois par mois" Icon={History} state={state} skeleton={300}>
+    <Card title="Vue par mois" Icon={History} state={state} skeleton={520}>
       {months && (
         <div className="ld-board-scroll">
-          <table className="fst-months ld-recap ld-board ld-board-months">
+          <table className="fst-months ld-sheet">
             <thead>
-              <tr><th>Mois</th><th>Ventes</th><th>Rétractations</th><th>Clients nets</th><th>ARR Owner</th><th>Budget ads</th><th>Commissions sales</th><th>Fixes et primes</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th><th>Sales</th></tr>
+              <tr>
+                <th />
+                {months.map((m) => (
+                  <th key={m.month} data-on={shown === m.month || undefined}>
+                    <button type="button" onClick={() => onPick(m.month)} title={monthName(m.month)}>
+                      {MONTH_SHORT[Number(m.month.slice(5, 7)) - 1]} {m.month.slice(0, 4)}{m.current && <small>en cours</small>}
+                    </button>
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
-              {months.map((m) => (
-                <tr key={m.month} className="ld-board-row" data-open={range.from.slice(0, 7) === m.month && range.to.slice(0, 7) === m.month || undefined} onClick={() => onPick(m.month)}>
-                  <td><span className="ld-mark-label">{monthName(m.month)}</span>{m.current && <small className="ld-board-now">en cours</small>}</td>
-                  <td className="fst-num is-strong">{count(m.sales)}</td>
-                  <td className="fst-num" data-none={!m.retracted || undefined}>{count(m.retracted)}</td>
-                  <td className="fst-num is-strong">{count(m.net)}</td>
-                  <td className="fst-num is-strong">{euros(m.arr_eur)}</td>
-                  <td className="fst-num">{orDash(m.ads_spend_eur)}</td>
-                  <td className="fst-num">{euros(m.commissions_eur)}</td>
-                  <td className="fst-num">{euros((m.fixed_eur || 0) + (m.bonuses_eur || 0))}</td>
-                  <td className="fst-num">{euros(m.cost_eur)}</td>
-                  <td className="fst-num"><Margin value={m.margin_pct} /></td>
-                  <td className="fst-num">{orDash(m.cac_eur)}</td>
-                  <td className="fst-num">{count(m.people)}</td>
+              {rows.map((r) => (r.section ? (
+                <tr key={r.section} className="ld-sheet-section"><th colSpan={months.length + 1}>{r.section}</th></tr>
+              ) : (
+                <tr key={r.key} data-strong={r.strong || undefined}>
+                  <td>
+                    {r.channel
+                      ? <span className="ld-mark-label"><i className="ld-capsule" style={{ background: channelColor(r.channel.key) }} />{r.channel.label}{r.suffix && <small>{r.suffix}</small>}</span>
+                      : r.label}
+                  </td>
+                  {months.map((m) => {
+                    const v = r.value(m);
+                    const empty = v == null || (!r.strong && !r.margin && !v);
+                    return (
+                      <td key={m.month} className="fst-num" data-on={shown === m.month || undefined} data-none={empty || undefined}>
+                        {empty ? '—' : r.margin ? <Margin value={v} /> : r.format(v)}
+                      </td>
+                    );
+                  })}
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
