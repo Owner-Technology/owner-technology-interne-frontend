@@ -992,7 +992,7 @@ function BoardKpisCard({ state, leads, when, onSeeLeads }) {
               sub={`${plural(t.sales, 'vente')} · ${plural(t.retracted, 'rétractation')}${totalLeads ? ` · ${pct(t.net / totalLeads, 1)} des leads` : ''}`} />
             <Kpi label="ARR Owner généré" value={t.arr_eur} format={euros} sub={t.net ? `${euros(t.arr_eur / t.net)} par client` : ''} />
             <Kpi label="Coût d'acquisition" value={t.cost_eur} format={euros}
-              sub={`ads ${euros(spend('meta_ads'))} · webinaire ${euros(spend('webinar'))} · commissions ${euros(t.commissions_eur)}${fixed != null ? ` · fixes ${euros(fixed)}` : ''}`} />
+              sub={<>ads {euros(spend('meta_ads'))} · webinaire {euros(spend('webinar'))}<br />commissions {euros(t.commissions_eur)}{fixed != null && ` · fixes ${euros(fixed)}`}</>} />
             <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={`${euros(t.margin_eur)} de marge sur l'ARR`} />
             <Kpi label="Coût par client" value={t.cac_eur} format={euros} sub={t.people != null ? `${plural(t.people, 'sales', 'sales')} dans le mois` : ''} />
           </div>
@@ -1008,7 +1008,7 @@ function BoardKpisCard({ state, leads, when, onSeeLeads }) {
                     </ProgressRing>
                     <div className="ld-stat-text">
                       <b className="fst-num">{c.label} <span className="ld-board-margin" data-tone={marginTone(c.margin_pct)}>{c.margin_pct != null ? rate(c.margin_pct) : '—'}</span></b>
-                      <small>{count(n)} leads · {plural(c.net, 'client')} · {euros(c.arr_eur)} d'ARR · {euros(c.cost_eur)} de coût</small>
+                      <small>{n > 0 && `${count(n)} leads · `}{plural(c.net, 'client')} · {euros(c.arr_eur)} d'ARR · {euros(c.cost_eur)} de coût</small>
                     </div>
                   </div>
                 </button>
@@ -1034,7 +1034,8 @@ function BoardCard({ state, leads }) {
       .map((c) => ({ key: c.key, label: c.label, sales: 0, retracted: 0, net: 0, arr_eur: 0, ads_spend_eur: null, commissions_eur: 0, cost_eur: 0, margin_pct: null, cac_eur: null, share_pct: null, origins: [] }));
     return [...b.channels, ...silent];
   }, [b, leads]);
-  const leadsOf = (key) => (leads ? count(received[key]?.total || 0) : '—');
+  // Les anciens webinaires ne reçoivent plus de leads : ce sont des inscrits d'avant, relancés.
+  const leadsOf = (key) => (leads && key !== 'old_webinar' ? count(received[key]?.total || 0) : '—');
   const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
   return (
     <Card title="Board général, canal par canal" Icon={BadgeEuro} state={state} skeleton={460}>
