@@ -55,7 +55,7 @@ export const signed = (n) => (n > 0 ? `+${n.toLocaleString('fr-FR')}` : n.toLoca
 // Teinte de chaque canal, reprise des Statistiques Finance pour les mêmes familles (ads en bleu, cold call setter en
 // jaune, parrainage en pêche, LinkedIn en rouge, webinaire en vert tendre).
 export const CHANNEL_COLOR = {
-  meta_ads: '#8fbdf3', google_ads: '#7fd3df', chatgpt_ads: '#aaa5ee', partners: '#f1b76a', webinar: '#b9dc8a',
+  meta_ads: '#8fbdf3', google_ads: '#7fd3df', chatgpt_ads: '#aaa5ee', youtube_ads: '#f0a3b8', partners: '#f1b76a', webinar: '#b9dc8a',
   ccs: '#ecd36a', cold_call: '#cfc8bd', referral: '#f4b183', linkedin: '#f2a0a0', web: '#86d3a6', simulator: '#c4e9d3', other: '#dedad3',
 };
 export const channelColor = (key) => CHANNEL_COLOR[key] || CHANNEL_COLOR.other;
