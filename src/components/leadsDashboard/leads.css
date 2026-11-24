@@ -323,3 +323,11 @@
 .ld-kpi-lines i, .ld-kpi-lines b { white-space: nowrap; }
 .ld-board-none td { text-align: left !important; padding-left: 46px !important; }
 .ld-board-none .fst-link { margin-left: 12px; }
+
+/* Un lead s'ouvre sur les notes du sales et la frise de ses appels. */
+.ld-lead[data-open] { cursor: pointer; border-radius: 12px; transition: background .12s; }
+.ld-lead[data-open]:hover { background: var(--hover); }
+.ld-lead-notes { display: grid; gap: 8px; margin-bottom: 22px; padding: 16px 18px; border: 1px solid var(--line-soft, #f1eee9); border-radius: 14px; background: #faf9f7; }
+.ld-lead-notes-who { font-size: 16px; font-weight: 500; color: #1c1b19; }
+.ld-lead-notes-who small { margin-left: 10px; font-size: 13px; font-weight: 400; color: #8b867e; }
+.ld-lead-notes p { margin: 0; font-size: 14px; line-height: 1.55; color: #1c1b19; white-space: pre-wrap; }

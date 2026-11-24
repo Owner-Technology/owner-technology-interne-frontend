@@ -21,6 +21,8 @@ import {
   byKey, canReadCalls, categoryColor, categoryTone, channelColor, channelTone, compareWord, TONE_INK, comparisonFor, dayLabel, delta, groupChannels,
   byWeek, headcountText, presetRange, PRESETS, provenanceColor, revenueText,
 } from './model.js';
+import LeadHistoryPanel from '../perfSales/v2/LeadHistory.jsx';
+import '../perfSales/v2/v2.css';
 import './leads.css';
 
 const REFRESH_MS = 5 * 60 * 1000;
@@ -603,11 +605,12 @@ function leadStep(lead) {
   return !lead.status || lead.status === 'new' ? ['Pas encore traité', undefined] : [lead.status, undefined];
 }
 
-function LeadLine({ lead, many }) {
+function LeadLine({ lead, many, onOpen }) {
   const facts = [lead.company, headcountText(lead.headcount), revenueText(lead.revenue), lead.sector].filter(Boolean);
   const from = [lead.detail, lead.creative].filter((x, i, all) => x && all.indexOf(x) === i);
   return (
-    <div className="ld-lead">
+    <div className="ld-lead" data-open={lead.in_crm || undefined} onClick={lead.in_crm ? () => onOpen(lead) : undefined}
+      title={lead.in_crm ? 'Voir les notes du sales et les appels' : undefined}>
       <span className="ld-lead-time fst-num">{many && lead.at ? <>{dayShort(lead.at)}<br /></> : null}{timeOf(lead.at)}</span>
       <div className="ld-lead-main">
         <div className="ld-lead-name">{lead.name || 'Sans nom'}</div>
@@ -636,6 +639,7 @@ function LeadsDrawer({ open, range, channel, onChannel, onClose, when }) {
   const shown = rows.filter((r) => (!channel || r.channel === channel)
     && (!needle || [r.name, r.company, r.sector, r.sales, r.setter, r.detail, r.creative].some((x) => String(x || '').toLowerCase().includes(needle))));
   const many = range.from !== range.to;
+  const [picked, setPicked] = useState(null);       // le lead dont on lit les notes et les appels
   const [limit, setLimit] = useState({ key: '', n: 60 });
   const listKey = `${range.from}/${range.to}/${channel || ''}/${needle}`;
   const n = limit.key === listKey ? limit.n : 60;
@@ -646,6 +650,7 @@ function LeadsDrawer({ open, range, channel, onChannel, onClose, when }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
   return (
+    <>
     <AnimatePresence>
       {open && (
         <>
@@ -678,7 +683,7 @@ function LeadsDrawer({ open, range, channel, onChannel, onClose, when }) {
             <div className="ld-drawer-body">
               {!state.fresh && !state.error && <div className="fst-skel" style={{ height: 240 }} />}
               {state.error && <div className="fst-error" role="alert">{state.error}<button type="button" onClick={state.retry}>Réessayer</button></div>}
-              {state.fresh && shown.slice(0, n).map((lead) => <LeadLine key={`${lead.id}-${lead.channel}`} lead={lead} many={many} />)}
+              {state.fresh && shown.slice(0, n).map((lead) => <LeadLine key={`${lead.id}-${lead.channel}`} lead={lead} many={many} onOpen={setPicked} />)}
               {state.fresh && !shown.length && <div className="fst-empty">Aucun lead.</div>}
               {state.fresh && shown.length > n && (
                 <div className="fst-more"><button type="button" onClick={() => setLimit({ key: listKey, n: n + 120 })}>Afficher les {count(Math.min(120, shown.length - n))} suivants</button></div>
@@ -688,6 +693,15 @@ function LeadsDrawer({ open, range, channel, onChannel, onClose, when }) {
         </>
       )}
     </AnimatePresence>
+    <LeadHistoryPanel lead={open && picked ? { id: picked.id, name: picked.name, company: picked.company, origin: picked.channel_label, status: picked.status, now: picked.sales || picked.setter || 'sans sales' } : null} onClose={() => setPicked(null)} zBase={70}>
+      {picked && (
+        <div className="ld-lead-notes">
+          <span className="ld-eyebrow">Notes du sales{picked.sales ? ` · ${picked.sales}` : ''}</span>
+          <p>{picked.notes || 'Aucune note sur la fiche.'}</p>
+        </div>
+      )}
+    </LeadHistoryPanel>
+    </>
   );
 }
 
