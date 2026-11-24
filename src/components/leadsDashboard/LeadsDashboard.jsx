@@ -1030,7 +1030,7 @@ function BoardKpisCard({ state, leads, when, onSeeLeads }) {
   );
 }
 
-function BoardCard({ state, leads }) {
+function BoardCard({ state, leads, onSeeLeads }) {
   const [open, setOpen] = useState(null);
   const b = state.data;
   const t = b?.totals;
@@ -1070,6 +1070,18 @@ function BoardCard({ state, leads }) {
                         <td className="fst-num is-strong">{leadsOf(c.key)}</td>
                         <BoardCells row={c} />
                       </tr>
+                      {open === c.key && c.origins.length === 0 && (
+                        <tr className="ld-board-sub ld-board-none">
+                          <td colSpan={11}>
+                            Aucune vente signée sur la période.
+                            {received[c.key]?.total > 0 && (
+                              <button type="button" className="fst-link" onClick={(e) => { e.stopPropagation(); onSeeLeads(c.key); }}>
+                                {received[c.key].total > 1 ? `Voir les ${count(received[c.key].total)} leads reçus` : 'Voir le lead reçu'}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      )}
                       {open === c.key && c.origins.map((o) => (
                         <tr key={o.label} className="ld-board-sub"><td>{originName(o.label)}</td><td /><BoardCells row={o} whole={false} /></tr>
                       ))}
@@ -1344,7 +1356,7 @@ export default function LeadsDashboard() {
       {tab === 'board' && (
         <>
           <Reveal><BoardKpisCard state={board} leads={d} when={when} onSeeLeads={seeLeads} /></Reveal>
-          <Reveal className="ld-gap"><BoardCard state={board} leads={d} /></Reveal>
+          <Reveal className="ld-gap"><BoardCard state={board} leads={d} onSeeLeads={seeLeads} /></Reveal>
           <Reveal className="ld-gap"><BoardSalesCard state={board} /></Reveal>
           <Reveal className="ld-gap"><BoardMonthsCard state={board} range={range} onPick={pickMonth} /></Reveal>
         </>

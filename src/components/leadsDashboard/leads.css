@@ -321,3 +321,5 @@
 .ld-pay .fst-table tbody tr.ld-seller:hover td { background: #f4f2ee; }
 .ld-pay .fst-table td.ld-pay-client { white-space: nowrap; max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
 .ld-kpi-lines i, .ld-kpi-lines b { white-space: nowrap; }
+.ld-board-none td { text-align: left !important; padding-left: 46px !important; }
+.ld-board-none .fst-link { margin-left: 12px; }
