@@ -15,6 +15,7 @@
 // dépôt est public, la liste nominative vit dans le backend.
 import { READ_ONLY_DIRECTION_ROLES } from "./readOnlyRoles.js";
 import { withoutHiddenTabs } from "./hiddenPages.js";
+import { canSeeLeadsCopie } from "./leadsCopieAccess.js";
 
 export const SUB_TICKETS_ROLES = new Set(["admin", "ceo", "head_of_acquisition", "acquisition_director", "finance_director", "hr", "customer_success_manager"]);
 
@@ -81,6 +82,7 @@ const ITEM_ROLE_GATE = {
   financial_analysis: new Set(["ceo", "admin"]),
   // « Leads » (dashboard des leads reçus, 18/11/2026) : le CEO, les admins et la tête de l'acquisition (19/11), comme l'API.
   leads_dashboard: new Set(["ceo", "admin", "head_of_acquisition"]),
+  leads_dashboard_copie: new Set(["ceo", "admin", "head_of_acquisition"]),
   // « Automatisation des missions » (suivi des process d'Opti'Lex) : le CEO et les admins, comme l'API.
   optilex_automation: new Set(["ceo", "admin"]),
   // « Ma Tracking Sheet » : la page n'ouvre sans permission qu'aux rôles ceo et admin.
@@ -124,7 +126,11 @@ export function getVisibleSections(allSections, role) {
   // Gate par-item (global) : retire les onglets réservés à certains rôles.
   allSections = allSections.map((s) => (
     s.items
-      ? { ...s, items: s.items.filter((it) => { const g = ITEM_ROLE_GATE[it.id]; return !g || g.has(effective); }) }
+      ? { ...s, items: s.items.filter((it) => {
+        // « Leads » (copie) : par personne, pas par rôle (utils/leadsCopieAccess.js).
+        if (it.id === "leads_dashboard_copie" && !canSeeLeadsCopie()) return false;
+        const g = ITEM_ROLE_GATE[it.id]; return !g || g.has(effective);
+      }) }
       : s
   ));
   const allowed = ROLE_SECTIONS[effective];
