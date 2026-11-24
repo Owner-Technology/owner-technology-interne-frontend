@@ -12,7 +12,8 @@ const WEEKDAYS = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
 const HISTORY = 36;   // mois proposés vers le passé, comme le sélecteur de mois des Statistiques
 const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
-export function PeriodPicker({ value, onChange, label }) {
+// `align` : de quel côté du bouton le menu s'aligne (« right » par défaut : il finit au bord droit du bouton ; « left » : il commence au bord gauche).
+export function PeriodPicker({ value, onChange, label, align = 'right' }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [today, setToday] = useState(() => parisToday());
@@ -37,12 +38,12 @@ export function PeriodPicker({ value, onChange, label }) {
     const gap = 8;
     const width = panel.offsetWidth;
     const height = panel.offsetHeight;
-    const left = Math.max(gap, Math.min(t.right - width, window.innerWidth - width - gap));
+    const left = Math.max(gap, Math.min(align === 'left' ? t.left : t.right - width, window.innerWidth - width - gap));
     const below = t.bottom + gap;
     const wanted = below + height > window.innerHeight - gap && t.top - gap - height > gap ? t.top - gap - height : below;
     const top = Math.max(gap, Math.min(wanted, window.innerHeight - height - gap));   // jamais coupé en bas, même quand ni dessous ni dessus ne suffisent
     setPlace((previous) => (previous && previous.top === top && previous.left === left ? previous : { top, left }));
-  }, []);
+  }, [align]);
 
   useLayoutEffect(() => { if (open) reposition(); }, [open, view, reposition]);
 

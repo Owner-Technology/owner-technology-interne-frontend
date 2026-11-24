@@ -32,6 +32,9 @@ export const SIDEBAR_TABS = [
   { key: 'leads_dashboard', label: 'Leads', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
   )},
+  { key: 'leads_dashboard_copie', label: 'Leads', icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+  )},
   { key: 'perf_sales', label: 'Perf Sales', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
   )},
@@ -136,7 +139,7 @@ export const DASHBOARD_TAB_ROUTES = {
   variables: '/ceo/variables', conges: '/ceo/conges', work_hours: '/ceo/work-hours', campaigns: '/ceo/campaigns',
   my_tracking_sheet: '/tracking-sheet', optilex_board: '/ceo/optilex-board', sales_recordings: '/ceo/sales-recordings',
   meta_ads: '/ceo/meta-ads', bot_ia: '/ceo/Sub-Tickets', financial_analysis: '/ceo/analyse-financiere',
-  optilex_automation: '/ceo/automatisation-missions', leads_dashboard: '/ceo/leads',
+  optilex_automation: '/ceo/automatisation-missions', leads_dashboard: '/ceo/leads', leads_dashboard_copie: '/ceo/leads-copie',
 };
 
 // Les rôles qui ont un tableau de bord (leur page d'arrivée en est un, et l'admin) : leur menu reste le même sur
