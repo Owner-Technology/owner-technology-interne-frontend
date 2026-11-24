@@ -589,6 +589,20 @@ function CampaignsCard({ state }) {
 
 const timeOf = (iso) => (iso ? iso.slice(11, 16).replace(':', ' h ') : '');
 
+// Où en est le lead dans le pipe, d'après son statut dans le CRM : signé, écarté, en cours de rappel, pas encore traité.
+// Un RDV posé se lit déjà sur ses étiquettes R1 et R2.
+const LEAD_STEP = {
+  signed: ['Client signé', 'green'], 'Non pertinent': ['Non pertinent', 'red'], 'À rappeler': ['À rappeler', 'yellow'],
+  callback: ['À rappeler', 'yellow'], 'À relancer': ['À relancer', 'yellow'], Répondeur: ['Répondeur', 'yellow'],
+  Injoignable: ['Injoignable', 'peach'], r3: ['R3', 'green'],
+};
+function leadStep(lead) {
+  if (!lead.in_crm) return null;
+  if (LEAD_STEP[lead.status]) return LEAD_STEP[lead.status];
+  if (lead.r1_date || lead.r2_date) return null;
+  return !lead.status || lead.status === 'new' ? ['Pas encore traité', undefined] : [lead.status, undefined];
+}
+
 function LeadLine({ lead, many }) {
   const facts = [lead.company, headcountText(lead.headcount), revenueText(lead.revenue), lead.sector].filter(Boolean);
   const from = [lead.detail, lead.creative].filter((x, i, all) => x && all.indexOf(x) === i);
@@ -603,6 +617,7 @@ function LeadLine({ lead, many }) {
           {from.length > 0 && <span className="ld-lead-who">{from.join(' · ')}</span>}
           {lead.r1_date && <Pill plain tone="green">R1 le {dayShort(lead.r1_date)}</Pill>}
           {lead.r2_date && <Pill plain tone="green">R2 le {dayShort(lead.r2_date)}</Pill>}
+          {leadStep(lead) && <Tag tone={leadStep(lead)[1]}>{leadStep(lead)[0]}</Tag>}
           {lead.sales && <span className="ld-lead-who">{lead.sales}</span>}
           {!lead.sales && lead.setter && <span className="ld-lead-who">{lead.setter}</span>}
         </div>
