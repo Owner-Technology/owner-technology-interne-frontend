@@ -133,7 +133,7 @@ const StatChip = ({ value, label, share, sub, color, icon }) => (
 // Étiquette pastel d'un canal (charte Owner) : son icône dans un petit carré teinté, son nom à l'encre du ton.
 const CHANNEL_ICON = {
   meta_ads: Megaphone, google_ads: Search, chatgpt_ads: Sparkles, partners: Handshake, webinar: Presentation, ccs: PhoneOutgoing,
-  cold_call: Phone, referral: Gift, linkedin: Briefcase, web: Globe, simulator: Calculator, other: CircleDot,
+  cold_call: Phone, referral: Gift, linkedin: Briefcase, web: Globe, simulator: Calculator, other: CircleDot, old_webinar: History,
 };
 function ChannelTag({ channel, label }) {
   const Icon = CHANNEL_ICON[channel] || CircleDot;
@@ -1081,7 +1081,7 @@ function BoardCard({ state, leads }) {
   );
 }
 
-const BOARD_ORDER = ['meta_ads', 'webinar', 'cold_call', 'ccs', 'referral', 'linkedin', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'partners', 'simulator', 'web', 'other'];
+const BOARD_ORDER = ['meta_ads', 'webinar', 'old_webinar', 'cold_call', 'ccs', 'referral', 'linkedin', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'partners', 'simulator', 'web', 'other'];
 
 // Les ventes de la période, une par ligne, rangées sales par sales (la feuille « Apports d'affaires » du CEO) : le client,
 // l'origine du lead en couleur, l'effectif, l'ARR Owner, la commission et l'état. `Par sales` ou toutes à la suite.
@@ -1095,7 +1095,10 @@ function SaleRow({ sale, who = false }) {
       <td className={`is-wrap ld-pay-client${who ? '' : ' is-heavy'}`}>{sale.client}</td>
       {who && <td className="is-heavy"><Who name={sale.sales_person} /></td>}
       <td className="is-nowrap"><Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag></td>
-      <td className="is-nowrap fst-cell-muted">{sale.origin || '–'}</td>
+      <td className="is-nowrap fst-cell-muted">
+        {sale.origin || '–'}
+        {sale.webinar && <span className="ld-sale-webinar"><Tag tone="lime">{sale.webinar.phase}</Tag><Tag tone={sale.webinar.via.startsWith('Relance') ? 'yellow' : 'green'}>{sale.webinar.via}</Tag></span>}
+      </td>
       <td className="is-nowrap is-heavy">{sale.headcount || <span className="fst-cell-muted">–</span>}</td>
       <td className="is-num ld-pay-amount">{euros(sale.arr_eur)}</td>
       <td className="is-num is-heavy">{euros(sale.commission_eur)}</td>

@@ -288,3 +288,5 @@
 .ld-kpi-channels .ld-stat-text small { white-space: nowrap; }
 .ld-seller-pay b { font-weight: 500; color: #1c1b19; }
 @media (max-width: 1180px) { .ld-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 18px; } .ld-kpi-tile:nth-child(4) { padding-left: 0; border-left: 0; } }
+
+.ld-sale-webinar { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: middle; }
