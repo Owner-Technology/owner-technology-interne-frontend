@@ -933,16 +933,145 @@ function CacCard({ state, prev, cmp }) {
   );
 }
 
+// ── Board général ─────────────────────────────────────────────────────────────────────────────────
+// Le premier board des leads (point du 23/11/2026) : les canaux en lignes ; en face, les clients signés sur la période
+// (au jour de signature), l'ARR Owner et ce que le canal a coûté. Un canal se déplie en origines. Le serveur compte
+// tout (/lead-statistics/board) : ventes, prix et commissions de la page Variables Sales, budget lu chez Meta.
+const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+const monthName = (month) => `${MONTH_NAMES[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;
+const rate = (v) => `${Number(v).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`;
+const orDash = (v, format = euros) => (v == null ? '—' : format(v));
+const marginTone = (v) => { if (v == null) return undefined; if (v >= 60) return 'good'; return v >= 30 ? 'mid' : 'low'; };
+const Margin = ({ value }) => <span className="ld-board-margin" data-tone={marginTone(value)}>{orDash(value, rate)}</span>;
+
+// `whole` : une ligne de canal ou de total. Une origine dépliée s'arrête aux commissions : le budget ads se lit au
+// canal, son coût et sa rentabilité aussi.
+function BoardCells({ row, whole: full = true }) {
+  return (
+    <>
+      <td className="fst-num is-strong">{count(row.sales)}</td>
+      <td className="fst-num" data-none={!row.retracted || undefined}>{count(row.retracted)}</td>
+      <td className="fst-num is-strong">{count(row.net)}</td>
+      <td className="fst-num is-strong">{euros(row.arr_eur)}</td>
+      <td className="fst-num">{full ? orDash(row.ads_spend_eur) : ''}</td>
+      <td className="fst-num">{euros(row.commissions_eur)}</td>
+      <td className="fst-num">{full ? euros(row.cost_eur) : ''}</td>
+      <td className="fst-num">{full ? <Margin value={row.margin_pct} /> : ''}</td>
+      <td className="fst-num">{full ? orDash(row.cac_eur) : ''}</td>
+    </>
+  );
+}
+
+function BoardCard({ state }) {
+  const [open, setOpen] = useState(null);
+  const b = state.data;
+  const t = b?.totals;
+  const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
+  return (
+    <Card title="Board général" Icon={BadgeEuro} state={state} skeleton={460}>
+      {b && t && (
+        <>
+          <div className="ld-board-top">
+            <div className="ld-hero">
+              <span className="ld-eyebrow">ARR Owner généré</span>
+              <BigNumber value={t.arr_eur} money />
+              <div className="ld-hero-sub">
+                <span>{plural(t.net, 'client net', 'clients nets')} · {plural(t.sales, 'vente signée', 'ventes signées')} · {plural(t.retracted, 'rétractation')}</span>
+              </div>
+            </div>
+            <div className="fst-facts ld-board-facts">
+              <Fact label="Coût d'acquisition" value={t.cost_eur} format={euros} />
+              <Fact label="Rentabilité" value={t.margin_pct ?? 0} format={rate} />
+              <Fact label="Coût par client" value={t.cac_eur ?? 0} format={euros} />
+              {t.people != null && <Fact label="Sales" value={t.people} />}
+            </div>
+          </div>
+          {b.channels.length === 0 ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
+            <div className="ld-board-scroll">
+              <table className="fst-months ld-recap ld-board">
+                <thead>
+                  <tr><th>Canal</th><th>Ventes</th><th>Rétractations</th><th>Clients nets</th><th>ARR Owner</th><th>Budget ads</th><th>Commissions sales</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th></tr>
+                </thead>
+                <tbody>
+                  {b.channels.map((c) => (
+                    <Fragment key={c.key}>
+                      <tr data-open={open === c.key || undefined} className="ld-board-row" onClick={() => setOpen(open === c.key ? null : c.key)}>
+                        <td>
+                          <button type="button" className="ld-board-toggle" aria-expanded={open === c.key}>
+                            <ChevronRight size={14} />
+                            <span className="ld-mark-label"><i className="ld-capsule" style={{ background: channelColor(c.key) }} />{c.label}</span>
+                            {c.share_pct != null && <small>{rate(c.share_pct)} de l'ARR</small>}
+                          </button>
+                        </td>
+                        <BoardCells row={c} />
+                      </tr>
+                      {open === c.key && c.origins.map((o) => (
+                        <tr key={o.label} className="ld-board-sub"><td>{o.label}</td><BoardCells row={o} whole={false} /></tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                </tbody>
+                <tfoot>
+                  {fixed != null && (
+                    <tr className="ld-board-fixed"><td>Fixes et primes des sales</td><td colSpan={6} /><td className="fst-num">{euros(fixed)}</td><td colSpan={2} /></tr>
+                  )}
+                  <tr><td>Total</td><BoardCells row={t} /></tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
+
+// Les six derniers mois, mêmes règles, un mois par ligne ; un clic ouvre le mois dans le board.
+function BoardMonthsCard({ state, range, onPick }) {
+  const months = state.data?.history;
+  return (
+    <Card title="Mois par mois" Icon={History} state={state} skeleton={300}>
+      {months && (
+        <div className="ld-board-scroll">
+          <table className="fst-months ld-recap ld-board ld-board-months">
+            <thead>
+              <tr><th>Mois</th><th>Ventes</th><th>Rétractations</th><th>Clients nets</th><th>ARR Owner</th><th>Budget ads</th><th>Commissions sales</th><th>Fixes et primes</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th><th>Sales</th></tr>
+            </thead>
+            <tbody>
+              {months.map((m) => (
+                <tr key={m.month} className="ld-board-row" data-open={range.from.slice(0, 7) === m.month && range.to.slice(0, 7) === m.month || undefined} onClick={() => onPick(m.month)}>
+                  <td><span className="ld-mark-label">{monthName(m.month)}</span>{m.current && <small className="ld-board-now">en cours</small>}</td>
+                  <td className="fst-num is-strong">{count(m.sales)}</td>
+                  <td className="fst-num" data-none={!m.retracted || undefined}>{count(m.retracted)}</td>
+                  <td className="fst-num is-strong">{count(m.net)}</td>
+                  <td className="fst-num is-strong">{euros(m.arr_eur)}</td>
+                  <td className="fst-num">{orDash(m.ads_spend_eur)}</td>
+                  <td className="fst-num">{euros(m.commissions_eur)}</td>
+                  <td className="fst-num">{euros((m.fixed_eur || 0) + (m.bonuses_eur || 0))}</td>
+                  <td className="fst-num">{euros(m.cost_eur)}</td>
+                  <td className="fst-num"><Margin value={m.margin_pct} /></td>
+                  <td className="fst-num">{orDash(m.cac_eur)}</td>
+                  <td className="fst-num">{count(m.people)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────────────────────────
 
-const TABS = [{ key: 'leads', label: 'Canaux et ads' }, { key: 'setters', label: 'Setters' }, { key: 'calls', label: 'Appels' }, { key: 'sales', label: 'Ventes' }];
+const TABS = [{ key: 'board', label: 'Board général' }, { key: 'leads', label: 'Canaux et ads' }, { key: 'setters', label: 'Setters' }, { key: 'calls', label: 'Appels' }, { key: 'sales', label: 'Ventes' }];
 
 export default function LeadsDashboard() {
   const today = parisToday();
-  const [preset, setPreset] = useState('today');
+  const [preset, setPreset] = useState('this-month');     // la page s'ouvre sur le board du mois
   const [custom, setCustom] = useState(null);
   const [compare, setCompare] = useState(true);
-  const [tab, setTab] = useState('leads');
+  const [tab, setTab] = useState('board');
   const [campaignsOpen, setCampaignsOpen] = useState(false);
   const [list, setList] = useState({ open: false, channel: null });
   const seeLeads = useCallback((channel) => setList({ open: true, channel }), []);
@@ -966,6 +1095,7 @@ export default function LeadsDashboard() {
   // l'ouverture de l'onglet.
   const calls = useLeadStat('calls', !tooLong && current.fresh ? range : null);
   const campaigns = useLeadStat('campaigns', tab === 'leads' && campaignsOpen ? range : null);
+  const board = useLeadStat('board', tab === 'board' ? range : null);
 
   // Le jour en cours se met à jour tout seul, toutes les cinq minutes.
   const { retry } = current;
@@ -983,6 +1113,11 @@ export default function LeadsDashboard() {
     : `du ${dayShort(shownRange.from)} au ${dayShort(shownRange.to)}`;
   const choose = useCallback((next) => { setClock(parisClock()); setCustom(next); }, []);
   const pickDay = useCallback((day) => choose({ from: day, to: day }), [choose]);
+  // Un mois du board : en entier, ou jusqu'à aujourd'hui pour le mois en cours.
+  const pickMonth = useCallback((month) => {
+    const end = `${month}-${String(new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()).padStart(2, '0')}`;
+    choose({ from: `${month}-01`, to: end > today ? today : end });
+  }, [choose, today]);
 
   return (
     <Page title="Leads"
@@ -991,13 +1126,21 @@ export default function LeadsDashboard() {
           <Segmented small value={custom ? null : preset} label="Période"
             onChange={(key) => { choose(null); setPreset(key); }} options={PRESETS} />
           <PeriodPicker value={custom} onChange={choose} label="Autre période" />
-          <button type="button" className="fst-btn is-small" aria-pressed={compare} onClick={() => setCompare(!compare)}>
-            <CalendarDays size={14} />{compare ? `Comparé à ${word}${until ? ' à la même heure' : ''}` : 'Sans comparaison'}
-          </button>
+          {tab !== 'board' && (
+            <button type="button" className="fst-btn is-small" aria-pressed={compare} onClick={() => setCompare(!compare)}>
+              <CalendarDays size={14} />{compare ? `Comparé à ${word}${until ? ' à la même heure' : ''}` : 'Sans comparaison'}
+            </button>
+          )}
         </div>
       )}>
       <div className="ld-tabs"><Segmented value={tab} onChange={setTab} label="Vue" options={TABS} /></div>
 
+      {tab === 'board' && (
+        <>
+          <Reveal><BoardCard state={board} /></Reveal>
+          <Reveal className="ld-gap"><BoardMonthsCard state={board} range={range} onPick={pickMonth} /></Reveal>
+        </>
+      )}
       {tab === 'leads' && (
         <>
           <Reveal className="fst-grid">
