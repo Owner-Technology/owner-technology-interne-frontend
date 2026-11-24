@@ -30,6 +30,7 @@ import { mentionedIds, notifiedSummary } from "../utils/mentions.js";
 import { VisibilityBadge, VisibilityToggle, useMentionDirectories } from "../components/clientComments/CommentAudience.jsx";
 import { canChooseVisibility, scopeOf, sendBlocker } from "../utils/commentVisibility.js";
 import { isOnboardingToReschedule, onboardingDateOf, onboardingSituation } from "../utils/boardIntegration.js";
+import { SECTOR_OPTIONS, autoSector, canEditSector, effectiveSector, isManualSector, secteurLabel, sectorBulkFailure, sectorBulkLine, sectorTargets } from "../utils/boardSector.js";
 import { isOnboardingUpcoming, isOnboardingOverdue, isIntegrationUpcoming, isIntegrationOverdue } from "../utils/boardPredicates.js";
 import { createLatestRequestTracker, displayEtat, EXITED_ETATS, isOutOfOnboarding, matchesSignedClient, withConfirmedEtat } from "../utils/boardClientState.js";
 import { Fragment, createContext, memo, useContext, useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useId } from "react";
@@ -409,8 +410,7 @@ const ROW_TD = { padding: "12px 14px", fontSize: 13, color: TEXT, borderTop: "1p
 
 // ── Secteur d'activité (dev 28/10/2026) ─────────────────────────────────────
 // Type d'entreprise du NDA (client_data.business_type), déduit du code NAF trouvé sur Pappers.
-// Seule l'orthographe de la valeur enregistrée « Micro créche » est corrigée à l'affichage.
-const secteurLabel = (v) => (v === "Micro créche" ? "Micro-crèche" : v);
+// Seule l'orthographe de la valeur enregistrée « Micro créche » est corrigée à l'affichage (secteurLabel, utils/boardSector.js).
 // Une icône dessinée par secteur de la liste du NDA, en deux tons : trait marine, volumes en bleu
 // Owner pâle ; seuls la croix de l'ambulance et celle de la pharmacie gardent leur couleur.
 // Secteur inconnu : l'immeuble de « Générales ».
@@ -812,6 +812,106 @@ function EtatPicker({ etat, onPick, disabled }) {
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
                   )}
+                </button>
+              );
+            })}
+          </div>
+        </>,
+        document.body,
+      )}
+    </span>
+  );
+}
+
+// Sélecteur du secteur d'activité (Client Success, admin, CEO ; dev 24/11/2026). Le secteur est déduit du NDA (code NAF) et retombe sur
+// « Générales » quand il est inconnu : ici on le précise à la main. Même fenêtre que la situation : le bouton porte l'icône et le
+// secteur, la fenêtre liste les secteurs avec leur icône et une coche sur l'actuel ; « Automatique » retire le choix et revient à la
+// détection. `onPick(secteur | null)` (null = automatique) renvoie une promesse : le bouton se fige le temps de l'enregistrement, et un
+// refus rétablit l'ancienne valeur (voir `patch`). Clavier : flèches, Entrée, Échap.
+const SECTOR_MENU_H = 340;
+const SECTOR_MENU_W = 372;
+// Index dans la fenêtre : 0 = « Automatique » (pleine largeur), 1 à 15 = les secteurs sur deux colonnes.
+const sectorStep = (i, key) => {
+  if (key === "ArrowRight") return Math.min(SECTOR_OPTIONS.length, i + 1);
+  if (key === "ArrowLeft") return Math.max(0, i - 1);
+  if (key === "ArrowDown") return i === 0 ? 1 : Math.min(SECTOR_OPTIONS.length, i + 2);
+  return i <= 2 ? 0 : i - 2;
+};
+function SectorPicker({ sector, auto, manual, onPick, bulkCount, inline = false }) {
+  const [open, setOpen] = useState(false);
+  const [bulk, setBulk] = useState(1);   // nombre de clients que le choix va changer (mode multi-sélection), lu à l'ouverture
+  const [pos, setPos] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
+  // Le focus entre dans la fenêtre, sur le choix actuel.
+  useEffect(() => {
+    if (!open) return;
+    const menu = menuRef.current;
+    (menu?.querySelector('[aria-selected="true"]') || menu?.querySelector('[role="option"]'))?.focus({ preventScroll: true });
+  }, [open]);
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (open) { setOpen(false); return; }
+    const r = btnRef.current.getBoundingClientRect();
+    const up = r.bottom + SECTOR_MENU_H > window.innerHeight && r.top > SECTOR_MENU_H;
+    setPos({ top: up ? r.top - 4 : r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - SECTOR_MENU_W - 8)), up });
+    setBulk(bulkCount?.() || 1);
+    setOpen(true);
+  };
+  const choose = (value) => {
+    setOpen(false);
+    if (value === null ? !manual : manual && value === sector) { btnRef.current?.focus(); return; }
+    const pending = onPick(value);
+    if (!pending?.then) return;
+    const done = () => { setSaving(false); if (document.activeElement === document.body) btnRef.current?.focus({ preventScroll: true }); };
+    setSaving(true);
+    pending.then(done, done);
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); setOpen(false); btnRef.current?.focus(); return; }
+    if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+    e.preventDefault();
+    const options = [...menuRef.current.querySelectorAll('[role="option"]')];
+    options[sectorStep(Math.max(0, options.indexOf(document.activeElement)), e.key)]?.focus();
+  };
+  const check = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "auto", flexShrink: 0 }}><path d="M20 6 9 17l-5-5" /></svg>;
+  const title = manual ? `Secteur choisi à la main : ${secteurLabel(sector)}. Cliquer pour le changer.`
+    : sector ? `Secteur d'activité : ${secteurLabel(sector)} (détecté). Cliquer pour le préciser.` : "Secteur non renseigné. Cliquer pour le choisir.";
+  return (
+    <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", minWidth: 0, maxWidth: "100%" }}>
+      <button ref={btnRef} type="button" onClick={toggle} disabled={saving} aria-haspopup="listbox" aria-expanded={open} aria-busy={saving || undefined}
+        className={`ob-sector-btn${inline ? " is-inline" : ""}${open ? " is-open" : ""}`} title={title}>
+        {sector ? <SectorIcon secteur={sector} size={inline ? 18 : 20} /> : <StatusGlyph kind="dashed" color={MUTED} size={inline ? 16 : 18} />}
+        <span className="ob-sector-label" style={sector ? undefined : { color: MUTED }}>{sector ? secteurLabel(sector) : "Choisir"}</span>
+        <svg className="ob-sector-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: open ? "rotate(180deg)" : "none" }} aria-hidden><polyline points="6 9 12 15 18 9" /></svg>
+      </button>
+      {open && pos && createPortal(
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10050 }} />
+          <div ref={menuRef} role="listbox" aria-label="Secteur d'activité" onKeyDown={onKey} className="ob-sector-menu"
+            style={{ ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }), left: pos.left, transformOrigin: pos.up ? "bottom left" : "top left" }}>
+            {bulk > 1 && <div className="ob-sector-bulk" role="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>{sectorBulkLine(bulk)}</div>}
+            <button type="button" role="option" aria-selected={!manual} className="ob-sector-opt is-auto" onClick={() => choose(null)}>
+              <StatusGlyph kind="dashed" color={MUTED} size={16} />
+              Automatique<small>{auto ? secteurLabel(auto) : "non détecté"}</small>
+              {!manual && check}
+            </button>
+            {SECTOR_OPTIONS.map((name) => {
+              const sel = manual && name === sector;
+              return (
+                <button key={name} type="button" role="option" aria-selected={sel} className="ob-sector-opt" onClick={() => choose(name)}>
+                  <SectorIcon secteur={name} size={18} />
+                  <span className="ob-sector-label">{secteurLabel(name)}</span>
+                  {sel && check}
                 </button>
               );
             })}
@@ -1242,7 +1342,7 @@ function SigCell({ status, sentAt, signedAt, scheduledAt, grouped }) {
 // Ligne du tableau, mémorisée (dev 28/10/2026) : elle ne se redessine que si SES données changent (client,
 // sélection, no show, entrée animée). Avant, tout rendu de la page redessinait les 700 à 900 lignes
 // (400 à 550 ms à chaque onglet, chaque sélection) ; les rappels reçus sont stables (useCallback, setState).
-const BoardRow = memo(function BoardRow({ r, rk, isSel, newIdx, noShow, renewal, onSelect, patch, changeEtat, recordMeteo, readOnly = false, csm = null, pick = "", picking = false, onPick }) {
+const BoardRow = memo(function BoardRow({ r, rk, isSel, newIdx, noShow, renewal, onSelect, patch, changeEtat, recordMeteo, readOnly = false, csm = null, pick = "", picking = false, onPick, patchSector, bulkOf }) {
   const td = ROW_TD;
   // Attribution groupée (16/11/2026) : `pick` = "" (hors sélection) | "can" (sélectionnable) | "on" | "saving" | "done" | "leaving" | "failed".
   // Appui long (souris ou doigt) sur une ligne « can » = mode sélection ; ensuite un clic coche ou décoche, sans ouvrir la fiche.
@@ -1314,11 +1414,14 @@ const BoardRow = memo(function BoardRow({ r, rk, isSel, newIdx, noShow, renewal,
           </div>
         </div>
       </td>
-      <td style={{ ...td, color: r.secteur_activite ? TEXT : "#d8d3cb" }}>
-        {r.secteur_activite ? (
-          <div className="ob-sector" title={`Secteur d'activité : ${secteurLabel(r.secteur_activite)}`}>
-            <SectorIcon secteur={r.secteur_activite} size={20} />
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{secteurLabel(r.secteur_activite)}</span>
+      <td style={{ ...td, color: effectiveSector(r) ? TEXT : "#d8d3cb" }}>
+        {canEditSector(roleOf(), { readOnly, numero: r.numero_client }) ? (
+          <SectorPicker sector={effectiveSector(r)} auto={autoSector(r)} manual={isManualSector(r)}
+            onPick={(v) => patchSector(r.numero_client, v)} bulkCount={() => bulkOf(r.numero_client)} />
+        ) : effectiveSector(r) ? (
+          <div className="ob-sector" title={`Secteur d'activité : ${secteurLabel(effectiveSector(r))}`}>
+            <SectorIcon secteur={effectiveSector(r)} size={20} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{secteurLabel(effectiveSector(r))}</span>
           </div>
         ) : <span title="Secteur non renseigné">—</span>}
       </td>
@@ -1826,6 +1929,8 @@ export default function OptilexBoard({ embed = false }) {
   const pickPhaseRef = useRef("idle");
   const setPhase = (v) => { pickPhaseRef.current = v; setPickPhase(v); };
   const pickedSet = useMemo(() => new Set(picked), [picked]);
+  const pickedRef = useRef(picked);
+  pickedRef.current = picked;   // lu par patchSector / bulkOf : leur identité reste stable, les centaines de lignes ne se redessinent pas à chaque case cochée
   const togglePick = useCallback((numero) => {
     if (pickPhaseRef.current !== "idle") return;
     setPicked((p) => (p.includes(numero) ? p.filter((x) => x !== numero) : [...p, numero]));
@@ -1879,6 +1984,34 @@ export default function OptilexBoard({ embed = false }) {
     setPhase("idle");
     if (!failed.length) setPickCsm(null);
   };
+  // Secteur d'activité en mode multi-sélection (dev 24/11/2026) : changer le secteur d'un client COCHÉ le change pour tous les clients
+  // cochés, d'un coup (un PATCH par client, comme la fiche, par paquets) ; un client hors sélection ne change que lui. Optimiste,
+  // et chaque client dont l'enregistrement échoue retrouve son secteur d'avant. La sélection reste en place.
+  const bulkOf = useCallback((numero) => sectorTargets(numero, pickedRef.current, pickPhaseRef.current === "idle").length, []);
+  const patchSector = useCallback(async (numero, value) => {
+    const targets = sectorTargets(numero, pickedRef.current, pickPhaseRef.current === "idle");
+    if (targets.length === 1) return patch(numero, { secteur_ovr: value });
+    if (isBoardReadOnly()) return undefined;
+    mutSeq.current += 1;   // une lecture partie avant le changement n'écrase pas le résultat
+    const before = new Map();
+    const set = new Set(targets);
+    setRows((prev) => prev.map((r) => {
+      if (!set.has(r.numero_client)) return r;
+      before.set(r.numero_client, r);
+      return { ...r, secteur_ovr: value };
+    }));
+    const { failed } = await assignInBatches((n, v) => apiClient.patch("/api/v1/optilex/board-tracking", { numero_client: n, secteur_ovr: v }), targets, value);
+    mutSeq.current += 1;
+    if (failed.length) {
+      console.error("bulk sector failed", failed);
+      const bad = new Set(failed.map((f) => f.numero));
+      setRows((prev) => prev.map((r) => (bad.has(r.numero_client) && before.has(r.numero_client) ? before.get(r.numero_client) : r)));
+      const first = failed[0].error;
+      flagSaveError(first?.status >= 400 && first.status < 500 && typeof first?.data?.detail === "string" && failed.length === 1 ? first
+        : { status: 400, data: { detail: sectorBulkFailure(failed.length, targets.length) } });
+    }
+    return undefined;
+  }, [patch, flagSaveError]);
   const pickOf = (r) => {
     if (!pickAvailable || !isPickable(r)) return "";
     const n = r.numero_client;
@@ -2560,6 +2693,24 @@ export default function OptilexBoard({ embed = false }) {
         .ob-sector{display:flex;align-items:center;gap:8px;min-width:0;font-size:12.5px;font-weight:500}
         .ob-sector-ic{flex-shrink:0;transition:transform .32s cubic-bezier(.34,1.56,.64,1)}
         .ob-row:hover .ob-sector-ic{transform:translateY(-1px) rotate(-6deg) scale(1.12)}
+        /* Secteur d'activité : bouton (icône, libellé, flèche) et fenêtre à deux colonnes, comme la situation (dev 24/11/2026). */
+        .ob-sector-btn{display:inline-flex;align-items:center;gap:8px;min-width:0;padding:3px 6px 3px 4px;margin:-3px 0 -3px -4px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:12.5px;font-weight:500;color:inherit;text-align:left;cursor:pointer;transition:background .15s ease,opacity .2s ease}
+        .ob-sector-btn.is-inline{font-size:13px}
+        .ob-sector-btn:hover,.ob-sector-btn.is-open{background:#f7f5f2}
+        .ob-sector-btn:focus-visible{outline:2px solid #2b2927;outline-offset:1px}
+        .ob-sector-btn:disabled{opacity:.5;cursor:progress}
+        .ob-sector-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .ob-sector-caret{flex-shrink:0;color:#8b867e;transition:transform .16s ease}
+        .ob-sector-menu{position:fixed;z-index:10051;box-sizing:border-box;width:372px;max-width:calc(100vw - 16px);max-height:340px;overflow-y:auto;padding:5px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;background:#fff;border:1px solid #ece9e4;border-radius:14px;box-shadow:0 14px 34px rgba(28,27,25,.10),0 2px 6px rgba(28,27,25,.04);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;animation:obMenuIn .15s cubic-bezier(.16,1,.3,1) both}
+        .ob-sector-opt{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:12.5px;font-weight:500;color:#1c1b19;text-align:left;white-space:nowrap;cursor:pointer}
+        .ob-sector-opt:hover,.ob-sector-opt:focus-visible,.ob-sector-opt[aria-selected="true"]{background:#f7f5f2}
+        .ob-sector-opt:focus-visible{outline:none;box-shadow:inset 0 0 0 2px #2b2927}
+        .ob-sector-bulk{grid-column:1/-1;display:flex;align-items:center;gap:7px;margin-bottom:3px;padding:7px 10px;border-radius:8px;background:#eaf1fd;color:#1e40af;font-size:12px;font-weight:500}
+        .ob-sector-bulk svg{flex-shrink:0}
+        .ob-sector-opt.is-auto{grid-column:1/-1;margin-bottom:3px;color:#8b867e;box-shadow:0 1px 0 #f1eee9;border-radius:8px 8px 0 0}
+        .ob-sector-opt.is-auto:focus-visible{box-shadow:inset 0 0 0 2px #2b2927}
+        .ob-sector-opt small{font-size:11.5px;font-weight:500;color:#a8a39b}
+        @media (prefers-reduced-motion: reduce){.ob-sector-menu{animation:none}.ob-sector-btn,.ob-sector-caret{transition:none}}
         /* Fenêtre météo : le contenu arrive en cascade après le ressort de la fenêtre ; les icônes éclosent.
            Remplissage « backwards » : une fois jouée, l'animation rend la main aux effets de survol. */
         @keyframes obWcRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -2857,7 +3008,7 @@ export default function OptilexBoard({ embed = false }) {
                         noShow={viewFilter.situationOf(r) === "noshow"} renewal={etatFilter === "Renouvellement client"}
                         onSelect={setSelected} patch={patch} changeEtat={changeEtat} recordMeteo={recordMeteo} readOnly={readOnly}
                         csm={r.csm_user_id ? csmById[r.csm_user_id] || null : null}
-                        pick={pickOf(r)} picking={picked.length > 0} onPick={togglePick} />
+                        pick={pickOf(r)} picking={picked.length > 0} onPick={togglePick} patchSector={patchSector} bulkOf={bulkOf} />
                     );
                   })}
                   {filtered.length === 0 && (
@@ -3823,9 +3974,11 @@ function ClientInfoSection({ row, num, patch, onEmailSaved, changeEtat, onContac
               </span>
             </PropRow>
             <PropRow icon="secteur" label="Secteur">
-              {row.secteur_activite
-                ? <span className="ob-pv-line"><SectorIcon secteur={row.secteur_activite} size={18} />{secteurLabel(row.secteur_activite)}</span>
-                : <span className="ob-pv-none">Non renseigné</span>}
+              {canEditSector(roleOf(), { readOnly: isBoardReadOnly(), numero: num })
+                ? <SectorPicker inline sector={effectiveSector(row)} auto={autoSector(row)} manual={isManualSector(row)} onPick={(v) => patch(num, { secteur_ovr: v })} />
+                : effectiveSector(row)
+                  ? <span className="ob-pv-line"><SectorIcon secteur={effectiveSector(row)} size={18} />{secteurLabel(effectiveSector(row))}</span>
+                  : <span className="ob-pv-none">Non renseigné</span>}
             </PropRow>
             {/* CSM attitré et suivi Client Success (lettre de mission, Trustpilot, programmes) : ici depuis le 16/11/2026. */}
             <CsmRows row={row} num={num} patch={patch} onChanged={onChanged} />
@@ -4625,7 +4778,7 @@ function FicheHeader({ row, full, onToggleFull, onClose }) {
       <div className="ob-fh-meta">
         {etat && <EtatBadge etat={etat} withIcon />}
         {num && <span className="ob-fh-chip">Client n° {num}</span>}
-        {row.secteur_activite && <span className="ob-fh-chip"><SectorIcon secteur={row.secteur_activite} size={15} />{secteurLabel(row.secteur_activite)}</span>}
+        {effectiveSector(row) && <span className="ob-fh-chip"><SectorIcon secteur={effectiveSector(row)} size={15} />{secteurLabel(effectiveSector(row))}</span>}
       </div>
       <div className="ob-fh-tiles">
         <FicheTile i={0} reduce={reduce} label="Météo"
