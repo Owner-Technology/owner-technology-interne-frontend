@@ -255,3 +255,23 @@
 .ld-kpi { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 999px; transition: transform .15s; }
 .ld-kpi:hover { transform: translateY(-1px); }
 .ld-board { min-width: 1020px; }
+
+/* Suivi des ventes à la forme du Suivi des paiements : bande de familles, icône par colonne, lignes hautes, filets
+   chauds, un filet marqué entre les blocs. */
+.ld-pay .fst-table { font-size: 14px; }
+.ld-pay .fst-table th, .ld-pay .fst-table td { border-left: 0; border-right: 1px solid #f1eee9; }
+.ld-pay .fst-table th:last-child, .ld-pay .fst-table td:last-child { border-right: 0; }
+.ld-pay .fst-table .is-heavy { border-right: 3px solid #e8e4de; }
+.ld-pay .ld-pay-groups th { height: 26px; padding: 8px 12px 2px; text-align: left; vertical-align: bottom; background: #fff; border-bottom: 0; font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: #a8a39b; white-space: nowrap; }
+.ld-pay .ld-pay-groups th > i { display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; vertical-align: 1px; }
+.ld-pay .fst-table thead tr:last-child th { height: 36px; padding: 0 12px; background: #fff; border-bottom: 1px solid #e8e4de; font-size: 12.5px; font-weight: 500; color: #1c1b19; }
+.ld-pay .fst-table thead tr:last-child th svg { color: #8b867e; }
+.ld-pay .fst-table tbody td { height: 50px; padding: 0 12px; border-bottom: 1px solid #f1eee9; color: #1c1b19; }
+.ld-pay .fst-table tbody tr:hover td { background: #faf9f7; }
+.ld-pay .ld-pay-client { font-weight: 500; }
+.ld-pay .ld-pay-amount { font-weight: 500; }
+.ld-pay .fst-table td:last-child { min-width: 190px; }
+.ld-pay .ld-seller td { height: 46px; background: #f4f2ee; border-top: 1px solid #e8e4de; border-right-color: transparent; }
+.ld-pay .ld-seller:hover td { background: #f4f2ee; }
+.ld-pay .ld-seller-facts b { font-weight: 500; color: #1c1b19; }
+.ld-pay .fst-table tr[data-off] td { color: #a8a39b; }
