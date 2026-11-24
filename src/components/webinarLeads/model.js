@@ -90,9 +90,13 @@ export function originsOf(leads) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([origin, count]) => ({ origin, count }));
 }
 
-// R1 au plus tard demain (heure de Paris) : les premiers à affecter.
+// Le RDV à placer d'un lead (dev 24/11/2026) : son R1 posé par un setter, ou son R2 réservé sur un lien du webinaire.
+export const rdvOf = (lead) => lead?.r1_date || lead?.r2_date || null;
+export const kindOf = (lead) => (lead?.r1_date ? 'R1' : lead?.r2_date ? 'R2' : 'RDV');
+
+// RDV au plus tard demain (heure de Paris) : les premiers à affecter.
 export const isSoon = (lead, today) => {
-  const slot = slotOf(lead.r1_date);
+  const slot = slotOf(rdvOf(lead));
   return Boolean(slot) && slot.date <= addDays(today, 1);
 };
 
