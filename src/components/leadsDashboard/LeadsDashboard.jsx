@@ -994,10 +994,10 @@ function BoardKpisCard({ state, leads, when, onSeeLeads }) {
             <Kpi label="Coût d'acquisition" value={t.cost_eur} format={euros}
               sub={(
                 <span className="ld-kpi-lines">
-                  <span><i>Budget ads</i><b>{euros(spend('meta_ads'))}</b></span>
-                  <span><i>Budget webinaire</i><b>{euros(spend('webinar'))}</b></span>
-                  <span><i>Commissions sales</i><b>{euros(t.commissions_eur)}</b></span>
-                  {fixed != null && <span><i>Fixes et primes</i><b>{euros(fixed)}</b></span>}
+                  <span><i>Ads</i><b>{euros(spend('meta_ads'))}</b></span>
+                  <span><i>Webinaire</i><b>{euros(spend('webinar'))}</b></span>
+                  <span><i>Commissions</i><b>{euros(t.commissions_eur)}</b></span>
+                  {fixed != null && <span><i>Fixes</i><b>{euros(fixed)}</b></span>}
                 </span>
               )} />
             <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={<>{euros(t.margin_eur)} de marge<br />ARR moins coût</>} />
