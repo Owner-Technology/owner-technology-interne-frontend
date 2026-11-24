@@ -202,7 +202,7 @@
 /* Board général (dev 24/11/2026) : les canaux en lignes, ventes, ARR Owner et coût en face. */
 .ld-board-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 44px; }
 .ld-board-facts { margin-top: 0; border-top: 0; }
-.ld-board-scroll { overflow-x: auto; margin-top: 24px; }
+.ld-board-scroll { overflow-x: auto; margin-top: 6px; }
 .ld-board { min-width: 940px; margin-top: 0; }
 .ld-board-row { cursor: pointer; }
 .ld-board-row[data-open] { background: var(--hover); }
@@ -275,3 +275,16 @@
 .ld-pay .ld-seller:hover td { background: #f4f2ee; }
 .ld-pay .ld-seller-facts b { font-weight: 500; color: #1c1b19; }
 .ld-pay .fst-table tr[data-off] td { color: #a8a39b; }
+
+/* KPI de rentabilité : six chiffres qui se lisent de gauche à droite, puis les canaux. */
+.ld-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 6px; }
+.ld-kpi-tile { display: grid; gap: 6px; align-content: start; padding: 4px 20px 6px; border-left: 1px solid var(--line-soft); min-width: 0; }
+.ld-kpi-tile:first-child { padding-left: 0; border-left: 0; }
+.ld-kpi-value { font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; color: var(--ink); white-space: nowrap; }
+.ld-kpi-tile[data-tone="good"] .ld-kpi-value { color: var(--green); }
+.ld-kpi-tile[data-tone="low"] .ld-kpi-value { color: var(--red); }
+.ld-kpi-sub { font-size: 12px; line-height: 1.45; color: var(--muted); }
+.ld-kpi-channels { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.ld-kpi-channels .ld-stat-text small { white-space: nowrap; }
+.ld-seller-pay b { font-weight: 500; color: #1c1b19; }
+@media (max-width: 1180px) { .ld-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 18px; } .ld-kpi-tile:nth-child(4) { padding-left: 0; border-left: 0; } }

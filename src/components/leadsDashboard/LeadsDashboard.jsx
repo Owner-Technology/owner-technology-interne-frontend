@@ -962,32 +962,60 @@ function BoardCells({ row, whole: full = true }) {
   );
 }
 
-// Les KPI du haut : les leads reçus sur la période, tous canaux d'acquisition, canal par canal.
-function BoardLeadsCard({ state, when, onSeeLeads }) {
-  const d = state.data;
-  const total = d?.total?.leads || 0;
-  const channels = (d?.channels || []).filter((c) => c.total > 0).sort((x, y) => y.total - x.total);
+// Les KPI du haut : ce que l'acquisition a rapporté face à ce qu'elle a coûté sur la période. Une ligne qui se lit de
+// gauche à droite (leads reçus → clients signés → ARR Owner → coût → rentabilité), puis la même lecture canal par canal.
+function Kpi({ label, value, format = whole, sub, tone }) {
   return (
-    <Card title="Leads reçus" Icon={Inbox} state={state} skeleton={170} className="ld-glow" data-glow="blue"
-      actions={d && <button type="button" className="fst-btn is-small" onClick={() => onSeeLeads(null)}><List size={14} />Voir les leads</button>}>
-      {d && (
-        <div className="ld-board-top">
-          <div className="ld-hero">
-            <BigNumber value={total} />
-            <div className="ld-hero-sub"><span>{total > 1 ? 'leads reçus' : 'lead reçu'} {when}</span></div>
+    <div className="ld-kpi-tile" data-tone={tone}>
+      <span className="ld-eyebrow">{label}</span>
+      <Num className="ld-kpi-value fst-num" value={value ?? 0} format={format} duration={900} />
+      <span className="ld-kpi-sub">{sub}</span>
+    </div>
+  );
+}
+
+function BoardKpisCard({ state, leads, when, onSeeLeads }) {
+  const b = state.data;
+  const t = b?.totals;
+  const received = useMemo(() => byKey(leads?.channels || []), [leads]);
+  const totalLeads = leads?.total?.leads || 0;
+  const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
+  const spend = (key) => b?.channels.find((c) => c.key === key)?.ads_spend_eur || 0;
+  return (
+    <Card title={`Rentabilité de l'acquisition, ${when}`} Icon={Target} state={state} skeleton={230} className="ld-glow" data-glow="blue"
+      actions={leads && <button type="button" className="fst-btn is-small" onClick={() => onSeeLeads(null)}><List size={14} />Voir les leads</button>}>
+      {b && t && (
+        <>
+          <div className="ld-kpis">
+            <Kpi label="Leads reçus" value={totalLeads} sub="tous canaux d'acquisition" />
+            <Kpi label="Clients signés" value={t.net}
+              sub={`${plural(t.sales, 'vente')} · ${plural(t.retracted, 'rétractation')}${totalLeads ? ` · ${pct(t.net / totalLeads, 1)} des leads` : ''}`} />
+            <Kpi label="ARR Owner généré" value={t.arr_eur} format={euros} sub={t.net ? `${euros(t.arr_eur / t.net)} par client` : ''} />
+            <Kpi label="Coût d'acquisition" value={t.cost_eur} format={euros}
+              sub={`ads ${euros(spend('meta_ads'))} · webinaire ${euros(spend('webinar'))} · commissions ${euros(t.commissions_eur)}${fixed != null ? ` · fixes ${euros(fixed)}` : ''}`} />
+            <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={`${euros(t.margin_eur)} de marge sur l'ARR`} />
+            <Kpi label="Coût par client" value={t.cac_eur} format={euros} sub={t.people != null ? `${plural(t.people, 'sales', 'sales')} dans le mois` : ''} />
           </div>
-          <div className="ld-stats ld-board-kpis">
-            {channels.map((c) => {
+          <div className="ld-kpi-channels">
+            {b.channels.map((c) => {
               const ChannelIcon = CHANNEL_ICON[c.key] || CircleDot;
+              const n = received[c.key]?.total || 0;
               return (
-                <button key={c.key} type="button" className="ld-kpi" onClick={() => onSeeLeads(c.key)} title="Voir ces leads">
-                  <StatChip value={c.total} label={c.label} share={total ? c.total / total : 0} sub={`${pct(total ? c.total / total : 0, 0)} des leads`}
-                    color={TONE_INK[channelTone(c.key)]} icon={<ChannelIcon size={15} strokeWidth={2} />} />
+                <button key={c.key} type="button" className="ld-kpi" onClick={() => onSeeLeads(c.key)} title="Voir les leads de ce canal">
+                  <div className="ld-stat">
+                    <ProgressRing value={Math.max(0, (c.margin_pct || 0) / 100)} size={40} stroke={3.5} color={TONE_INK[channelTone(c.key)]} label={c.label}>
+                      <span className="ld-stat-ico" style={{ color: TONE_INK[channelTone(c.key)] }}><ChannelIcon size={15} strokeWidth={2} /></span>
+                    </ProgressRing>
+                    <div className="ld-stat-text">
+                      <b className="fst-num">{c.label} <span className="ld-board-margin" data-tone={marginTone(c.margin_pct)}>{c.margin_pct != null ? rate(c.margin_pct) : '—'}</span></b>
+                      <small>{count(n)} leads · {plural(c.net, 'client')} · {euros(c.arr_eur)} d'ARR · {euros(c.cost_eur)} de coût</small>
+                    </div>
+                  </div>
                 </button>
               );
             })}
           </div>
-        </div>
+        </>
       )}
     </Card>
   );
@@ -1009,24 +1037,9 @@ function BoardCard({ state, leads }) {
   const leadsOf = (key) => (leads ? count(received[key]?.total || 0) : '—');
   const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
   return (
-    <Card title="Board général" Icon={BadgeEuro} state={state} skeleton={460}>
+    <Card title="Board général, canal par canal" Icon={BadgeEuro} state={state} skeleton={460}>
       {b && t && (
         <>
-          <div className="ld-board-top">
-            <div className="ld-hero">
-              <span className="ld-eyebrow">ARR Owner généré</span>
-              <BigNumber value={t.arr_eur} money />
-              <div className="ld-hero-sub">
-                <span>{plural(t.net, 'client net', 'clients nets')} · {plural(t.sales, 'vente signée', 'ventes signées')} · {plural(t.retracted, 'rétractation')}</span>
-              </div>
-            </div>
-            <div className="fst-facts ld-board-facts">
-              <Fact label="Coût d'acquisition" value={t.cost_eur} format={euros} />
-              <Fact label="Rentabilité" value={t.margin_pct ?? 0} format={rate} />
-              <Fact label="Coût par client" value={t.cac_eur ?? 0} format={euros} />
-              {t.people != null && <Fact label="Sales" value={t.people} />}
-            </div>
-          </div>
           {rows.length === 0 ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
             <div className="ld-board-scroll">
               <table className="fst-months ld-recap ld-board">
@@ -1134,6 +1147,7 @@ function BoardSalesCard({ state }) {
                           <i key={key} className="ld-seller-mark"><i className="ld-capsule" style={{ background: channelColor(key) }} />{person.by_channel[key]}</i>
                         ))}
                         {person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
+                        {person.payout_eur != null && <span className="ld-seller-pay">touche ce mois-ci <b>{euros(person.payout_eur)}</b></span>}
                       </span>
                     </td>
                     <td className="is-num ld-pay-amount">{euros(person.arr_eur)}</td>
@@ -1313,7 +1327,7 @@ export default function LeadsDashboard() {
 
       {tab === 'board' && (
         <>
-          <Reveal><BoardLeadsCard state={current} when={when} onSeeLeads={seeLeads} /></Reveal>
+          <Reveal><BoardKpisCard state={board} leads={d} when={when} onSeeLeads={seeLeads} /></Reveal>
           <Reveal className="ld-gap"><BoardCard state={board} leads={d} /></Reveal>
           <Reveal className="ld-gap"><BoardSalesCard state={board} /></Reveal>
           <Reveal className="ld-gap"><BoardMonthsCard state={board} range={range} onPick={pickMonth} /></Reveal>
