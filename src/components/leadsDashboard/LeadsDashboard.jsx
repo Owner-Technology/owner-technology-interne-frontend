@@ -1079,57 +1079,73 @@ function SaleRow({ sale, who = false }) {
   return (
     <tr data-off={sale.retracted || undefined}>
       <td className="is-nowrap fst-cell-muted">{saleDay(sale.signed_at)}</td>
-      <td className="is-wrap">{sale.client}</td>
-      {who && <td><Who name={sale.sales_person} /></td>}
-      <td className="is-nowrap"><Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag>{sale.origin && <small className="ld-sale-origin">{sale.origin}</small>}</td>
-      <td className="is-nowrap">{sale.headcount || <span className="fst-cell-muted">–</span>}</td>
-      <td className="is-num">{euros(sale.arr_eur)}</td>
-      <td className="is-num">{euros(sale.commission_eur)}</td>
+      <td className={`is-wrap ld-pay-client${who ? '' : ' is-heavy'}`}>{sale.client}</td>
+      {who && <td className="is-heavy"><Who name={sale.sales_person} /></td>}
+      <td className="is-nowrap"><Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag></td>
+      <td className="is-nowrap fst-cell-muted">{sale.origin || '–'}</td>
+      <td className="is-nowrap is-heavy">{sale.headcount || <span className="fst-cell-muted">–</span>}</td>
+      <td className="is-num ld-pay-amount">{euros(sale.arr_eur)}</td>
+      <td className="is-num is-heavy">{euros(sale.commission_eur)}</td>
       <td className="is-nowrap">{sale.retracted ? <Tag tone="red">Rétractation</Tag> : <span className="fst-cell-muted">{sale.finance_status || '–'}</span>}</td>
     </tr>
   );
 }
 
+// Le tableau reprend la forme du Suivi des paiements : une bande de familles au-dessus des colonnes, une icône par
+// colonne, des lignes hautes, un filet marqué entre les blocs.
 function BoardSalesCard({ state }) {
   const [view, setView] = useState('people');
   const sales = state.data?.sales;
   const people = state.data?.people;
+  const all = view === 'all';
   const bySeller = useMemo(() => {
     const map = new Map();
     (sales || []).forEach((x) => { if (!map.has(x.sales_person)) map.set(x.sales_person, []); map.get(x.sales_person).push(x); });
     return map;
   }, [sales]);
   return (
-    <Card title="Ventes signées, sales par sales" Icon={Users} state={state} skeleton={420}
+    <Card title="Suivi des ventes" Icon={Users} state={state} skeleton={420}
       actions={sales?.length ? <Segmented small value={view} onChange={setView} label="Présentation" options={BOARD_VIEWS} /> : null}>
       {sales && (!sales.length ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
-        <TableBox minWidth={view === 'all' ? 1060 : 940} free={false}>
-          <thead>
-            <tr><Th>Signée le</Th><Th>Client</Th>{view === 'all' && <Th>Sales</Th>}<Th>Origine</Th><Th>Effectif</Th><Th num>ARR Owner</Th><Th num>Commission</Th><Th>État</Th></tr>
-          </thead>
-          <tbody>
-            {view === 'all' ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : (people || []).map((person) => (
-              <Fragment key={person.name}>
-                <tr className="ld-seller">
-                  <td colSpan={4}>
-                    <span className="ld-seller-name"><Who name={person.name} /></span>
-                    <span className="ld-seller-facts">
-                      {plural(person.sales, 'vente')}{person.retracted > 0 && ` · ${plural(person.retracted, 'rétractation')}`}
-                      {BOARD_ORDER.filter((key) => person.by_channel?.[key]).map((key) => (
-                        <i key={key} className="ld-seller-mark" title={key}><i className="ld-capsule" style={{ background: channelColor(key) }} />{person.by_channel[key]}</i>
-                      ))}
-                      {person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
-                    </span>
-                  </td>
-                  <td className="is-num">{euros(person.arr_eur)}</td>
-                  <td className="is-num">{euros(person.commissions_eur)}</td>
-                  <td />
-                </tr>
-                {(bySeller.get(person.name) || []).map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} />)}
-              </Fragment>
-            ))}
-          </tbody>
-        </TableBox>
+        <div className="ld-pay">
+          <TableBox minWidth={all ? 1120 : 980} free={false}>
+            <thead>
+              <tr className="ld-pay-groups">
+                <th colSpan={all ? 3 : 2} className="is-heavy"><i style={{ background: '#1c1b19' }} />Vente</th>
+                <th colSpan={3} className="is-heavy"><i style={{ background: channelColor('meta_ads') }} />Acquisition</th>
+                <th colSpan={2} className="is-heavy"><i style={{ background: '#0b7a4b' }} />Owner</th>
+                <th><i style={{ background: '#a8a39b' }} />Finance</th>
+              </tr>
+              <tr>
+                <Th Icon={CalendarCheck}>Signée le</Th><Th Icon={Briefcase}>Client</Th>{all && <Th Icon={Users}>Sales</Th>}
+                <Th Icon={Target}>Canal</Th><Th Icon={Inbox}>Origine du lead</Th><Th Icon={CircleDot}>Effectif</Th>
+                <Th Icon={BadgeEuro} num>ARR Owner</Th><Th Icon={Calculator} num>Commission</Th><Th Icon={History}>Première échéance</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : (people || []).map((person) => (
+                <Fragment key={person.name}>
+                  <tr className="ld-seller">
+                    <td colSpan={5}>
+                      <span className="ld-seller-name"><Who name={person.name} /></span>
+                      <span className="ld-seller-facts">
+                        <b>{plural(person.sales, 'vente')}</b>{person.retracted > 0 && <span>{plural(person.retracted, 'rétractation')}</span>}
+                        {BOARD_ORDER.filter((key) => person.by_channel?.[key]).map((key) => (
+                          <i key={key} className="ld-seller-mark"><i className="ld-capsule" style={{ background: channelColor(key) }} />{person.by_channel[key]}</i>
+                        ))}
+                        {person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
+                      </span>
+                    </td>
+                    <td className="is-num ld-pay-amount">{euros(person.arr_eur)}</td>
+                    <td className="is-num">{euros(person.commissions_eur)}</td>
+                    <td />
+                  </tr>
+                  {(bySeller.get(person.name) || []).map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} />)}
+                </Fragment>
+              ))}
+            </tbody>
+          </TableBox>
+        </div>
       ))}
     </Card>
   );
