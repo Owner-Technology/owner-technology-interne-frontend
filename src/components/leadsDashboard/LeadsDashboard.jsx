@@ -987,13 +987,20 @@ function BoardKpisCard({ state, leads, when, onSeeLeads }) {
       {b && t && (
         <>
           <div className="ld-kpis">
-            <Kpi label="Leads reçus" value={totalLeads} sub="tous canaux d'acquisition" />
+            <Kpi label="Leads reçus" value={totalLeads} sub="Tous canaux d'acquisition" />
             <Kpi label="Clients signés" value={t.net}
-              sub={`${plural(t.sales, 'vente')} · ${plural(t.retracted, 'rétractation')}${totalLeads ? ` · ${pct(t.net / totalLeads, 1)} des leads` : ''}`} />
+              sub={<>{plural(t.sales, 'vente')}, {plural(t.retracted, 'rétractation')}{totalLeads > 0 && <><br />{pct(t.net / totalLeads, 1)} des leads reçus</>}</>} />
             <Kpi label="ARR Owner généré" value={t.arr_eur} format={euros} sub={t.net ? `${euros(t.arr_eur / t.net)} par client` : ''} />
             <Kpi label="Coût d'acquisition" value={t.cost_eur} format={euros}
-              sub={<>ads {euros(spend('meta_ads'))} · webinaire {euros(spend('webinar'))}<br />commissions {euros(t.commissions_eur)}{fixed != null && ` · fixes ${euros(fixed)}`}</>} />
-            <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={`${euros(t.margin_eur)} de marge sur l'ARR`} />
+              sub={(
+                <span className="ld-kpi-lines">
+                  <span><i>Budget ads</i><b>{euros(spend('meta_ads'))}</b></span>
+                  <span><i>Budget webinaire</i><b>{euros(spend('webinar'))}</b></span>
+                  <span><i>Commissions sales</i><b>{euros(t.commissions_eur)}</b></span>
+                  {fixed != null && <span><i>Fixes et primes</i><b>{euros(fixed)}</b></span>}
+                </span>
+              )} />
+            <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={<>{euros(t.margin_eur)} de marge<br />ARR moins coût</>} />
             <Kpi label="Coût par client" value={t.cac_eur} format={euros} sub={t.people != null ? `${plural(t.people, 'sales', 'sales')} dans le mois` : ''} />
           </div>
           <div className="ld-kpi-channels">
@@ -1001,16 +1008,18 @@ function BoardKpisCard({ state, leads, when, onSeeLeads }) {
               const ChannelIcon = CHANNEL_ICON[c.key] || CircleDot;
               const n = received[c.key]?.total || 0;
               return (
-                <button key={c.key} type="button" className="ld-kpi" onClick={() => onSeeLeads(c.key)} title="Voir les leads de ce canal">
-                  <div className="ld-stat">
-                    <ProgressRing value={Math.max(0, (c.margin_pct || 0) / 100)} size={40} stroke={3.5} color={TONE_INK[channelTone(c.key)]} label={c.label}>
-                      <span className="ld-stat-ico" style={{ color: TONE_INK[channelTone(c.key)] }}><ChannelIcon size={15} strokeWidth={2} /></span>
-                    </ProgressRing>
-                    <div className="ld-stat-text">
-                      <b className="fst-num">{c.label} <span className="ld-board-margin" data-tone={marginTone(c.margin_pct)}>{c.margin_pct != null ? rate(c.margin_pct) : '—'}</span></b>
-                      <small>{n > 0 && `${count(n)} leads · `}{plural(c.net, 'client')} · {euros(c.arr_eur)} d'ARR · {euros(c.cost_eur)} de coût</small>
-                    </div>
-                  </div>
+                <button key={c.key} type="button" className="ld-channel" onClick={() => onSeeLeads(c.key)} title="Voir les leads de ce canal">
+                  <span className="ld-channel-head">
+                    <span className="ld-channel-ico" style={{ color: TONE_INK[channelTone(c.key)], background: channelColor(c.key) }}><ChannelIcon size={15} strokeWidth={2} /></span>
+                    <span className="ld-channel-name">{c.label}</span>
+                    <span className="ld-channel-rate ld-board-margin fst-num" data-tone={marginTone(c.margin_pct)}>{c.margin_pct != null ? rate(c.margin_pct) : '—'}</span>
+                  </span>
+                  <span className="ld-channel-facts">
+                    <span><i>Leads</i><b className="fst-num">{c.key === 'old_webinar' ? '—' : count(n)}</b></span>
+                    <span><i>Clients</i><b className="fst-num">{count(c.net)}</b></span>
+                    <span><i>ARR Owner</i><b className="fst-num">{euros(c.arr_eur)}</b></span>
+                    <span><i>Coût</i><b className="fst-num">{euros(c.cost_eur)}</b></span>
+                  </span>
                 </button>
               );
             })}

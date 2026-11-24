@@ -290,3 +290,33 @@
 @media (max-width: 1180px) { .ld-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 18px; } .ld-kpi-tile:nth-child(4) { padding-left: 0; border-left: 0; } }
 
 .ld-sale-webinar { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: middle; }
+
+/* Bandeau de rentabilité, lisible : sous-textes plus grands, détail du coût en lignes, un bloc par canal. */
+.ld-kpis { gap: 0; margin-top: 10px; }
+.ld-kpi-tile { gap: 8px; padding: 2px 22px 4px; }
+.ld-kpi-tile .ld-eyebrow { font-size: 11.5px; }
+.ld-kpi-value { font-size: 32px; }
+.ld-kpi-sub { font-size: 13px; line-height: 1.55; color: var(--ink-soft, #5d5952); white-space: normal; }
+.ld-kpi-lines { display: grid; gap: 3px; }
+.ld-kpi-lines > span { display: flex; justify-content: space-between; gap: 12px; }
+.ld-kpi-lines i { font-style: normal; color: var(--muted); }
+.ld-kpi-lines b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ld-kpi-channels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 26px; padding-top: 22px; }
+.ld-channel { display: grid; gap: 14px; padding: 16px 18px; border: 1px solid var(--line-soft); border-radius: 16px; background: #fff; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s; }
+.ld-channel:hover { border-color: var(--line); transform: translateY(-1px); }
+.ld-channel-head { display: flex; align-items: center; gap: 10px; }
+.ld-channel-ico { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; flex: none; }
+.ld-channel-name { font-size: 14.5px; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; }
+.ld-channel-rate { font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+.ld-channel-facts { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 10px; }
+.ld-channel-facts > span { display: grid; gap: 3px; }
+.ld-channel-facts i { font-style: normal; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ld-channel-facts b { font-size: 14px; font-weight: 500; color: var(--ink); }
+@media (max-width: 1180px) { .ld-kpi-channels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Survol du suivi des ventes : une teinte à peine posée, d'un seul tenant, sans bouger les filets ; client sur une ligne. */
+.ld-pay .fst-table tbody tr, .ld-pay .fst-table tbody tr:hover { background: none; transition: none; }
+.ld-pay .fst-table tbody td { transition: background .12s ease; }
+.ld-pay .fst-table tbody tr:hover td { background: #fcfbf9; }
+.ld-pay .fst-table tbody tr.ld-seller:hover td { background: #f4f2ee; }
+.ld-pay .fst-table td.ld-pay-client { white-space: nowrap; max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
