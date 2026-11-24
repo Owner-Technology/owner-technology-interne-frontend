@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  dayLabel, freeKeys, hourLabel, isSoon, mondayOf, originsOf, salesForSlot, slotLabel, slotOf, visibleLeads, weekDays,
+  dayLabel, freeKeys, hourLabel, isSoon, kindOf, mondayOf, rdvOf, originsOf, salesForSlot, slotLabel, slotOf, visibleLeads, weekDays,
   weekRows, withoutSlot,
 } from './model.js';
 
@@ -53,4 +53,13 @@ test('les sales libres sur le créneau passent devant', () => {
   const { free, busy } = salesForSlot(agendas, ['c@x', 'b@x']);
   assert.deepEqual(free.map((a) => a.name), ['Bruno', 'Chloé']);
   assert.deepEqual(busy.map((a) => a.name), ['Alice']);
+});
+
+test('un R2 du webinaire se lit sur sa date de R2', () => {
+  const r2 = { id: 9, r1_date: null, r2_date: '2026-11-24T14:00:00Z' };
+  assert.equal(rdvOf(r2), '2026-11-24T14:00:00Z');
+  assert.equal(kindOf(r2), 'R2');
+  assert.equal(kindOf({ r1_date: '2026-11-25T10:00:00Z', r2_date: null }), 'R1');
+  assert.equal(isSoon(r2, '2026-11-24'), true);
+  assert.equal(isSoon({ r2_date: '2026-12-02T09:00:00Z' }, '2026-11-24'), false);
 });
