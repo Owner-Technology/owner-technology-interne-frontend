@@ -2226,7 +2226,10 @@ export default function OptilexBoard({ embed = false }) {
         .ob-tk-leg>span:first-child{font-size:11px;color:#8b867e}
         .ob-tk-leg strong{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:500;color:${NAVY};font-variant-numeric:tabular-nums;white-space:nowrap}
         .ob-tk-leg strong.is-none{font-weight:500;color:#c9c4bc}
-        .ob-tk-legact{display:flex;gap:10px}
+        .ob-tk-legact{display:flex;flex-wrap:wrap;gap:2px 10px}
+        .ob-tk-leg:nth-child(2) .ob-tk-legact{justify-content:center}
+        .ob-tk-leg:nth-child(3) .ob-tk-legact{justify-content:flex-end}
+        .ob-tk-legact .ob-tk-link{white-space:nowrap}
         .ob-tk-link{border:0;background:transparent;padding:0;font:inherit;font-size:12px;font-weight:500;color:#55514b;cursor:pointer}
         .ob-tk-link:hover{text-decoration:underline}
         .ob-tk-link.is-danger{color:#c5221f}
@@ -2243,6 +2246,7 @@ export default function OptilexBoard({ embed = false }) {
         .ob-tk-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-top:12px}
         .ob-tk-stub{position:relative;padding:22px 24px 20px}
         .ob-tk-stubrow{display:flex;align-items:center;justify-content:space-between;gap:18px}
+        .ob-tk-stubrow.is-solo{justify-content:flex-end}
         .ob-tk-stubact{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
         .ob-tk-codebox{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:1;min-width:0}
         .ob-tk-barcode{display:block;width:230px;max-width:100%;height:52px;color:#1c1b19}
@@ -3090,7 +3094,10 @@ const TK_STATUS_ICONS = {
 const capFirst = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 const fullDay = (p) => (p ? `${p.label.replace(".", "")} ${p.year}` : "");
 
-function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onReschedule, onCancel, onDateSaved, hostInfo, onTransfer, onNoShow }) {
+// La finance (dev 25/11/2026) a le même billet que le Client Success, sans ce qui constate l'onboarding (parcours, réalisé,
+// date de réalisation, no show : `onStart`, `onManualDone`, `onNoShow` absents) ; elle garde ce que sa liste de rendez-vous
+// lui donnait en plus : « effectué » des rendez-vous du cabinet (`onLegDone`) et lien de prise de rendez-vous (`legLinks`).
+function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onReschedule, onCancel, onDateSaved, hostInfo, onTransfer, onNoShow, onLegDone, legLinks = false }) {
   const reduce = useReducedMotion();
   const date = row.rdv_onboarding_date_manual || row.rdv_onboarding_date;
   const done = !!row.rdv_onboarding_done;
@@ -3110,9 +3117,9 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
   const to = wallParts(done ? doneDate : date);
   const total = from && to ? Math.round((to.day - from.day) / 86400000) : null;
   const rdv = [
-    ["Intégration Opti'Lex", row.rdv_lancement_date, row.rdv_lancement_done],
-    ["Lancement fiscal", launchDate(row, "fiscal"), row.rdv_fiscal_done, "fiscal"],
-    ["Lancement social", launchDate(row, "social"), row.rdv_social_done, "social"],
+    ["Intégration Opti'Lex", row.rdv_lancement_date, row.rdv_lancement_done, null, "rdv_lancement_done", null],
+    ["Lancement fiscal", launchDate(row, "fiscal"), row.rdv_fiscal_done, "fiscal", "rdv_fiscal_done", row.fiscal_url],
+    ["Lancement social", launchDate(row, "social"), row.rdv_social_done, "social", "rdv_social_done", row.social_url],
   ];
   const host = date && !done ? hostInfo?.host : null;
   // No show du rendez-vous prévu : déjà noté quand le dernier no show qualifié (champ `no_show` du board) est ce jour-là.
@@ -3273,21 +3280,34 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
           )}
           {/* Les lancements, comme passager / siège / classe. */}
           <div className="ob-tk-legs">
-            {rdv.map(([label, d, ok, kind]) => (
-              <div key={label} className="ob-tk-leg">
-                <span>{label}</span>
-                <strong className={d ? "" : "is-none"}>
-                  {d ? fmtDT(d) : "À placer"}
-                  {ok && <span title="Effectué"><StatusGlyph kind="done" color={GREEN} size={13} /></span>}
-                </strong>
-                {kind && ((d && !ok && onReschedule) || (onCancel && launchCancellable(d, ok))) && (
-                  <span className="ob-tk-legact">
-                    {d && !ok && onReschedule && <button type="button" className="ob-tk-link" onClick={() => onReschedule(kind)}>Reprogrammer</button>}
-                    {onCancel && launchCancellable(d, ok) && <button type="button" className="ob-tk-link is-danger" onClick={() => onCancel(kind)}>Annuler</button>}
-                  </span>
-                )}
-              </div>
-            ))}
+            {rdv.map(([label, d, ok, kind, doneField, url]) => {
+              const canResched = !!kind && !!d && !ok && !!onReschedule;
+              const canCancel = !!kind && !!onCancel && launchCancellable(d, ok);
+              // Comme la liste d'avant : l'intégration se coche toujours, un lancement une fois sa date posée.
+              const canMark = !!onLegDone && (!kind || !!d);
+              const link = legLinks && url;
+              return (
+                <div key={label} className="ob-tk-leg">
+                  <span>{label}</span>
+                  <strong className={d ? "" : "is-none"}>
+                    {d ? fmtDT(d) : "À placer"}
+                    {ok && <span title="Effectué"><StatusGlyph kind="done" color={GREEN} size={13} /></span>}
+                  </strong>
+                  {(canResched || canCancel) && (
+                    <span className="ob-tk-legact">
+                      {canResched && <button type="button" className="ob-tk-link" onClick={() => onReschedule(kind)}>Reprogrammer</button>}
+                      {canCancel && <button type="button" className="ob-tk-link is-danger" onClick={() => onCancel(kind)}>Annuler</button>}
+                    </span>
+                  )}
+                  {(canMark || link) && (
+                    <span className="ob-tk-legact">
+                      {canMark && <button type="button" className="ob-tk-link" onClick={() => onLegDone(doneField, !ok)}>{ok ? "Remettre à venir" : "Marquer effectué"}</button>}
+                      {link && <CopyButton value={url} label="le lien de prise de rendez-vous du client">Lien</CopyButton>}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -3313,8 +3333,8 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
                 {cutting && <motion.span className="ob-tk-cutline" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.65, ease: [0.45, 0, 0.55, 1] }} />}
               </div>
               <div className="ob-tk-stub">
-                <div className="ob-tk-stubrow">
-                  <div className="ob-tk-stubact">
+                <div className={`ob-tk-stubrow${onStart ? "" : " is-solo"}`}>
+                  {onStart && <div className="ob-tk-stubact">
                     <motion.button type="button" className="ob-tk-cta" whileTap={{ scale: 0.97 }} onClick={onStart}>
                       {/* La fusée décolle au survol. Rien ne bouge en continu dans le billet : toute animation permanente le
                           ferait redessiner à chaque image. */}
@@ -3323,7 +3343,7 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
                       </svg>
                       {pending ? "Reprendre l'onboarding" : "Faire l'onboarding"}
                     </motion.button>
-                  </div>
+                  </div>}
                   <div className="ob-tk-codebox">
                     <Barcode value={row.numero_client || row.id} width={260} height={52} className="ob-tk-barcode" />
                     <span className="ob-tk-num">{row.numero_client || ""}</span>
@@ -3354,7 +3374,7 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
         </AnimatePresence>
       </div>
       {/* Sous le billet déchiré : rouvrir le parcours, corriger la date de réalisation. */}
-      {done && stubGone && (
+      {done && stubGone && onStart && (
         <motion.div className="ob-tk-after" initial={justDone ? { opacity: 0, y: -6 } : false} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: justDone ? 0.75 : 0, ease: [0.22, 1, 0.36, 1] }}>
           <button type="button" className="ob-tk-link" onClick={onStart}>
@@ -4655,7 +4675,10 @@ export function DetailPanel({ row, onClose, reload, reloadRatings, patch, change
     await apiClient.post("/api/v1/optilex/onboarding-no-show", { numero_client: num, rdv_date: day });
     afterHistory();
   };
-  const onboardingHost = useOnboardingHost(num, ONBOARDING_FLOW_ROLES.includes(roleOf()) && !row.rdv_onboarding_done
+  // Le billet d'onboarding : le Client Success, qui mène le parcours, et la finance (dev 25/11/2026).
+  const flowRole = ONBOARDING_FLOW_ROLES.includes(roleOf());
+  const financeRole = FINANCE_ROLES.includes(roleOf());
+  const onboardingHost = useOnboardingHost(num, (flowRole || financeRole) && !row.rdv_onboarding_done
     && !!(row.rdv_onboarding_date_manual || row.rdv_onboarding_date), apptVersion);
   // Antériorité emails : à l'ouverture d'une fiche, on enregistre les emails vus (Owner + Opti'Lex
   // courant par SIREN) dans l'historique -> on garde la trace même quand l'email change ensuite,
@@ -4717,36 +4740,20 @@ export function DetailPanel({ row, onClose, reload, reloadRatings, patch, change
               onDone={(d) => patch(num, { rdv_onboarding_done: true, rdv_onboarding_done_date: d })}
               onNotDone={() => patch(num, { rdv_onboarding_done: false })} onNoShow={qualifyNoShow} />
           )}
-          {ONBOARDING_FLOW_ROLES.includes(roleOf()) && !!num ? (
+          {(flowRole || financeRole) && !!num ? (
             // Onglet Détails allégé (dev 24/09/2026) : un seul bouton, le reste vit dans le parcours.
-            <OnboardingCard row={row} holdCut={onboardingOpen} onStart={() => setOnboardingOpen(true)} onDateSaved={reload}
-              onManualDone={(d) => patch(num, { rdv_onboarding_done: true, rdv_onboarding_done_date: d })}
+            <OnboardingCard row={row} holdCut={onboardingOpen} onStart={flowRole ? () => setOnboardingOpen(true) : undefined} onDateSaved={reload}
+              onManualDone={flowRole ? (d) => patch(num, { rdv_onboarding_done: true, rdv_onboarding_done_date: d }) : undefined}
               onReschedule={(kind) => setReschedOpen(kind)} onCancel={(kind) => setCancelOpen(kind)}
-              hostInfo={onboardingHost} onTransfer={(t) => setTransferTo(t)} onNoShow={() => setNoShowOpen(true)} />
+              hostInfo={onboardingHost} onTransfer={(t) => setTransferTo(t)} onNoShow={flowRole ? () => setNoShowOpen(true) : undefined}
+              onLegDone={financeRole ? (field, v) => patch(num, { [field]: v }) : undefined} legLinks={financeRole} />
           ) : (
+            // Liste des rendez-vous : le cabinet et les rôles en lecture seule. Le Client Success et la finance ont le billet,
+            // qui reprogramme l'onboarding (le recalage et la correction de date de cette liste n'y servaient plus).
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
               <RdvRow label="Rendez-vous Onboarding Owner" date={row.rdv_onboarding_date_manual || row.rdv_onboarding_date || row.rdv_onboarding_done_date} done={row.rdv_onboarding_done}
-                editable={!!num && ["customer_success_manager", "admin", "ceo"].includes((apiClient.getUser() || {}).role)}
                 link={!row.rdv_onboarding_done ? row.onboarding_url || null : null}
-                meetLink={row.onboarding_meet_link}
-                onToggle={(v) => patch(num, { rdv_onboarding_done: v })} />
-              {/* Corriger la date prévue (même champ que la date de la table) : la finance comme le Client Success. */}
-              {!!num && ["customer_success_manager", "admin", "ceo", ...FINANCE_ROLES].includes((apiClient.getUser() || {}).role) && (
-                <BoardOnboardingDateCorrection key={num} numero={num}
-                  initialDate={toDateInput(row.rdv_onboarding_date_manual || row.rdv_onboarding_date)} onSaved={reload} />
-              )}
-              {/* Recalage direct du RDV onboarding (Vincent / facturation / admin) : déplace la
-                  date CRM ET les 2 événements Google (Vincent + facturation), client notifié. */}
-              {!!num && !!(row.rdv_onboarding_date_manual || row.rdv_onboarding_date)
-                && ["admin", "ceo", "customer_success_manager", ...FINANCE_ROLES].includes((apiClient.getUser() || {}).role) && (
-                <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={() => setReschedOpen("onboarding")}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#f7f5f2"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = CARD; }}
-                  style={{ alignSelf: "flex-start", marginTop: -2, display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 8, border: `1px solid ${BORDER}`, background: CARD, color: NAVY, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NAVY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></svg>
-                  Recaler le RDV onboarding
-                </motion.button>
-              )}
+                meetLink={row.onboarding_meet_link} />
               <RdvRow label="Rendez-vous Intégration Opti'Lex" date={row.rdv_lancement_date} done={row.rdv_lancement_done} editable={!!num} readOnly={readOnly} meetLink={row.lancement_meet_link}
                 onToggle={(v) => patch(num, { rdv_lancement_done: v })} />
               <RdvRow label="Rendez-vous lancement fiscal" date={launchDate(row, "fiscal")} done={row.rdv_fiscal_done} readOnly={readOnly} editable={!!num && !!launchDate(row, "fiscal")}
