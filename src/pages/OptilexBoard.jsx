@@ -125,7 +125,8 @@ const ETAT_OPTIONS = ["Signé", "En cours de résiliation", "En cours de rétrac
 const ACTED_ETATS = ["Résiliation", "Rétractation", "Self-Résiliation", "Liquidation"];
 const BoardExitActContext = createContext(false);
 // La finance (finance_team, finance_director) a sur le board les droits du Client Success (dev 25/11/2026), sauf ce
-// que le serveur garde au Client Success : constater l'onboarding, transférer un onboarding ou choisir son animateur.
+// que le serveur garde au Client Success : constater un onboarding réalisé, transférer un onboarding ou choisir son
+// animateur.
 const FINANCE_ROLES = ["finance_team", "finance_director"];
 // Rôles en lecture seule (RH, 06/11/2026) : le board de la direction financière, rien ne s'y écrit (ni état,
 // ni onboarding, ni météo, ni commentaire, ni rendez-vous). Les contrôles
@@ -2987,7 +2988,7 @@ function OnboardingNoShowBadge({ date }) {
 // Sélecteur d'email de destination Opti'Lex : dropdown Owner / Opti'Lex (par SIREN) / historique.
 // Pose email_ovr (via patch /board-tracking). Les 5 emails Opti'Lex + la relance contrat Yousign
 // partent sur l'email sélectionné (backend). Réservé admin + ceo + optilex.
-const EMAIL_SELECT_ROLES = ["admin", "ceo", "optilex", "customer_success_manager"];
+const EMAIL_SELECT_ROLES = ["admin", "ceo", "optilex", "customer_success_manager", ...FINANCE_ROLES];
 const canSelectEmail = () => { try { return EMAIL_SELECT_ROLES.includes((apiClient.getUser() || {}).role); } catch { return false; } };
 // Relance de la signature Opti'Lex : le cabinet (Lisa), l'admin et le CEO. Le Client Success ne
 // relance jamais lui-même : il corrige l'adresse puis PRÉVIENT Lisa (règle du 24/09/2026).
@@ -3094,9 +3095,10 @@ const TK_STATUS_ICONS = {
 const capFirst = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 const fullDay = (p) => (p ? `${p.label.replace(".", "")} ${p.year}` : "");
 
-// La finance (dev 25/11/2026) a le même billet que le Client Success, sans ce qui constate l'onboarding (parcours, réalisé,
-// date de réalisation, no show : `onStart`, `onManualDone`, `onNoShow` absents) ; elle garde ce que sa liste de rendez-vous
-// lui donnait en plus : « effectué » des rendez-vous du cabinet (`onLegDone`) et lien de prise de rendez-vous (`legLinks`).
+// La finance (dev 25/11/2026) a le même billet que le Client Success, no show compris, sans ce qui constate l'onboarding
+// réalisé (parcours, réalisé, date de réalisation : `onStart` et `onManualDone` absents) ; elle garde ce que sa liste de
+// rendez-vous lui donnait en plus : « effectué » des rendez-vous du cabinet (`onLegDone`) et lien de prise de rendez-vous
+// (`legLinks`).
 function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onReschedule, onCancel, onDateSaved, hostInfo, onTransfer, onNoShow, onLegDone, legLinks = false }) {
   const reduce = useReducedMotion();
   const date = row.rdv_onboarding_date_manual || row.rdv_onboarding_date;
@@ -3422,7 +3424,7 @@ function EmailSelect({ row, patch, onSaved, bare = false }) {
     for (const e of extra) add(e, "Owner");
     return list;
   }, [owner, row.email_optilex_options, row.email_optilex, row.email_history, row.shared_contacts, extra]);
-  const canOpen = canSelectEmail(); // autorisé à choisir/ajouter (admin/ceo/optilex/client success)
+  const canOpen = canSelectEmail(); // autorisé à choisir/ajouter (admin/ceo/optilex/client success/finance)
   const choose = async (email) => {
     setSaving(true);
     const ovr = email.toLowerCase() === owner.toLowerCase() ? null : email; // Owner = efface l'override
@@ -4745,7 +4747,7 @@ export function DetailPanel({ row, onClose, reload, reloadRatings, patch, change
             <OnboardingCard row={row} holdCut={onboardingOpen} onStart={flowRole ? () => setOnboardingOpen(true) : undefined} onDateSaved={reload}
               onManualDone={flowRole ? (d) => patch(num, { rdv_onboarding_done: true, rdv_onboarding_done_date: d }) : undefined}
               onReschedule={(kind) => setReschedOpen(kind)} onCancel={(kind) => setCancelOpen(kind)}
-              hostInfo={onboardingHost} onTransfer={(t) => setTransferTo(t)} onNoShow={flowRole ? () => setNoShowOpen(true) : undefined}
+              hostInfo={onboardingHost} onTransfer={(t) => setTransferTo(t)} onNoShow={() => setNoShowOpen(true)}
               onLegDone={financeRole ? (field, v) => patch(num, { [field]: v }) : undefined} legLinks={financeRole} />
           ) : (
             // Liste des rendez-vous : le cabinet et les rôles en lecture seule. Le Client Success et la finance ont le billet,
