@@ -1124,7 +1124,7 @@ function SaleRow({ sale, who = false }) {
   return (
     <tr data-off={sale.retracted || undefined}>
       <td className="is-nowrap fst-cell-muted">{saleDay(sale.signed_at)}</td>
-      <td className={`is-wrap ld-pay-client${who ? '' : ' is-heavy'}`} title={sale.client}>{sale.client}</td>
+      <td className={`is-wrap ld-pay-client${who ? '' : ' is-heavy'}`}>{sale.client}</td>
       {who && <td className="is-heavy"><Who name={sale.sales_person} /></td>}
       <td className="is-nowrap">
         <Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag>
