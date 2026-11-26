@@ -136,7 +136,7 @@ export function PeriodPicker({ value, onChange, label }) {
       </button>
       {open && createPortal(
         <div className="fst-root fst-embed">
-          <div ref={panelRef} id={id} role="dialog" aria-label={label} className="fst-pp-panel"
+          <div ref={panelRef} id={id} role="dialog" aria-label={label} className="fst-pp-panel" data-placed={place ? 'true' : undefined}
             style={place ? { top: place.top, left: place.left } : { top: 0, left: 0, visibility: 'hidden' }}>
             <div className="fst-pp-body">
               <div className="fst-pp-side" role="group" aria-label="Périodes proposées">

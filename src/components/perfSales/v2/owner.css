@@ -497,3 +497,6 @@ html.dark-mode body:has(.ps2-owner) *:hover::-webkit-scrollbar-thumb { backgroun
   body:has(.ps2-owner) .ps2 .ps2-skpi-tile:hover,
   body:has(.ps2-owner) .ps2 .ps2-kpi:hover { transform: none; }
 }
+
+/* Calendrier des périodes, hors de .ps2 : même police que les tableaux de la peau Owner. */
+body:has(.ps2-owner) .fst-root .fst-pp-panel, body:has(.ps2-owner) .fst-root .fst-pp-panel button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }

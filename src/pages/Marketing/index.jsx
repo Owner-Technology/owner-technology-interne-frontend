@@ -2,12 +2,16 @@ import { WEBINAR_CAMPAIGNS, acquisitionPeriod, withAcquisition } from './acquisi
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
-import { motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
+import { EASE, ITEM, Reveal, reducedMotion } from '../../components/perfSales/motion.jsx';
+import { RefreshButton } from '../TrackingSheetFinance/components/PageKit.jsx';
+import './webinar.css';
 import apiClient from '../../services/apiClient';
 import { homeRouteFor } from '../../navigation/home.js';
 import SharedNavbar from '../../components/SharedNavbar.jsx';
 
-import { buildTheme, fmtInt, fmtPct } from './theme';
+import { buildOwnerTheme, fmtInt, fmtPct } from './theme';
 import DateRangePicker from './components/DateRangePicker';
 import SourceFilter from './components/SourceFilter';
 import PartialDataBanner from './components/PartialDataBanner';
@@ -29,7 +33,6 @@ import RdvBySourceDonut from './components/RdvBySourceDonut';
 import LiveQualitySection from './components/LiveQualitySection';
 import WebinarLiveReplay from './components/WebinarLiveReplay';
 import { WEBINAR_REPLAY } from './data/webinarReplay';
-import Card from './components/Card';
 
 // Les rôles en lecture seule (RH) consultent la page ; les budgets leur restent en lecture (ROLES_WITH_BUDGET_EDIT).
 const ALLOWED_ROLES = ['admin', 'ceo', 'marketing', 'acquisition_director', 'head_of_acquisition', 'finance_director', ...READ_ONLY_DIRECTION_ROLES];
@@ -133,7 +136,7 @@ export default function Marketing() {
     document.body.classList.toggle('dark-mode', darkMode);
     document.documentElement.classList.toggle('dark-mode', darkMode);
   }, [darkMode]);
-  const C = useMemo(() => buildTheme(darkMode), [darkMode]);
+  const C = useMemo(() => buildOwnerTheme(darkMode), [darkMode]);
 
   // ── Auth + role gate ─────────────────────────────────────────────
   const [session, setSession] = useState(null);
@@ -215,6 +218,7 @@ export default function Marketing() {
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState(null);
+  const [updatedAt, setUpdatedAt] = useState(null);
 
   // Ref pointant toujours sur le `webinarId` courant. Sert de garde
   // anti-stale : si on change vite de webinaire, une réponse en vol pour
@@ -223,10 +227,12 @@ export default function Marketing() {
   useEffect(() => { webinarIdRef.current = webinarId; }, [webinarId]);
 
   const overviewRequestRef = useRef(0);
-  const loadOverview = useCallback(async () => {
+  // `quiet` : le rafraîchissement automatique de 60 s ne grise pas la page (refonte du 26/11/2026) ; un changement de
+  // filtre, de cohorte ou « Actualiser » montre le chargement.
+  const loadOverview = useCallback(async ({ quiet = false } = {}) => {
     const requestId = ++overviewRequestRef.current;
     const requestedWebinarId = webinarId;
-    setOverviewLoading(true);
+    if (!quiet) setOverviewLoading(true);
     try {
       const qs = queryString();
       const json = await apiClient.get(`/api/v1/marketing/webinars/${webinarId}/overview?${qs}`);
@@ -252,6 +258,7 @@ export default function Marketing() {
       if (webinarIdRef.current !== requestedWebinarId || overviewRequestRef.current !== requestId) return;
       setOverview(enriched);
       setOverviewError(null);
+      setUpdatedAt(new Date());
     } catch (e) {
       if (webinarIdRef.current !== requestedWebinarId || overviewRequestRef.current !== requestId) return;
       setOverviewError(e?.message || 'Erreur de chargement');
@@ -287,7 +294,7 @@ export default function Marketing() {
     let timer = null;
     const start = () => {
       if (timer || document.hidden) return;
-      timer = setInterval(() => { void loadOverviewRef.current(); }, 60000);
+      timer = setInterval(() => { void loadOverviewRef.current({ quiet: true }); }, 60000);
     };
     const stop = () => {
       if (timer) { clearInterval(timer); timer = null; }
@@ -434,471 +441,338 @@ export default function Marketing() {
   };
 
   // ── Render ───────────────────────────────────────────────────────
+  // Refonte du 26/11/2026 sur le langage de Finance → Statistiques (docs/STYLE-OWNER.md) : un en-tête avec la cohorte
+  // et la période, une barre de sections collée en haut, puis six rubriques dans l'ordre de lecture d'un webinaire
+  // (vue d'ensemble, live, acquisition, e-mails, sales, prospects). Mêmes données, mêmes appels, mêmes règles d'affichage.
   if (!authReady) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: C.backdrop,
-        color: C.muted,
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
-      }}>
+      <div className="wb-boot" style={{ background: C.backdrop, color: C.muted }}>
         Chargement…
       </div>
     );
   }
 
   const canEditBudgets = ROLES_WITH_BUDGET_EDIT.includes(userRole) || userRole === 'admin';
+  const hasLive = Boolean(realtimeLeads?.live_quality?.available || WEBINAR_REPLAY[webinarId]);
+  const sections = SECTIONS.filter((section) => section.key !== 'live' || hasLive);
+  // Un changement de filtre ou de cohorte garde les chiffres précédents à l'écran, estompés, le temps de la réponse.
+  const refreshing = overviewLoading && Boolean(overview);
+  const presetLabel = PRESET_LABELS[preset] || '';
+  const periodText = preset === 'custom' ? `${fmtDay(customFrom)} → ${fmtDay(customTo)}` : presetLabel;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: C.backdrop,
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
-      color: C.text,
-    }}>
-      {!embedMode && (
-        <SharedNavbar session={session} darkMode={darkMode} setDarkMode={setDarkMode} />
-      )}
+    <MotionConfig reducedMotion="user">
+      <div className={`wb-root fst-root fst-embed${C.dark ? ' is-dark' : ''}`} style={{ background: C.backdrop, color: C.text }}>
+        {!embedMode && (
+          <SharedNavbar session={session} darkMode={darkMode} setDarkMode={setDarkMode} />
+        )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          maxWidth: 1480,
-          margin: '0 auto',
-          // En embed, le wrapper gère déjà la padding-top sous sa SharedNavbar
-          // (paddingTop: 64) ; on ne re-padding pas une 2e fois.
-          padding: embedMode ? '24px 32px 64px' : '92px 32px 64px',
-        }}
-      >
-        {/* ── HEADER ── */}
-        <header style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 16,
-          marginBottom: 28,
-        }}>
-          <div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 12px',
-              borderRadius: 50,
-              background: C.surface,
-              border: `1px solid ${C.hairline}`,
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.muted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              boxShadow: C.shadow,
-            }}>
-              Marketing · Owner Technology
+        <div className="wb-wrap" style={{ paddingTop: embedMode ? 10 : 84 }}>
+          {/* ── EN-TÊTE ── */}
+          <motion.header
+            className="wb-head"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+          >
+            <div className="wb-head-top">
+              <div style={{ minWidth: 0 }}>
+                <span className="fst-micro">Marketing · Owner Technology</span>
+                <h1 className="wb-title">Performance webinaire</h1>
+                <p className="wb-sub">KPIs landing, séquence emailing et pipeline prospects, cohorte par cohorte.</p>
+              </div>
+              <div className="wb-head-actions">
+                {webinarsList.length > 1 && (
+                  <WebinarSelector webinars={webinarsList} value={webinarId} onChange={handleWebinarChange} />
+                )}
+                <RefreshButton
+                  busy={overviewLoading}
+                  onClick={() => { void loadOverview(); void fetchRealtimeLeads(); }}
+                />
+              </div>
             </div>
-            <h1 style={{
-              margin: '10px 0 2px',
-              fontSize: 32,
-              fontWeight: 800,
-              color: C.text,
-              letterSpacing: '-0.03em',
-              lineHeight: 1.1,
-            }}>
-              Performance webinaire
-            </h1>
-            <p style={{
-              margin: 0,
-              fontSize: 14,
-              color: C.muted,
-              fontWeight: 500,
-            }}>
-              KPIs landing, séquence emailing et pipeline prospects
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {/* Sélecteur cohorte webinaire — affiché dès qu'il y a 2+
-                entrées dans `/marketing/webinars`. On garde un style
-                discret cohérent avec DateRangePicker (pill blanche +
-                ombre, font-weight 600). */}
-            {webinarsList.length > 1 && (
-              <WebinarSelector
-                webinars={webinarsList}
-                value={webinarId}
-                onChange={handleWebinarChange}
+            <div className="wb-head-bottom">
+              <DateRangePicker
+                preset={preset}
+                customFrom={customFrom}
+                customTo={customTo}
+                onChange={(next) => {
+                  setPreset(next.preset);
+                  setCustomFrom(next.customFrom);
+                  setCustomTo(next.customTo);
+                }}
                 C={C}
               />
+              <LiveStatus updatedAt={updatedAt} busy={overviewLoading} error={Boolean(overviewError)} />
+            </div>
+          </motion.header>
+
+          {/* ── SECTIONS (collée en haut) ── */}
+          <SectionNav sections={sections} context={`${webinar?.title || 'Webinaire'} · ${periodText}`} busy={overviewLoading} />
+
+          {/* ── DONNÉES PARTIELLES ── */}
+          <AnimatePresence initial={false}>
+            {partialErrors.length > 0 && (
+              <motion.div key="partial" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE }} style={{ overflow: 'hidden' }}>
+                <PartialDataBanner errors={partialErrors} C={C} />
+              </motion.div>
             )}
-            <DateRangePicker
-              preset={preset}
-              customFrom={customFrom}
-              customTo={customTo}
-              onChange={(next) => {
-                setPreset(next.preset);
-                setCustomFrom(next.customFrom);
-                setCustomTo(next.customTo);
-              }}
-              C={C}
-            />
-          </div>
-        </header>
+          </AnimatePresence>
 
-        {/* ── PARTIAL DATA BANNER ── */}
-        {partialErrors.length > 0 && (
-          <div style={{ marginBottom: 18 }}>
-            <PartialDataBanner errors={partialErrors} C={C} />
-          </div>
-        )}
-
-        {/* ── ERROR STATE (full failure) ── */}
-        {overviewError && !overview && (
-          <Card title="Erreur de chargement" C={C}>
-            <div style={{
-              padding: '12px 16px',
-              background: C.rose.bg,
-              color: C.rose.fg,
-              borderRadius: 12,
-              fontSize: 13,
-              fontWeight: 600,
-            }}>
-              {overviewError}
+          {/* ── ÉCHEC COMPLET ── */}
+          {overviewError && !overview && (
+            <div className="fst-error wb-fail" role="alert">
+              <span><b>Les chiffres de la landing n'ont pas pu être chargés.</b> {overviewError}</span>
+              <button type="button" onClick={() => loadOverview()}>Réessayer</button>
             </div>
-            <button
-              type="button"
-              onClick={loadOverview}
-              style={{
-                marginTop: 12,
-                padding: '8px 16px',
-                borderRadius: 10,
-                background: C.accent,
-                color: '#fff',
-                border: 'none',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              Réessayer
-            </button>
-          </Card>
-        )}
+          )}
 
-        {/* ── HERO + KPI STRIP ── */}
-        <section style={{ marginBottom: 24 }}>
-          <HeroKpiStrip
-            webinar={webinar}
-            summary={summary}
-            realtimeLeads={realtimeLeads}
-            rankingPanel={<SalesWebinarRankingCompact data={realtimeLeads} C={C} webinarId={webinarId} />}
-            donutPanel={<RdvBySourceDonut data={realtimeLeads} C={C} />}
-            C={C}
-            loading={overviewLoading && !summary}
-          />
-        </section>
+          {/* ── VUE D'ENSEMBLE ── */}
+          <Section id="overview" title="Vue d'ensemble" hint="Les inscrits de la cohorte, ce qu'ils deviennent, et les chiffres qui comptent." stale={refreshing}>
+            <HeroKpiStrip
+              webinar={webinar}
+              summary={summary}
+              realtimeLeads={realtimeLeads}
+              rankingPanel={<SalesWebinarRankingCompact data={realtimeLeads} C={C} webinarId={webinarId} />}
+              donutPanel={<RdvBySourceDonut data={realtimeLeads} C={C} />}
+              C={C}
+              loading={overviewLoading && !summary}
+            />
+          </Section>
 
-        {/* ── QUALITÉ DU LIVE (rapport Zoom) ──
-            Cartes KPI cliquables détaillant la qualité de présence au live.
-            La section entière (wrapper + marge) n'est rendue que si la
-            cohorte expose `live_quality.available` → aucune marge fantôme
-            ni carte vide pour les cohortes sans rapport Zoom. Placée juste
-            après le bloc Hero (qui porte la tuile "Présents au live"). */}
-        {realtimeLeads?.live_quality?.available && (
-          <section style={{ marginBottom: 24 }}>
-            <LiveQualitySection realtimeLeads={realtimeLeads} C={C} />
-          </section>
-        )}
+          {/* ── LIVE : qualité de présence (rapport Zoom) et analyse du replay ── */}
+          {hasLive && (
+            <Section id="live" title="Le live" hint="Qui est resté, combien de temps, et ce qui s'est dit pendant le webinaire.">
+              {realtimeLeads?.live_quality?.available && <LiveQualitySection realtimeLeads={realtimeLeads} C={C} />}
+              {WEBINAR_REPLAY[webinarId] && <WebinarLiveReplay data={WEBINAR_REPLAY[webinarId]} C={C} />}
+            </Section>
+          )}
 
-        {/* Analyse IA du live : replay vidéo + segments horodatés + synthèse (data statique par cohorte). */}
-        {WEBINAR_REPLAY[webinarId] && (
-          <WebinarLiveReplay data={WEBINAR_REPLAY[webinarId]} C={C} />
-        )}
-
-        {/* ── SOURCE BREAKDOWN ── */}
-        {/* Affiché si summary OU pendant le 1er chargement (skeleton 3 cards).
-            Hors loading sans summary (ex. erreur dure), SourceBreakdown
-            renvoie null comme avant → la section reste vide sans crasher. */}
-        {(summary || initialLoading) && (
-          <section style={{ marginBottom: 24 }}>
-            <SourceBreakdown summary={summary} C={C} loading={initialLoading} />
-          </section>
-        )}
-
-        {/* ── TRAFFIC & BUDGET CHART ── */}
-        <section style={{ marginBottom: 24 }}>
-          <TrafficChart
-            pageviews={pageviews}
-            leadsByDay={leadsByDay}
-            budgetByDay={budgetByDay}
-            budgetAvailable={stats?.metaDailyBudgetAvailable !== false}
-            C={C}
-            darkMode={darkMode}
-            loading={initialLoading}
-          />
-        </section>
-
-        {/* ── BUDGET PAR JOUR (graph dédié, lecture rapide) ── */}
-        <section style={{ marginBottom: 24 }}>
-          {stats?.metaDailyBudgetAvailable !== false && <BudgetByDayChart budgetByDay={budgetByDay} C={C} darkMode={darkMode} loading={initialLoading} />}
-        </section>
-
-        {/* ── SATISFACTION GAUGE + HEATMAP (side by side) ── */}
-        <section style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(320px, 1fr) 1.4fr',
-          gap: 16,
-          marginBottom: 24,
-        }}>
-          <SatisfactionGauge score={summary?.globalOpenRatePct} C={C} loading={initialLoading} />
-          <Heatmap leads={leads} C={C} loading={initialLoading} />
-        </section>
-
-        {/* ── EMAIL ENGAGEMENT TABLE ── */}
-        <section style={{ marginBottom: 24 }}>
-          <EmailEngagement rows={emailEngagement} C={C} loading={initialLoading} />
-        </section>
-
-        {/* ── CAMPAGNES CIBLÉES (4 cards, polling actif) ──
-            Masquées hors cohorte 26 mai : les 4 endpoints campagnes côté
-            landing ne sont PAS paramétrés par webinaire et retourneraient
-            leurs chiffres 26 mai même sous un header "Webinaire 22 juin"
-            — trompeur. Sur les autres cohortes, on n'affiche tout simplement
-            pas cette section (cohérent avec le fait que ces séquences
-            n'existent pas encore pour elles). */}
-        {webinarId === COHORT_WITH_CAMPAIGNS && (
-        <section style={{ marginBottom: 28 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 14,
-          }}>
-            <h2 style={{
-              margin: 0,
-              fontSize: 18,
-              fontWeight: 700,
-              color: C.text,
-              letterSpacing: '-0.02em',
-            }}>
-              Campagnes ciblées
-            </h2>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              background: C.subtle,
-              border: `1px solid ${C.hairline}`,
-              borderRadius: 50,
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.muted,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-            }}>
-              <span style={{
-                display: 'inline-block',
-                width: 6,
-                height: 6,
-                background: C.emerald.strong,
-                borderRadius: '50%',
-                animation: 'mktPulse 1.8s ease-in-out infinite',
-              }} />
-              Polling actif
+          {/* ── ACQUISITION ── */}
+          <Section id="acquisition" title="Acquisition" hint="D'où viennent les inscrits, jour par jour, et ce qu'ils coûtent." stale={refreshing}>
+            {(summary || initialLoading) && <SourceBreakdown summary={summary} C={C} loading={initialLoading} />}
+            <TrafficChart
+              pageviews={pageviews}
+              leadsByDay={leadsByDay}
+              budgetByDay={budgetByDay}
+              budgetAvailable={stats?.metaDailyBudgetAvailable !== false}
+              C={C}
+              darkMode={darkMode}
+              loading={initialLoading}
+            />
+            <div className={`wb-grid is-heat${stats?.metaDailyBudgetAvailable !== false ? '' : ' is-single'}`}>
+              {stats?.metaDailyBudgetAvailable !== false && <BudgetByDayChart budgetByDay={budgetByDay} C={C} darkMode={darkMode} loading={initialLoading} />}
+              <Heatmap leads={leads} C={C} loading={initialLoading} />
             </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <CampaignCard
-              webinarId={webinarId}
-              kind="post-missed"
-              title="Relance post-webinaire · pas venus + pas de RDV"
-              subtitle="Séquence 4 jours pour les inscrits qui n'ont pas pris de RDV"
-              intervalMs={15000}
-              progressColor={C.heroEmerald}
-              C={C}
-            />
-            <CampaignCard
-              webinarId={webinarId}
-              kind="postponement"
-              title="Campagne décalage 26 mai · notification one-shot"
-              subtitle="Email envoyé à tous les inscrits pour annoncer le décalage"
-              intervalMs={15000}
-              progressColor={C.heroEmerald}
-              C={C}
-            />
-            <CampaignCard
-              webinarId={webinarId}
-              kind="broad"
-              title="Campagne Broad invite · cold outreach (CSV)"
-              subtitle="Invitation aux anciens prospects via /broad"
-              intervalMs={30000}
-              progressColor={`linear-gradient(90deg, ${C.amber.strong}, ${C.amber.fg})`}
-              C={C}
-              // Cold outreach Resend sans pixel → pas de tracking
-              // ouverture/clic ni feedback bounce/plainte exploitable.
-              // On garde uniquement Délivrés + Inscrits via /broad.
-              excludeTiles={['opened', 'clicked', 'bounced', 'complained']}
-              // Campagne one-shot massive : drain horaire pas exploitable.
-              hideSentByHour
-              extraTiles={(data, T) => [
-                <BroadInscritsTile key="inscrits" data={data} C={T} />,
-              ]}
-            />
-          </div>
-        </section>
-        )}
+            {/* Saisie manuelle uniquement pour les cohortes sans dépenses Meta. */}
+            {summary?.budgetSource !== 'meta' && (
+              <BudgetEditor
+                webinarId={webinarId}
+                C={C}
+                onChange={loadOverview}
+                readOnly={!canEditBudgets}
+                dateFrom={webinar?.date_start}
+                dateTo={webinar?.date_end}
+              />
+            )}
+          </Section>
 
-        {/* ── SÉQUENCES POST-WEBINAIRE ──
-            L'endpoint post-nurture est cohorte-aware côté landing : chaque
-            cohorte de COHORTS_WITH_NURTURE renvoie ses propres chiffres.
-            Section distincte des "Campagnes ciblées" (qui restent 26-mai-only
-            car leurs endpoints one-shot ne sont pas paramétrés par webinaire). */}
-        {COHORTS_WITH_NURTURE.has(webinarId) && (
-        <section style={{ marginBottom: 28 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 14,
-          }}>
-            <h2 style={{
-              margin: 0,
-              fontSize: 18,
-              fontWeight: 700,
-              color: C.text,
-              letterSpacing: '-0.02em',
-            }}>
-              Séquences post-webinaire
-            </h2>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              background: C.subtle,
-              border: `1px solid ${C.hairline}`,
-              borderRadius: 50,
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.muted,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-            }}>
-              <span style={{
-                display: 'inline-block',
-                width: 6,
-                height: 6,
-                background: C.emerald.strong,
-                borderRadius: '50%',
-                animation: 'mktPulse 1.8s ease-in-out infinite',
-              }} />
-              Polling actif
+          {/* ── E-MAILS ── */}
+          <Section id="emails" title="E-mails" hint="La séquence avant le live, puis les relances, e-mail par e-mail." stale={refreshing}>
+            <div className="wb-grid is-mail">
+              <SatisfactionGauge score={summary?.globalOpenRatePct} C={C} loading={initialLoading} />
+              <EmailEngagement rows={emailEngagement} C={C} loading={initialLoading} />
             </div>
-          </div>
-          <NurtureTable webinarId={webinarId} C={C} />
-        </section>
-        )}
 
-        {/* ── CLASSEMENT SALES WEBINAIRE ── */}
-        <section style={{ marginBottom: 24 }}>
-          <SalesWebinarRanking data={realtimeLeads} C={C} />
-        </section>
+            {/* Campagnes ciblées : masquées hors cohorte 26 mai — leurs 4 endpoints côté landing ne sont PAS paramétrés
+                par webinaire et retourneraient les chiffres du 26 mai sous un autre titre. */}
+            {webinarId === COHORT_WITH_CAMPAIGNS && (
+              <>
+                <SubHead title="Campagnes ciblées" />
+                <CampaignCard
+                  webinarId={webinarId}
+                  kind="post-missed"
+                  title="Relance post-webinaire · pas venus + pas de RDV"
+                  subtitle="Séquence 4 jours pour les inscrits qui n'ont pas pris de RDV"
+                  intervalMs={15000}
+                  progressColor={C.heroEmerald}
+                  C={C}
+                />
+                <CampaignCard
+                  webinarId={webinarId}
+                  kind="postponement"
+                  title="Campagne décalage 26 mai · notification one-shot"
+                  subtitle="Email envoyé à tous les inscrits pour annoncer le décalage"
+                  intervalMs={15000}
+                  progressColor={C.heroEmerald}
+                  C={C}
+                />
+                <CampaignCard
+                  webinarId={webinarId}
+                  kind="broad"
+                  title="Campagne Broad invite · cold outreach (CSV)"
+                  subtitle="Invitation aux anciens prospects via /broad"
+                  intervalMs={30000}
+                  progressColor={C.amber.strong}
+                  C={C}
+                  // Cold outreach Resend sans pixel → pas de tracking ouverture/clic ni feedback bounce/plainte
+                  // exploitable. On garde uniquement Délivrés + Inscrits via /broad.
+                  excludeTiles={['opened', 'clicked', 'bounced', 'complained']}
+                  // Campagne one-shot massive : drain horaire pas exploitable.
+                  hideSentByHour
+                  extraTiles={(data, T) => [
+                    <BroadInscritsTile key="inscrits" data={data} C={T} />,
+                  ]}
+                />
+              </>
+            )}
 
-        {/* ── LEADS PIPELINE ── */}
-        <section style={{ marginBottom: 24 }}>
-          <LeadsPipeline
-            leads={filteredLeads}
-            scoresByLeadId={scoresByLeadId}
-            C={C}
-            loading={initialLoading}
-            sourceFilter={
-              <SourceFilter value={source} onChange={handleSourceChange} C={C} />
-            }
-          />
-        </section>
+            {/* Séquences post-webinaire : l'endpoint post-nurture est cohorte-aware côté landing. */}
+            {COHORTS_WITH_NURTURE.has(webinarId) && (
+              <>
+                <SubHead title="Séquences post-webinaire" />
+                <NurtureTable webinarId={webinarId} C={C} />
+              </>
+            )}
+          </Section>
 
-        {/* Saisie manuelle uniquement pour les cohortes sans dépenses Meta. */}
-        {summary?.budgetSource !== 'meta' && <section style={{ marginBottom: 16 }}>
-          <BudgetEditor
-            webinarId={webinarId}
-            C={C}
-            onChange={loadOverview}
-            readOnly={!canEditBudgets}
-            dateFrom={webinar?.date_start}
-            dateTo={webinar?.date_end}
-          />
-        </section>}
+          {/* ── SALES ── */}
+          <Section id="sales" title="Sales" hint="Ce que chaque sales a fait des rendez-vous de la cohorte.">
+            <SalesWebinarRanking data={realtimeLeads} C={C} />
+          </Section>
 
-        <footer style={{
-          marginTop: 32,
-          paddingTop: 16,
-          borderTop: `1px solid ${C.hairline}`,
-          fontSize: 11,
-          color: C.faded,
-          fontWeight: 500,
-          textAlign: 'center',
-        }}>
-          Owner Technology · Marketing interne · Données Plausible +
-          Postgres via api-owner
-        </footer>
-      </motion.div>
-    </div>
+          {/* ── PROSPECTS ── */}
+          <Section id="prospects" title="Prospects" hint="Chaque inscrit, sa source, son engagement et où il en est de la séquence." stale={refreshing}>
+            <LeadsPipeline
+              leads={filteredLeads}
+              scoresByLeadId={scoresByLeadId}
+              C={C}
+              loading={initialLoading}
+              sourceFilter={<SourceFilter value={source} onChange={handleSourceChange} C={C} />}
+            />
+          </Section>
+
+          <footer className="wb-foot">
+            Owner Technology · Marketing interne · Données Plausible + Postgres via api-owner
+          </footer>
+        </div>
+      </div>
+    </MotionConfig>
   );
 }
 
-/** Sélecteur de cohorte webinaire — select natif stylé pill cohérent
- *  avec DateRangePicker. Apparaît dès qu'il y a 2+ webinaires dans
- *  `/marketing/webinars`. Change la cohorte via state + URL `?webinar=`.
- */
-function WebinarSelector({ webinars, value, onChange, C }) {
+// Rubriques de la page, dans l'ordre de lecture ; « Le live » n'apparaît que si la cohorte a un rapport Zoom ou un replay.
+const SECTIONS = [
+  { key: 'overview', label: "Vue d'ensemble" },
+  { key: 'live', label: 'Live' },
+  { key: 'acquisition', label: 'Acquisition' },
+  { key: 'emails', label: 'E-mails' },
+  { key: 'sales', label: 'Sales' },
+  { key: 'prospects', label: 'Prospects' },
+];
+const PRESET_LABELS = { all: 'Webinaire complet', day: 'Jour', '7d': '7 jours', '30d': '30 jours', month: 'Ce mois', custom: 'Personnalisé' };
+const fmtDay = (iso) => {
+  const d = new Date(`${iso}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+};
+
+/** Une rubrique : titre, phrase d'indice, puis ses cartes qui arrivent en cascade à l'entrée dans l'écran. Pendant un
+ *  changement de filtre, ses chiffres restent visibles mais estompés (`stale`). */
+function Section({ id, title, hint, stale = false, children }) {
   return (
-    <label style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 8,
-      padding: '6px 10px 6px 14px',
-      background: '#ffffff',
-      border: `1px solid ${C.hairline}`,
-      borderRadius: 50,
-      boxShadow: C.shadow,
-      fontSize: 12.5,
-      fontWeight: 600,
-      color: C.text,
-      cursor: 'pointer',
-    }}>
-      <span style={{ color: C.muted, fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        Webinaire
-      </span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          appearance: 'none',
-          background: 'transparent',
-          border: 'none',
-          color: C.text,
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: 'pointer',
-          outline: 'none',
-          paddingRight: 18,
-          fontFamily: 'inherit',
-          letterSpacing: '-0.005em',
-          // Caret via SVG inline (cohérent UI)
-          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'><path d='M1 1L5 5L9 1' stroke='%239ca3af' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right center',
-        }}
-      >
+    <section id={`wb-${id}`} className="wb-section" data-stale={stale || undefined} aria-busy={stale || undefined}>
+      <header className="wb-section-head">
+        <h2 className="wb-section-title">{title}</h2>
+        {hint && <p className="wb-section-hint">{hint}</p>}
+      </header>
+      <Reveal className="wb-section-body" stagger={0.06} amount={0.04}>
+        {children}
+      </Reveal>
+    </section>
+  );
+}
+
+/** Intertitre à l'intérieur d'une rubrique, avec le repère « suivi en direct » des envois. */
+function SubHead({ title }) {
+  return (
+    <motion.div variants={ITEM} className="wb-subhead">
+      <h3>{title}</h3>
+      <span className="wb-live-chip"><i aria-hidden="true" />Suivi en direct</span>
+    </motion.div>
+  );
+}
+
+/** Barre des rubriques, collée en haut : le pouce suit la rubrique lue ; un clic y descend en douceur. À droite, la
+ *  cohorte et la période en cours restent lisibles pendant la lecture, avec un filet qui file pendant un chargement. */
+function SectionNav({ sections, context, busy }) {
+  const [active, setActive] = useState(sections[0]?.key);
+  const keys = sections.map((section) => section.key).join(',');
+  useEffect(() => {
+    const ids = keys.split(',');
+    const pick = () => {
+      // La rubrique lue est la dernière dont le haut a passé la barre (172 px depuis le haut de la fenêtre).
+      let current = ids[0];
+      for (const key of ids) {
+        const el = document.getElementById(`wb-${key}`);
+        if (el && el.getBoundingClientRect().top <= 172) current = key;
+      }
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      setActive(atEnd ? ids[ids.length - 1] : current);
+    };
+    pick();
+    window.addEventListener('scroll', pick, { passive: true });
+    window.addEventListener('resize', pick);
+    return () => { window.removeEventListener('scroll', pick); window.removeEventListener('resize', pick); };
+  }, [keys]);
+  const go = (key) => {
+    const el = document.getElementById(`wb-${key}`);
+    if (!el) return;
+    setActive(key);
+    el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  };
+  return (
+    <nav className="wb-nav" aria-label="Rubriques de la page">
+      <div className="wb-nav-inner">
+        <div className="wb-nav-tabs" role="list">
+          {sections.map((section) => (
+            <button key={section.key} type="button" role="listitem" className="wb-nav-tab"
+              aria-current={active === section.key ? 'true' : undefined} onClick={() => go(section.key)}>
+              {active === section.key && <motion.span layoutId="wb-nav-thumb" className="wb-nav-thumb" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
+              <span>{section.label}</span>
+            </button>
+          ))}
+        </div>
+        <span className="wb-nav-context" title={context}>{context}</span>
+      </div>
+      <span className="wb-progress" data-on={busy || undefined} aria-hidden="true" />
+    </nav>
+  );
+}
+
+/** État de fraîcheur : point vert qui respire quand les chiffres sont à jour (rafraîchis toutes les 60 s). */
+function LiveStatus({ updatedAt, busy, error }) {
+  const time = updatedAt ? updatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
+  const text = busy ? 'Mise à jour…' : error ? 'Dernière mise à jour en échec' : time ? `À jour à ${time} · toutes les minutes` : 'Chargement…';
+  return (
+    <span className="wb-status" data-state={busy ? 'busy' : error ? 'error' : time ? 'ok' : 'busy'} aria-live="polite">
+      <i aria-hidden="true" />{text}
+    </span>
+  );
+}
+
+/** Sélecteur de cohorte webinaire — select natif (clavier, lecteur d'écran) habillé comme les champs du kit Finance.
+ *  Apparaît dès qu'il y a 2+ webinaires dans `/marketing/webinars`. Change la cohorte via state + URL `?webinar=`. */
+function WebinarSelector({ webinars, value, onChange }) {
+  return (
+    <label className="wb-select">
+      <span>Webinaire</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Webinaire affiché">
         {webinars.map((w) => (
           <option key={w.id} value={w.id}>{w.title || w.id}</option>
         ))}
       </select>
+      <ChevronDown size={15} aria-hidden="true" />
     </label>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
+import { ITEM } from '../../../components/perfSales/motion.jsx';
 import apiClient from '../../../services/apiClient';
 import { fmtInt, fmtPct } from '../theme';
 
@@ -71,34 +72,30 @@ export default function SalesWebinarRankingCompact({ data, C, maxRows = 6, webin
   const rankIcons = ['🥇', '🥈', '🥉'];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+    <Motion.div
+      variants={ITEM}
       style={{
         background: C.surface,
-        borderRadius: 20,
-        padding: '18px 18px 14px',
-        boxShadow: C.shadow,
-        border: `1px solid ${C.hairline}`,
+        borderRadius: 22,
+        padding: '22px 20px 16px',
+        border: `1px solid ${C.border}`,
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 14, padding: '0 4px' }}>
         <div style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: C.faded,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          marginBottom: 2,
+          fontSize: 16,
+          fontWeight: 500,
+          color: C.text,
+          letterSpacing: '-0.012em',
+          marginBottom: 4,
         }}>
           Classement sales · webinaire
         </div>
-        <div style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>
+        <div style={{ fontSize: 13, color: C.muted, fontWeight: 400 }}>
           {data
             ? `${fmtInt(totals.totalAssigned)} leads · ${fmtInt(totals.totalSigned)} signés · ${fmtPct(totals.globalClosing)} closing`
             : 'Chargement…'}
@@ -120,7 +117,7 @@ export default function SalesWebinarRankingCompact({ data, C, maxRows = 6, webin
           const isPodium = idx < 3 && (row.signed || 0) > 0;
 
           return (
-            <motion.div
+            <Motion.div
               key={`${email || 'none'}-${idx}`}
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
@@ -165,7 +162,7 @@ export default function SalesWebinarRankingCompact({ data, C, maxRows = 6, webin
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 11,
-                  fontWeight: 700,
+                  fontWeight: 500,
                   letterSpacing: '-0.02em',
                 }}>
                   {email ? initials(name) : '—'}
@@ -174,7 +171,7 @@ export default function SalesWebinarRankingCompact({ data, C, maxRows = 6, webin
 
               <div style={{
                 fontSize: 13,
-                fontWeight: 650,
+                fontWeight: 500,
                 color: C.text,
                 letterSpacing: '-0.01em',
                 whiteSpace: 'nowrap',
@@ -205,14 +202,14 @@ export default function SalesWebinarRankingCompact({ data, C, maxRows = 6, webin
                 color: pill.fg,
                 borderRadius: 50,
                 fontSize: 11,
-                fontWeight: 700,
+                fontWeight: 500,
                 fontVariantNumeric: 'tabular-nums',
                 minWidth: 50,
                 textAlign: 'center',
               }}>
                 {fmtPct(row.closing_rate_pct || 0)}
               </div>
-            </motion.div>
+            </Motion.div>
           );
         })}
       </div>
@@ -227,7 +224,7 @@ export default function SalesWebinarRankingCompact({ data, C, maxRows = 6, webin
         />,
         document.body,
       )}
-    </motion.div>
+    </Motion.div>
   );
 }
 
@@ -243,15 +240,15 @@ function SalesDetailModal({ C, sales, seller, loading, onClose }) {
   );
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 10080, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}
-        style={{ position: 'absolute', inset: 0, background: 'rgba(17,24,39,0.45)' }} />
-      <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+      <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(28,27,25,0.22)' }} />
+      <Motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         style={{ position: 'relative', width: 'min(620px, 100%)', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-          background: C.surface, borderRadius: 18, border: `1px solid ${C.hairline}`, boxShadow: '0 24px 60px rgba(17,24,39,0.28)', overflow: 'hidden' }}>
+          background: C.surface, borderRadius: 22, border: `1px solid ${C.border}`, boxShadow: '0 24px 60px rgba(28,27,25,0.14)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${C.hairline}` }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Ventes de {name}</div>
+            <div style={{ fontSize: 15, fontWeight: 500, color: C.text }}>Ventes de {name}</div>
             <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
               {loading ? 'Chargement…' : `${sales.length} vente${sales.length > 1 ? 's' : ''} issue${sales.length > 1 ? 's' : ''} de ce webinaire`}
             </div>
@@ -267,9 +264,9 @@ function SalesDetailModal({ C, sales, seller, loading, onClose }) {
           ) : sales.map((s) => (
             <div key={s.lead_id} style={{ border: `1px solid ${C.hairline}`, borderRadius: 12, padding: '12px 14px', marginBottom: 10, background: C.subtle }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{s.client_name || '—'}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{s.client_name || '—'}</div>
                 {s.numero_client && (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: C.emerald.fg, background: C.emerald.bg, borderRadius: 20, padding: '2px 9px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: C.emerald.fg, background: C.emerald.bg, borderRadius: 20, padding: '2px 9px' }}>
                     n°{s.numero_client}
                   </span>
                 )}
@@ -285,7 +282,7 @@ function SalesDetailModal({ C, sales, seller, loading, onClose }) {
             </div>
           ))}
         </div>
-      </motion.div>
+      </Motion.div>
     </div>
   );
 }

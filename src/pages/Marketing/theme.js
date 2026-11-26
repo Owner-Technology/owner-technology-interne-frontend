@@ -54,6 +54,39 @@ export const buildTheme = (dark) => ({
   heroViolet: 'linear-gradient(135deg, #9b8dff 0%, #6c5ce7 65%, #5239d6 100%)',
 });
 
+/**
+ * Palette Owner de la page Webinar (refonte du 26/11/2026, docs/STYLE-OWNER.md) : mêmes clés que `buildTheme`, donc
+ * chaque composant de la page la lit sans changer. En clair : toile grège, cartes blanches à trait fin, encre presque
+ * noire, gris chauds, couleurs des étiquettes pastel pour les séries. En sombre : la palette d'origine, comme les autres
+ * pages reteintées. `buildTheme` reste tel quel pour les autres pages qui l'utilisent (Funnel Leads).
+ */
+export const buildOwnerTheme = (dark) => {
+  if (dark) return { ...buildTheme(true), owner: true, dark: true };
+  return {
+    owner: true,
+    dark: false,
+    backdrop: '#f4f2ef',
+    surface: '#ffffff',
+    subtle: '#faf9f7',
+    border: '#ece9e4',
+    hairline: '#f1eee9',
+    text: '#1c1b19',
+    muted: '#8b867e',
+    faded: '#a8a39b',
+    shadow: '0 1px 2px rgba(50,40,30,0.04)',
+    shadowFloat: '0 14px 34px rgba(28,27,25,0.10), 0 2px 6px rgba(28,27,25,0.04)',
+    accent: '#2b2927',
+    emerald: { fg: '#0b7a4b', bg: '#e2f6ea', strong: '#1f9d57' },
+    rose: { fg: '#c5221f', bg: '#fde6e6', strong: '#d9544d' },
+    amber: { fg: '#7a5a05', bg: '#fbf1c2', strong: '#e3b93f' },
+    blue: { fg: '#1b6fd0', bg: '#e4f0fd', strong: '#6fa6ea' },
+    fuchsia: { fg: '#4a3fc4', bg: '#eae9fb', strong: '#9289e6' },
+    violet: { fg: '#4a4540', bg: '#f1eee9', strong: '#2b2927' },
+    heroEmerald: '#1f9d57',
+    heroViolet: '#2b2927',
+  };
+};
+
 /** Format a number with FR locale + thousands separators. */
 export const fmtInt = (n) => {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';

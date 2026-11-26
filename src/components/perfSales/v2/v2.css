@@ -1332,3 +1332,6 @@ button.ps2-tile { font: inherit; color: var(--ink); width: 100%; min-height: 168
   .ps2-agenda-chip-name, .ps2-agenda-sum em { display: none; }
 }
 
+
+/* Calendrier des périodes (Ventes : rétractations, no show) : il vit dans le <body>, hors de .ps2 ; il reprend la police des tableaux. */
+body:has(.ps2) .fst-pp-panel, body:has(.ps2) .fst-pp-panel button { font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }

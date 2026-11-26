@@ -1,98 +1,52 @@
 import React from 'react';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { Segmented } from '../../TrackingSheetFinance/statistics/parts.jsx';
+import { EASE } from '../../../components/perfSales/motion.jsx';
 
 /**
- * Date range picker — preset chips (day / 7d / 30d / month / 12mo / custom)
- * + two date inputs when "custom" is active. Controlled by parent state.
- *
- * Refs visual cue : pill-style toggles, hairline border, dark/light aware.
+ * Période de la page Webinar : bascule à pouce blanc du kit Finance (refonte du 26/11/2026), et deux dates qui se
+ * déplient en douceur quand « Personnalisé » est choisi. Contrôlé par le parent (preset, customFrom, customTo).
  */
-export default function DateRangePicker({ preset, customFrom, customTo, onChange, C }) {
-  // Presets restreints à la fenêtre d'analyse d'un webinaire post-événement.
-  // On retire `12mo` (pas pertinent : il y a 12 mois le webinaire n'existait
-  // pas). Le preset par défaut "Webinaire complet" couvre toute la période
-  // d'activité (ouverture inscriptions → aujourd'hui).
-  const PRESETS = [
-    { key: 'all', label: 'Webinaire complet' },
-    { key: 'day', label: 'Jour' },
-    { key: '7d', label: '7 jours' },
-    { key: '30d', label: '30 jours' },
-    { key: 'month', label: 'Ce mois' },
-    { key: 'custom', label: 'Personnalisé' },
-  ];
+// Presets restreints à la fenêtre d'analyse d'un webinaire post-événement. On retire `12mo` (pas pertinent : il y a
+// 12 mois le webinaire n'existait pas). Le preset par défaut « Webinaire complet » couvre toute la période d'activité
+// (ouverture inscriptions → aujourd'hui).
+const PRESETS = [
+  { key: 'all', label: 'Webinaire complet' },
+  { key: 'day', label: 'Jour' },
+  { key: '7d', label: '7 jours' },
+  { key: '30d', label: '30 jours' },
+  { key: 'month', label: 'Ce mois' },
+  { key: 'custom', label: 'Personnalisé' },
+];
 
+export default function DateRangePicker({ preset, customFrom, customTo, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      <div style={{
-        display: 'flex',
-        gap: 4,
-        padding: 4,
-        background: C.subtle,
-        borderRadius: 12,
-        border: `1px solid ${C.hairline}`,
-      }}>
-        {PRESETS.map((p) => {
-          const active = preset === p.key;
-          return (
-            <button
-              key={p.key}
-              type="button"
-              onClick={() => onChange({ preset: p.key, customFrom, customTo })}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 8,
-                border: 'none',
-                background: active ? C.surface : 'transparent',
-                color: active ? C.text : C.muted,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                boxShadow: active ? C.shadow : 'none',
-                transition: 'all 0.18s cubic-bezier(0.4,0,0.2,1)',
-              }}
-            >
-              {p.label}
-            </button>
-          );
-        })}
-      </div>
-      {preset === 'custom' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <input
-            type="date"
-            value={customFrom}
-            max={customTo}
-            onChange={(e) => onChange({ preset, customFrom: e.target.value, customTo })}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 8,
-              border: `1px solid ${C.border}`,
-              background: C.surface,
-              color: C.text,
-              fontSize: 12,
-              fontFamily: 'inherit',
-              outline: 'none',
-            }}
-          />
-          <span style={{ color: C.faded, fontSize: 12 }}>→</span>
-          <input
-            type="date"
-            value={customTo}
-            min={customFrom}
-            onChange={(e) => onChange({ preset, customFrom, customTo: e.target.value })}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 8,
-              border: `1px solid ${C.border}`,
-              background: C.surface,
-              color: C.text,
-              fontSize: 12,
-              fontFamily: 'inherit',
-              outline: 'none',
-            }}
-          />
-        </div>
-      )}
+    <div className="wb-period">
+      <Segmented options={PRESETS} value={preset} label="Période" onChange={(key) => onChange({ preset: key, customFrom, customTo })} />
+      <AnimatePresence initial={false}>
+        {preset === 'custom' && (
+          <Motion.div key="dates" className="wb-dates" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.25, ease: EASE }}>
+            <input
+              type="date"
+              className="fst-pp-date"
+              aria-label="Premier jour"
+              value={customFrom}
+              max={customTo}
+              onChange={(e) => onChange({ preset, customFrom: e.target.value, customTo })}
+            />
+            <span aria-hidden="true">→</span>
+            <input
+              type="date"
+              className="fst-pp-date"
+              aria-label="Dernier jour"
+              value={customTo}
+              min={customFrom}
+              onChange={(e) => onChange({ preset, customFrom, customTo: e.target.value })}
+            />
+          </Motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

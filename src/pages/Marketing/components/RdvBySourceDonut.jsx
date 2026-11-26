@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
 import { motion } from 'framer-motion';
 import { fmtInt, fmtPct } from '../theme';
+import { Segmented } from '../../TrackingSheetFinance/statistics/parts.jsx';
+import { ITEM } from '../../../components/perfSales/motion.jsx';
 
 /**
  * Camembert SVG (donut) — décomposition des RDV pris par source d'acquisition.
@@ -85,14 +87,12 @@ export default function RdvBySourceDonut({ data, C }) {
   if (total === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        variants={ITEM}
         style={{
-          background: '#ffffff',
-          borderRadius: 24,
-          padding: '20px 22px',
-          border: `1px solid ${C.hairline}`,
+          background: C.surface,
+          borderRadius: 22,
+          padding: '22px 24px',
+          border: `1px solid ${C.border}`,
           boxShadow: C.shadow,
           display: 'flex',
           flexDirection: 'column',
@@ -120,14 +120,12 @@ export default function RdvBySourceDonut({ data, C }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      variants={ITEM}
       style={{
-        background: '#ffffff',
-        borderRadius: 24,
-        padding: '20px 22px',
-        border: `1px solid ${C.hairline}`,
+        background: C.surface,
+        borderRadius: 22,
+        padding: '22px 24px',
+        border: `1px solid ${C.border}`,
         boxShadow: C.shadow,
         display: 'flex',
         flexDirection: 'column',
@@ -136,12 +134,8 @@ export default function RdvBySourceDonut({ data, C }) {
     >
       <Header C={C} total={total} activeView={activeView} viewMode={viewMode} setViewMode={setViewMode} />
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'auto 1fr',
-        gap: 18,
-        alignItems: 'center',
-      }}>
+      {/* Camembert et légende côte à côte ; la légende passe dessous quand la carte est étroite. */}
+      <div className="wb-donut">
         {/* Donut SVG */}
         <div style={{ position: 'relative', width: SIZE, height: SIZE, flexShrink: 0 }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ transform: 'rotate(-90deg)' }}>
@@ -151,7 +145,7 @@ export default function RdvBySourceDonut({ data, C }) {
               cy={CY}
               r={RADIUS}
               fill="none"
-              stroke={C.subtle}
+              stroke={C.hairline}
               strokeWidth={STROKE}
             />
             {/* Arcs colorés */}
@@ -185,7 +179,7 @@ export default function RdvBySourceDonut({ data, C }) {
           }}>
             <div style={{
               fontSize: 32,
-              fontWeight: 700,
+              fontWeight: 500,
               color: C.text,
               letterSpacing: '-0.02em',
               fontVariantNumeric: 'tabular-nums',
@@ -196,7 +190,7 @@ export default function RdvBySourceDonut({ data, C }) {
             <div style={{
               marginTop: 4,
               fontSize: 10,
-              fontWeight: 600,
+              fontWeight: 500,
               color: C.muted,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
@@ -226,22 +220,21 @@ function Header({ C, total, activeView, viewMode, setViewMode }) {
   return (
     <div style={{
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'flex-start',
-      justifyContent: 'space-between',
       gap: 12,
     }}>
       <div>
         <div style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: C.muted,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
+          fontSize: 16,
+          fontWeight: 500,
+          color: C.text,
+          letterSpacing: '-0.012em',
           marginBottom: 4,
         }}>
           {titleByMode[viewMode] || titleByMode.rdv}
         </div>
-        <div style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>
+        <div style={{ fontSize: 13, color: C.muted, fontWeight: 400 }}>
           {total > 0
             ? `${fmtInt(total)} ${activeView.unitLabel} · origine d'acquisition`
             : `Origine d'acquisition · ${activeView.unitLabel}`}
@@ -257,47 +250,11 @@ function Header({ C, total, activeView, viewMode, setViewMode }) {
 // Pill toggle 2 segments aligné sur le pattern DateRangePicker (pills
 // rouges actives, gris inactives). Discret pour ne pas voler la vedette
 // au donut.
-function ViewToggle({ C, viewMode, setViewMode }) {
+function ViewToggle({ viewMode, setViewMode }) {
+  // Bascule à pouce blanc du kit Finance (refonte du 26/11/2026).
   return (
-    <div role="tablist" aria-label="Vue camembert" style={{
-      display: 'inline-flex',
-      gap: 2,
-      padding: 3,
-      borderRadius: 50,
-      background: C.subtle,
-      border: `1px solid ${C.hairline}`,
-      flexShrink: 0,
-    }}>
-      {VIEW_MODES.map((v) => {
-        const active = viewMode === v.key;
-        return (
-          <button
-            key={v.key}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => setViewMode(v.key)}
-            style={{
-              padding: '4px 10px',
-              border: 'none',
-              borderRadius: 50,
-              background: active ? '#ffffff' : 'transparent',
-              boxShadow: active ? C.shadow : 'none',
-              color: active ? C.text : C.muted,
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              letterSpacing: '-0.005em',
-              transition: 'background 0.15s, color 0.15s, box-shadow 0.15s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {v.label}
-          </button>
-        );
-      })}
-    </div>
+    <Segmented small options={VIEW_MODES.map((v) => ({ key: v.key, label: v.label }))} value={viewMode}
+      onChange={setViewMode} label="Vue du camembert" />
   );
 }
 
@@ -321,7 +278,7 @@ function LegendRow({ seg, C }) {
       />
       <span style={{
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 500,
         color: C.text,
         whiteSpace: 'nowrap',
         overflow: 'hidden',
@@ -336,12 +293,12 @@ function LegendRow({ seg, C }) {
         gap: 6,
         fontVariantNumeric: 'tabular-nums',
       }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: '-0.01em' }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: C.text, letterSpacing: '-0.01em' }}>
           {fmtInt(seg.value)}
         </span>
         <span style={{
           fontSize: 11,
-          fontWeight: 600,
+          fontWeight: 500,
           color: seg.tone.fg,
           background: seg.tone.bg,
           padding: '2px 7px',

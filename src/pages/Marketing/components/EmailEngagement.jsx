@@ -248,14 +248,13 @@ export default function EmailEngagement({ rows = [], C }) {
 
   const HEADER_CELL = {
     padding: '14px 16px',
-    fontSize: 10,
-    fontWeight: 700,
-    color: C.faded,
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
+    fontSize: 12.5,
+    fontWeight: 500,
+    color: C.text,
+    letterSpacing: '-0.003em',
     textAlign: 'left',
-    borderBottom: `1px solid ${C.hairline}`,
-    background: C.subtle,
+    borderBottom: `1px solid ${C.border}`,
+    background: C.surface,
     whiteSpace: 'nowrap',
   };
   const CELL = {
@@ -283,14 +282,14 @@ export default function EmailEngagement({ rows = [], C }) {
               <th style={{ ...HEADER_CELL, textAlign: 'right' }}>Ouverts</th>
               <th style={{ ...HEADER_CELL, textAlign: 'right' }}>Cliqués</th>
               <th style={{ ...HEADER_CELL, textAlign: 'right' }}>Bounce</th>
-              <th style={HEADER_CELL}>Open rate</th>
-              <th style={HEADER_CELL}>Click rate</th>
+              <th style={HEADER_CELL}>Taux d'ouverture</th>
+              <th style={HEADER_CELL}>Taux de clic</th>
             </tr>
           </thead>
           <tbody>
             {ordered.map((r) => (
               <tr key={r.kind}>
-                <td style={{ ...CELL, fontWeight: 600 }}>
+                <td style={{ ...CELL, fontWeight: 500 }}>
                   {EMAIL_KIND_LABELS[r.kind] ?? r.kind}
                 </td>
                 <td style={{ ...CELL, textAlign: 'right', color: C.muted }}>{fmtInt(r.sent)}</td>
@@ -325,7 +324,7 @@ function RateBar({ pct, color, C, multiplier = 1 }) {
       <span style={{
         width: 50,
         fontSize: 13,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.text,
         fontVariantNumeric: 'tabular-nums',
         textAlign: 'right',

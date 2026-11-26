@@ -82,7 +82,7 @@ export default function Heatmap({ leads = [], C }) {
                 <div key={`h-${h}`} style={{
                   textAlign: 'center',
                   fontSize: 10,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   color: C.faded,
                   letterSpacing: '0.04em',
                 }}>
@@ -94,7 +94,7 @@ export default function Heatmap({ leads = [], C }) {
                 <React.Fragment key={label}>
                   <div style={{
                     fontSize: 11,
-                    fontWeight: 700,
+                    fontWeight: 500,
                     color: C.muted,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
@@ -146,7 +146,7 @@ export default function Heatmap({ leads = [], C }) {
                 padding: '6px 10px',
                 borderRadius: 8,
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 500,
                 boxShadow: C.shadowFloat,
                 border: `1px solid ${C.hairline}`,
                 pointerEvents: 'none',
@@ -154,7 +154,7 @@ export default function Heatmap({ leads = [], C }) {
                 animation: 'mktNumberTick 0.15s ease-out both',
               }}>
                 {DAY_LABELS[hover.dayIdx]} {hover.hour}h ·{' '}
-                <span style={{ color: hover.count > 0 ? C.emerald.fg : C.muted, fontWeight: 700 }}>
+                <span style={{ color: hover.count > 0 ? C.emerald.fg : C.muted, fontWeight: 500 }}>
                   {fmtInt(hover.count)} inscription{hover.count > 1 ? 's' : ''}
                 </span>
               </div>

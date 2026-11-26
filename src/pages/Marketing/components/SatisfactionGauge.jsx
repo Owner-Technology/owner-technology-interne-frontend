@@ -75,7 +75,7 @@ export default function SatisfactionGauge({ score, label = 'Taux d\'ouverture gl
                 textAnchor="middle"
                 style={{
                   fontSize: 44,
-                  fontWeight: 800,
+                  fontWeight: 500,
                   fill: C.text,
                   fontFamily: 'inherit',
                   letterSpacing: '-0.04em',
@@ -104,7 +104,7 @@ export default function SatisfactionGauge({ score, label = 'Taux d\'ouverture gl
               textAnchor="middle"
               style={{
                 fontSize: 14,
-                fontWeight: 600,
+                fontWeight: 500,
                 fill: C.muted,
                 fontFamily: 'inherit',
               }}
@@ -118,7 +118,7 @@ export default function SatisfactionGauge({ score, label = 'Taux d\'ouverture gl
             x={CENTER_X - RADIUS_OUTER - 8}
             y={CENTER_Y + 14}
             textAnchor="middle"
-            style={{ fontSize: 11, fontWeight: 600, fill: C.faded, fontFamily: 'inherit' }}
+            style={{ fontSize: 11, fontWeight: 500, fill: C.faded, fontFamily: 'inherit' }}
           >
             0
           </text>
@@ -126,7 +126,7 @@ export default function SatisfactionGauge({ score, label = 'Taux d\'ouverture gl
             x={CENTER_X + RADIUS_OUTER + 8}
             y={CENTER_Y + 14}
             textAnchor="middle"
-            style={{ fontSize: 11, fontWeight: 600, fill: C.faded, fontFamily: 'inherit' }}
+            style={{ fontSize: 11, fontWeight: 500, fill: C.faded, fontFamily: 'inherit' }}
           >
             100
           </text>
@@ -141,18 +141,17 @@ export default function SatisfactionGauge({ score, label = 'Taux d\'ouverture gl
           alignItems: 'center',
           gap: 12,
         }}>
-          {/* Soft orb (decorative, ref image 4) */}
-          <div style={{
-            width: 32,
-            height: 32,
+          {/* Pastille du verdict, à la couleur de son ton (vert, jaune, rouge). */}
+          <span aria-hidden="true" style={{
+            width: 10,
+            height: 10,
             borderRadius: '50%',
-            background: `radial-gradient(circle at 30% 30%, ${C.accent}, ${C.violet.strong})`,
-            opacity: 0.85,
+            background: verdictColor,
             flexShrink: 0,
-            boxShadow: `0 4px 12px ${C.accent}55`,
+            boxShadow: `0 0 0 4px ${verdictColor}22`,
           }} />
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: verdictColor, letterSpacing: '-0.01em' }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: verdictColor, letterSpacing: '-0.01em' }}>
               {verdict.label}
             </div>
             <div style={{ marginTop: 2, fontSize: 12, color: C.muted, fontWeight: 500 }}>

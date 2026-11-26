@@ -1,51 +1,17 @@
 import React from 'react';
+import { Segmented } from '../../TrackingSheetFinance/statistics/parts.jsx';
 
 /**
- * Source filter (all / landing / meta / broad) — controls leads list.
- * Compact pill group, dark/light aware, brand-coloured active pill.
+ * Filtre de source des prospects (toutes / landing / meta / broad) : petite bascule à pouce blanc du kit Finance
+ * (refonte du 26/11/2026). Le changement relance le chargement côté parent (la liste vient déjà filtrée du back).
  */
-export default function SourceFilter({ value, onChange, C }) {
-  const SOURCES = [
-    { key: 'all', label: 'Toutes', color: C.muted },
-    { key: 'landing', label: 'Landing', color: C.blue.fg },
-    { key: 'meta', label: 'Meta', color: C.fuchsia.fg },
-    { key: 'broad', label: 'Broad', color: C.amber.fg },
-  ];
+const SOURCES = [
+  { key: 'all', label: 'Toutes' },
+  { key: 'landing', label: 'Landing' },
+  { key: 'meta', label: 'Meta' },
+  { key: 'broad', label: 'Broad' },
+];
 
-  return (
-    <div style={{
-      display: 'inline-flex',
-      gap: 4,
-      padding: 4,
-      background: C.subtle,
-      borderRadius: 12,
-      border: `1px solid ${C.hairline}`,
-    }}>
-      {SOURCES.map((s) => {
-        const active = value === s.key;
-        return (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => onChange(s.key)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border: 'none',
-              background: active ? C.surface : 'transparent',
-              color: active ? s.color : C.muted,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              boxShadow: active ? C.shadow : 'none',
-              transition: 'all 0.18s cubic-bezier(0.4,0,0.2,1)',
-            }}
-          >
-            {s.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+export default function SourceFilter({ value, onChange }) {
+  return <Segmented small options={SOURCES} value={value} onChange={onChange} label="Source des prospects" />;
 }

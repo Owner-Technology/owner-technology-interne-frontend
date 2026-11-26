@@ -166,26 +166,73 @@ export function NoShowsCard({ anchor, current, canOpen, onOpenClient, pickPeriod
   const totals = data?.totals || {};
   const people = (data?.by_sales_person || []).filter((p) => p.clients > 0);
   const top = Math.max(0, ...people.map((p) => p.rate || 0));
-  const listed = (name) => byPerson(data.clients, name).filter((c) => c.status === 'no_show' || c.status === 'to_confirm');
+  const listed = (name) => byPerson(data.clients, name).filter((c) => ['no_show', 'reported', 'to_confirm'].includes(c.status));
+  // La tuile « par mois » n'apparaît que sur plusieurs mois (un seul mois, ou des jours : rien à comparer).
+  const monthly = !days && (data?.by_month?.length || 0) >= 2;
 
+  // No show = pas venu et pas encore revenu ; reporté = venu après un no show ; un onboarding à venir (même dans un an) et un
+  // « à confirmer » (aucune trace) restent hors du taux (dev 26/11/2026). Les chiffres bougent : un no show qui vient passe en reporté.
   return (
     <Card title="No show d’onboarding par sales" Icon={CalendarX2} state={state} skeleton={340} hint={`Ventes signées sur la période · ${days ? dayRangeLabel(days) : rangeLabel(range)}`}
       actions={<PeriodActions pickPeriod={pickPeriod} days={days} setDays={setDays} span={span} setSpan={setSpan} label="Période des no show" />}>
-      <div className="fst-rate-top">
-        <div>
-          <Num className="fst-rate-big" value={totals.rate} format={(n) => pct(n)} />
-          <div className="fst-rate-note">
-            {plural(totals.no_show || 0, 'client')} en no show sur {count(totals.due || 0)} dont le rendez-vous est passé
-            {totals.to_confirm ? ` · ${count(totals.to_confirm)} à confirmer, non compté${totals.to_confirm > 1 ? 's' : ''}` : ''}
-          </div>
+      <div className={`fst-ns-kpis${monthly ? '' : ' is-three'}`}>
+        <div className="fst-ns-kpi" data-tone="red">
+          <span className="fst-ns-kpi-label">No show</span>
+          <Num className="fst-ns-kpi-value" value={totals.rate} format={(n) => pct(n)} />
+          <span className="fst-ns-kpi-sub">{plural(totals.no_show || 0, 'client')} pas encore venu{(totals.no_show || 0) > 1 ? 's' : ''}</span>
         </div>
-        <Spark months={data?.by_month} rateOf={(m) => m.rate} />
+        <div className="fst-ns-kpi" data-tone="reported">
+          <span className="fst-ns-kpi-label">Reportés</span>
+          <Num className="fst-ns-kpi-value" value={totals.reported_rate} format={(n) => pct(n)} />
+          <span className="fst-ns-kpi-sub">{plural(totals.reported || 0, 'client')} venu{(totals.reported || 0) > 1 ? 's' : ''} après un no show</span>
+        </div>
+        <div className="fst-ns-kpi">
+          <span className="fst-ns-kpi-label">Onboardings passés</span>
+          <Num className="fst-ns-kpi-value" value={totals.due || 0} />
+          <span className="fst-ns-kpi-sub">{totals.to_confirm ? `${count(totals.to_confirm)} à confirmer, hors taux` : 'base des deux taux'}</span>
+        </div>
+        {monthly && (
+          <div className="fst-ns-kpi is-spark">
+            <span className="fst-ns-kpi-label">No show par mois</span>
+            <Spark months={data.by_month} rateOf={(m) => m.rate} />
+          </div>
+        )}
       </div>
       {people.length === 0 ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
-        <People people={people} top={top} numerator="no_show" denominator="due" cases={listed}
-          extra={(person) => (person.to_confirm ? <small className="fst-extra">+ {person.to_confirm} à confirmer</small> : null)}
-          render={(row) => <Onboarding key={row.sale_id} row={row} canOpen={canOpen} onOpenClient={onOpenClient} />} />
+        <div className="fst-ns-table" role="table" aria-label="No show par sales">
+          <div className="fst-ns-row is-head" role="row">
+            <span /><span role="columnheader">Sales</span><span role="columnheader">No show</span>
+            <span role="columnheader" className="is-num">Reportés</span><span role="columnheader" className="is-num">Passés</span><span />
+          </div>
+          {people.map((person) => <NoShowPerson key={person.name} person={person} top={top} cases={listed(person.name)}
+            render={(row) => <Onboarding key={row.sale_id} row={row} canOpen={canOpen} onOpenClient={onOpenClient} />} />)}
+        </div>
       )}
     </Card>
+  );
+}
+
+// Une ligne par sales : no show (barre, nombre, taux), reportés (nombre, taux), onboardings passés ; les cas au clic.
+function NoShowPerson({ person, top, cases, render }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div role="rowgroup">
+      <button type="button" role="row" className="fst-ns-row" aria-expanded={open} disabled={cases.length === 0} onClick={() => setOpen(!open)}>
+        <Avatar name={person.name} />
+        <span className="fst-ns-name">{person.name}{person.to_confirm ? <small>{person.to_confirm} à confirmer</small> : null}</span>
+        <span className="fst-ns-cell">
+          <Fill value={top ? (person.rate || 0) / top : 0} tone={person.rate ? 'red' : 'zero'} />
+          <span className="fst-num"><b>{pct(person.rate)}</b><small>{count(person.no_show)}</small></span>
+        </span>
+        <span className={`fst-ns-cell is-num is-reported${person.reported ? '' : ' is-zero'}`}>
+          <span className="fst-num"><b>{pct(person.reported_rate)}</b><small>{count(person.reported)}</small></span>
+        </span>
+        <span className="fst-ns-cell is-num fst-num is-muted">{count(person.due)}</span>
+        <ChevronRight size={14} className="fst-chev" />
+      </button>
+      <Collapse open={open}>
+        <div className="fst-cases">{cases.map(render)}</div>
+      </Collapse>
+    </div>
   );
 }

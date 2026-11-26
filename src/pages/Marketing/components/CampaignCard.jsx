@@ -61,7 +61,7 @@ export default function CampaignCard({
           background: C.rose.bg,
           color: C.rose.fg,
           fontSize: 13,
-          fontWeight: 600,
+          fontWeight: 500,
         }}>
           Données indisponibles{error ? ` — ${error}` : ''}.
         </div>
@@ -97,7 +97,7 @@ export default function CampaignCard({
           color: C.emerald.fg,
           borderRadius: 50,
           fontSize: 10,
-          fontWeight: 700,
+          fontWeight: 500,
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
         }}>
@@ -114,7 +114,7 @@ export default function CampaignCard({
           border: `1px solid ${C.hairline}`,
           borderRadius: 8,
           fontSize: 11,
-          fontWeight: 600,
+          fontWeight: 500,
           cursor: 'pointer',
           fontFamily: 'inherit',
         }}
@@ -155,10 +155,10 @@ export default function CampaignCard({
                   justifyContent: 'space-between',
                   marginBottom: 8,
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
                     {fmtInt(sent)} / {fmtInt(data.total)} envoyés
                   </span>
-                  <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>
+                  <span style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>
                     {fmtPct(pct)}
                   </span>
                 </div>
@@ -203,7 +203,7 @@ export default function CampaignCard({
                     </span>
                   )}
                   {pending === 0 && sending === 0 && data.timing?.lastSentAt && (
-                    <span style={{ color: C.emerald.fg, fontWeight: 600 }}>
+                    <span style={{ color: C.emerald.fg, fontWeight: 500 }}>
                       ✓ Tous envoyés à {fmtParisTime(data.timing.lastSentAt)}
                     </span>
                   )}
@@ -239,7 +239,7 @@ export default function CampaignCard({
                 <div style={{ marginTop: 24 }}>
                   <div style={{
                     fontSize: 10,
-                    fontWeight: 700,
+                    fontWeight: 500,
                     color: C.faded,
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
@@ -294,7 +294,7 @@ function Tile({ label, value, sub, highlight, tone, C }) {
     }}>
       <div style={{
         fontSize: 9,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.faded,
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
@@ -304,7 +304,7 @@ function Tile({ label, value, sub, highlight, tone, C }) {
       <div style={{
         marginTop: 6,
         fontSize: 22,
-        fontWeight: 700,
+        fontWeight: 500,
         color,
         letterSpacing: '-0.02em',
         fontVariantNumeric: 'tabular-nums',
@@ -339,10 +339,10 @@ function SentByHourTable({ rows, sent, barColor, C }) {
             gap: 12,
             padding: '6px 4px',
           }}>
-            <span style={{ fontSize: 12, fontFamily: 'ui-monospace, SF Mono, Menlo, monospace', color: C.muted }}>
+            <span style={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums', color: C.muted }}>
               {row.hour}
             </span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
               {fmtInt(row.count)}
             </span>
             <div style={{ height: 6, background: C.subtle, borderRadius: 50, overflow: 'hidden' }}>

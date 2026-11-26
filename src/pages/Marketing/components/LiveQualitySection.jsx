@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
 import { motion, AnimatePresence } from 'framer-motion';
+import { ITEM } from '../../../components/perfSales/motion.jsx';
 import { Line } from 'react-chartjs-2';
 // `chart.js/auto` enregistre tous les contrôleurs/échelles — même import
 // que TrafficChart/BudgetByDayChart (cohérence + pas de tree-shake cassé).
@@ -157,14 +158,11 @@ export default function LiveQualitySection({ realtimeLeads, C }) {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      variants={ITEM}
       style={{
         background: C.surface,
-        borderRadius: 20,
-        border: `1px solid ${C.hairline}`,
-        boxShadow: C.shadow,
+        borderRadius: 22,
+        border: `1px solid ${C.border}`,
         padding: '22px 24px',
       }}
     >
@@ -181,7 +179,7 @@ export default function LiveQualitySection({ realtimeLeads, C }) {
           <h3 style={{
             margin: 0,
             fontSize: 16,
-            fontWeight: 700,
+            fontWeight: 500,
             color: C.text,
             letterSpacing: '-0.015em',
           }}>
@@ -208,7 +206,7 @@ export default function LiveQualitySection({ realtimeLeads, C }) {
           border: `1px solid ${C.hairline}`,
           borderRadius: 50,
           fontSize: 10,
-          fontWeight: 600,
+          fontWeight: 500,
           color: C.muted,
           letterSpacing: '0.04em',
         }}>
@@ -274,7 +272,7 @@ function QaEngagement({ q, qaCards, openKey, toggle, C }) {
     }}>
       <div style={{
         fontSize: 11,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.muted,
         textTransform: 'uppercase',
         letterSpacing: '0.07em',
@@ -325,7 +323,7 @@ function QaEngagement({ q, qaCards, openKey, toggle, C }) {
               transition: 'border-color 0.18s ease',
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
               {listOpen ? 'Masquer les questions' : `Voir les ${fmtInt(list.length)} questions`}
             </span>
             <motion.span
@@ -384,7 +382,7 @@ function QaEngagement({ q, qaCards, openKey, toggle, C }) {
             margin: 0,
             fontSize: 12.5,
             lineHeight: 1.45,
-            fontWeight: 600,
+            fontWeight: 500,
             color: C.violet.fg,
           }}>
             {q.qa_conversion_note}
@@ -414,7 +412,7 @@ function QaListRow({ index, item, C }) {
       <span style={{
         flexShrink: 0,
         fontSize: 11,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.faded,
         fontVariantNumeric: 'tabular-nums',
         lineHeight: 1.5,
@@ -436,7 +434,7 @@ function QaListRow({ index, item, C }) {
           <p style={{
             margin: '4px 0 0',
             fontSize: 11,
-            fontWeight: 600,
+            fontWeight: 500,
             color: C.muted,
           }}>
             {item.asker}
@@ -491,7 +489,7 @@ function QualityCard({ card, open, onToggle, C, delay }) {
       }}>
         <div style={{
           fontSize: 10,
-          fontWeight: 700,
+          fontWeight: 500,
           color: C.faded,
           textTransform: 'uppercase',
           letterSpacing: '0.07em',
@@ -514,7 +512,7 @@ function QualityCard({ card, open, onToggle, C, delay }) {
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 11,
-            fontWeight: 700,
+            fontWeight: 500,
             lineHeight: 1,
           }}
         >
@@ -525,7 +523,7 @@ function QualityCard({ card, open, onToggle, C, delay }) {
       <div style={{
         marginTop: 8,
         fontSize: 24,
-        fontWeight: 700,
+        fontWeight: 500,
         color: valueColor,
         letterSpacing: '-0.02em',
         fontVariantNumeric: 'tabular-nums',
@@ -582,7 +580,7 @@ function PresenceCurve({ q, C }) {
   );
 
   const isDark = C.surface !== '#ffffff';
-  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,18,30,0.06)';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(50,40,30,0.06)';
 
   // Index du pic (max `n`). Préfère `peak_time`/`peak_concurrent` si fournis
   // et qu'ils tombent sur un point existant, sinon calcule le max local.
@@ -779,7 +777,7 @@ function PresenceCurve({ q, C }) {
       }}>
         <div style={{
           fontSize: 10,
-          fontWeight: 700,
+          fontWeight: 500,
           color: C.faded,
           textTransform: 'uppercase',
           letterSpacing: '0.07em',
@@ -792,7 +790,7 @@ function PresenceCurve({ q, C }) {
             alignItems: 'center',
             gap: 6,
             fontSize: 11,
-            fontWeight: 600,
+            fontWeight: 500,
             color: C.violet.fg,
           }}>
             <span aria-hidden="true" style={{
@@ -869,7 +867,7 @@ function PresenceTooltip({ x, y, clock, n, C }) {
     }}>
       <div style={{
         fontSize: 11,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.muted,
         marginBottom: 2,
         fontVariantNumeric: 'tabular-nums',
@@ -881,7 +879,7 @@ function PresenceTooltip({ x, y, clock, n, C }) {
           display: 'inline-block', width: 8, height: 8, borderRadius: 50,
           background: C.violet.strong, flexShrink: 0,
         }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
           {fmtInt(n)}
         </span>
         <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>spectateurs</span>
@@ -911,7 +909,7 @@ function RetentionLegend({ curve, C }) {
     }}>
       <span style={{
         fontSize: 10,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.faded,
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
@@ -921,11 +919,11 @@ function RetentionLegend({ curve, C }) {
       {steps.map((s) => (
         <span key={s.min} style={{
           fontSize: 12,
-          fontWeight: 600,
+          fontWeight: 500,
           color: C.muted,
           fontVariantNumeric: 'tabular-nums',
         }}>
-          <strong style={{ color: C.text, fontWeight: 700 }}>{fmtPct(s.pct)}</strong> à {s.min}min
+          <strong style={{ color: C.text, fontWeight: 500 }}>{fmtPct(s.pct)}</strong> à {s.min}min
         </span>
       ))}
     </div>
@@ -954,7 +952,7 @@ function RetentionCurve({ curve, C }) {
     }}>
       <div style={{
         fontSize: 10,
-        fontWeight: 700,
+        fontWeight: 500,
         color: C.faded,
         textTransform: 'uppercase',
         letterSpacing: '0.07em',
@@ -969,7 +967,7 @@ function RetentionCurve({ curve, C }) {
               width: 56,
               flexShrink: 0,
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 500,
               color: C.muted,
               fontVariantNumeric: 'tabular-nums',
             }}>
@@ -998,7 +996,7 @@ function RetentionCurve({ curve, C }) {
               flexShrink: 0,
               textAlign: 'right',
               fontSize: 12.5,
-              fontWeight: 700,
+              fontWeight: 500,
               color: C.text,
               fontVariantNumeric: 'tabular-nums',
             }}>

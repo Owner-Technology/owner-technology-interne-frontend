@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import Card from './Card';
 import { fmtInt, fmtPct } from '../theme';
 
@@ -81,20 +81,21 @@ export default function SalesWebinarRanking({ data, C }) {
       C={C}
       noPadding
     >
-      <div style={{ overflow: 'hidden', borderRadius: 'inherit' }}>
+      {/* Défile en largeur sur un petit écran plutôt que d'écraser les colonnes. */}
+      <div style={{ overflowX: 'auto', borderRadius: 'inherit' }}>
+        <div style={{ minWidth: 600 }}>
         {/* Header */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(200px, 1.4fr) 140px 100px 1.2fr',
           gap: 12,
           padding: '14px 22px',
-          borderBottom: `1px solid ${C.hairline}`,
-          background: C.subtle,
-          fontSize: 10,
-          fontWeight: 700,
-          color: C.faded,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
+          borderBottom: `1px solid ${C.border}`,
+          background: C.surface,
+          fontSize: 12.5,
+          fontWeight: 500,
+          color: C.text,
+          letterSpacing: '-0.003em',
         }}>
           <div>Commercial</div>
           <div style={{ textAlign: 'right' }}>Leads attribués</div>
@@ -112,7 +113,7 @@ export default function SalesWebinarRanking({ data, C }) {
           const rankIcons = ['🥇', '🥈', '🥉'];
 
           return (
-            <motion.div
+            <Motion.div
               key={`${email || 'none'}-${idx}`}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -138,7 +139,7 @@ export default function SalesWebinarRanking({ data, C }) {
                       borderRadius: 12,
                       flexShrink: 0,
                       objectFit: 'cover',
-                      boxShadow: '0 2px 6px rgba(15,18,30,0.08)',
+                      boxShadow: '0 2px 6px rgba(50,40,30,0.08)',
                       background: C.subtle,
                     }}
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -155,9 +156,9 @@ export default function SalesWebinarRanking({ data, C }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 13,
-                    fontWeight: 700,
+                    fontWeight: 500,
                     letterSpacing: '-0.02em',
-                    boxShadow: '0 2px 6px rgba(15,18,30,0.08)',
+                    boxShadow: '0 2px 6px rgba(50,40,30,0.08)',
                   }}>
                     {email ? initials(name) : '—'}
                   </div>
@@ -168,7 +169,7 @@ export default function SalesWebinarRanking({ data, C }) {
                     alignItems: 'center',
                     gap: 6,
                     fontSize: 14,
-                    fontWeight: 650,
+                    fontWeight: 500,
                     color: C.text,
                     letterSpacing: '-0.01em',
                     whiteSpace: 'nowrap',
@@ -197,7 +198,7 @@ export default function SalesWebinarRanking({ data, C }) {
               <div style={{
                 textAlign: 'right',
                 fontSize: 16,
-                fontWeight: 700,
+                fontWeight: 500,
                 color: C.text,
                 fontVariantNumeric: 'tabular-nums',
               }}>
@@ -208,7 +209,7 @@ export default function SalesWebinarRanking({ data, C }) {
               <div style={{
                 textAlign: 'right',
                 fontSize: 16,
-                fontWeight: 700,
+                fontWeight: 500,
                 color: (row.signed || 0) > 0 ? C.emerald.fg : C.muted,
                 fontVariantNumeric: 'tabular-nums',
               }}>
@@ -241,15 +242,16 @@ export default function SalesWebinarRanking({ data, C }) {
                   color: closingColors.fg,
                   borderRadius: 50,
                   fontSize: 12,
-                  fontWeight: 700,
+                  fontWeight: 500,
                   fontVariantNumeric: 'tabular-nums',
                 }}>
                   {fmtPct(row.closing_rate_pct || 0)}
                 </div>
               </div>
-            </motion.div>
+            </Motion.div>
           );
         })}
+        </div>
       </div>
     </Card>
   );

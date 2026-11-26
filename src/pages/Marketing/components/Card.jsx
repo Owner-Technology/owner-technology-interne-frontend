@@ -1,6 +1,7 @@
 import React from 'react';
 // eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
 import { motion } from 'framer-motion';
+import { ITEM } from '../../../components/perfSales/motion.jsx';
 
 /**
  * Reusable white card with consistent radius / shadow / padding —
@@ -19,6 +20,29 @@ export default function Card({
   hoverable = false,
   style = {},
 }) {
+  // Page Webinar (palette Owner, `C.owner`) : carte du kit Finance. Elle arrive dans la cascade de sa section (ITEM),
+  // trait fin sans ombre, rayon 22, titre en 500 et indice gris, sans filet sous l'en-tête. Les autres pages qui
+  // utilisent cette carte (Funnel Leads) gardent le rendu d'origine ci-dessous.
+  if (C.owner) {
+    return (
+      <motion.section
+        variants={ITEM}
+        className="wb-card"
+        style={{ background: C.surface, borderColor: C.border, ...style }}
+      >
+        {(title || action) && (
+          <header className={`wb-card-head${noPadding ? ' is-flush' : ''}`}>
+            <div style={{ minWidth: 0 }}>
+              {title && <h3 className="wb-card-title" style={{ color: C.text }}>{title}</h3>}
+              {subtitle && <p className="wb-card-hint" style={{ color: C.muted }}>{subtitle}</p>}
+            </div>
+            {action && <div className="wb-card-action">{action}</div>}
+          </header>
+        )}
+        <div className={noPadding ? undefined : 'wb-card-body'}>{children}</div>
+      </motion.section>
+    );
+  }
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}

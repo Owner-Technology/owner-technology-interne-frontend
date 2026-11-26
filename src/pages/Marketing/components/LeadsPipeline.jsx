@@ -38,7 +38,8 @@ function avatarColor(seed) {
   // Stable hash → palette index
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const PALETTE = ['#5b6abf', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
+  // Teintes de catégorie du kit Owner (texte des étiquettes pastel) : sobres, lisibles en blanc.
+  const PALETTE = ['#4a3fc4', '#0b7a4b', '#a05a05', '#c2500e', '#1b6fd0', '#0f7286', '#55514b'];
   return PALETTE[h % PALETTE.length];
 }
 
@@ -78,7 +79,7 @@ function Pill({ bg, fg, children }) {
       background: bg,
       color: fg,
       fontSize: 9,
-      fontWeight: 700,
+      fontWeight: 500,
       textTransform: 'uppercase',
       letterSpacing: '0.06em',
       whiteSpace: 'nowrap',
@@ -103,7 +104,7 @@ function ScorePill({ score, temperature, C, size = 'sm' }) {
       background: tone.bg,
       color: tone.fg,
       fontSize: size === 'md' ? 12 : 10,
-      fontWeight: 700,
+      fontWeight: 500,
       fontVariantNumeric: 'tabular-nums',
       whiteSpace: 'nowrap',
     }} title={`Score d'engagement ${score}/10 (${temperature})`}>
@@ -157,14 +158,13 @@ export default function LeadsPipeline({ leads = [], scoresByLeadId, C, sourceFil
 
   const HEADER_CELL = {
     padding: '12px 16px',
-    fontSize: 10,
-    fontWeight: 700,
-    color: C.faded,
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
+    fontSize: 12.5,
+    fontWeight: 500,
+    color: C.text,
+    letterSpacing: '-0.003em',
     textAlign: 'left',
-    background: C.subtle,
-    borderBottom: `1px solid ${C.hairline}`,
+    background: C.surface,
+    borderBottom: `1px solid ${C.border}`,
     whiteSpace: 'nowrap',
     position: 'sticky',
     top: 0,
@@ -269,14 +269,14 @@ export default function LeadsPipeline({ leads = [], scoresByLeadId, C, sourceFil
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: 11,
-                          fontWeight: 700,
+                          fontWeight: 500,
                           flexShrink: 0,
                         }}>
                           {getInitials(l.prenom, l.nom)}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 600, color: C.text, whiteSpace: 'nowrap' }}>
+                            <span style={{ fontWeight: 500, color: C.text, whiteSpace: 'nowrap' }}>
                               {l.prenom} {l.nom}
                             </span>
                             <SourcePill source={l.source} C={C} />
@@ -294,7 +294,7 @@ export default function LeadsPipeline({ leads = [], scoresByLeadId, C, sourceFil
                           padding: '3px 8px',
                           borderRadius: 8,
                           fontSize: 11,
-                          fontWeight: 700,
+                          fontWeight: 500,
                           background: parseInt(l.salaries, 10) >= 4 ? C.emerald.bg : C.subtle,
                           color: parseInt(l.salaries, 10) >= 4 ? C.emerald.fg : C.muted,
                         }}>
@@ -310,7 +310,7 @@ export default function LeadsPipeline({ leads = [], scoresByLeadId, C, sourceFil
                       </td>
                     )}
                     <td style={CELL}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{pos.label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: C.text }}>{pos.label}</div>
                       <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 70, height: 4, background: C.subtle, borderRadius: 50, overflow: 'hidden' }}>
                           <div style={{
@@ -320,7 +320,7 @@ export default function LeadsPipeline({ leads = [], scoresByLeadId, C, sourceFil
                             transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
                           }} />
                         </div>
-                        <span style={{ fontSize: 10, color: C.faded, fontWeight: 600 }}>
+                        <span style={{ fontSize: 10, color: C.faded, fontWeight: 500 }}>
                           {pos.done}/{pos.total}
                         </span>
                       </div>
@@ -378,7 +378,7 @@ function LeadDetailModal({ lead, score, C, onClose }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(15,18,30,0.6)',
+        background: 'rgba(50,40,30,0.6)',
         backdropFilter: 'blur(4px)',
         zIndex: 5000,
         display: 'flex',
@@ -411,7 +411,7 @@ function LeadDetailModal({ lead, score, C, onClose }) {
                 <h2 style={{
                   margin: 0,
                   fontSize: 22,
-                  fontWeight: 800,
+                  fontWeight: 500,
                   color: C.text,
                   letterSpacing: '-0.02em',
                 }}>
@@ -448,7 +448,7 @@ function LeadDetailModal({ lead, score, C, onClose }) {
                 }}>
                   <div style={{
                     fontSize: 9,
-                    fontWeight: 700,
+                    fontWeight: 500,
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
                     color: C.fuchsia.fg,
@@ -474,7 +474,7 @@ function LeadDetailModal({ lead, score, C, onClose }) {
                 border: `1px solid ${C.hairline}`,
                 color: C.muted,
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
                 fontFamily: 'inherit',
               }}
@@ -486,11 +486,10 @@ function LeadDetailModal({ lead, score, C, onClose }) {
 
         <div style={{ padding: '20px 28px 28px' }}>
           <div style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: C.faded,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
+            fontSize: 12.5,
+            fontWeight: 500,
+            color: C.text,
+            letterSpacing: '-0.003em',
             marginBottom: 14,
           }}>
             Timeline emails & WhatsApp
@@ -515,7 +514,7 @@ function LeadDetailModal({ lead, score, C, onClose }) {
                   borderRadius: 12,
                   color: C.text,
                   fontSize: 12,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                 }}
@@ -560,7 +559,7 @@ function TimelineItem({ item, C }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
             {EMAIL_KIND_LABELS[item.kind] || item.kind}
           </div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2, fontWeight: 500 }}>
@@ -582,7 +581,7 @@ function TimelineItem({ item, C }) {
           background: statusStyle.bg,
           color: statusStyle.fg,
           fontSize: 10,
-          fontWeight: 700,
+          fontWeight: 500,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
         }}>
@@ -617,7 +616,7 @@ function Chip({ label, active, tone, C }) {
       background: bg,
       color: fg,
       fontSize: 9,
-      fontWeight: 700,
+      fontWeight: 500,
       textTransform: 'uppercase',
       letterSpacing: '0.06em',
       border: `1px solid ${active ? bg : C.hairline}`,
