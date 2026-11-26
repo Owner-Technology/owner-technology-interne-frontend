@@ -113,6 +113,8 @@ export const outcomeMeta = (step) => (step.outcome === 'no_show' && step.level =
 export const LEVEL = { certain: 'Certain', probable: 'Probable', to_confirm: 'À confirmer' };
 export const ONBOARDING_STATUS = {
   no_show: { label: 'No show', tone: 'red' },
+  // Venu après un no show (dev 26/11/2026) : à part des vrais no show, avec son propre taux.
+  reported: { label: 'Reporté', tone: 'reported' },
   to_confirm: { label: 'À confirmer', tone: 'amber' },
   held: { label: 'Tenu', tone: 'green' },
   upcoming: { label: 'À venir', tone: 'blue' },
