@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
 import { motion } from 'framer-motion';
+import { ITEM } from '../../../components/perfSales/motion.jsx';
 import { fmtInt, fmtPct } from '../theme';
 
 /**
- * Three side-by-side coloured cards (blue/fuchsia/amber) showing inscrits
- * split by acquisition source — Landing, Meta Ads, Broad. Mirror of the
- * landing's SourceBreakdownCards but adapted to the light-mode palette
- * and softer card style of refs (rounded 16px, pill upper-right).
+ * Inscrits par source d'acquisition — Landing, Meta Ads, Broad (refonte du 26/11/2026) : une carte du kit Finance,
+ * une barre empilée qui donne la part de chacune d'un coup d'œil, puis une tuile par source avec son chiffre, sa
+ * part, son détail et ses réserves. Survoler une tuile éclaire sa part dans la barre.
  */
-export default function SourceBreakdown({ summary, C }) {
-  if (!summary) return null;
+export default function SourceBreakdown({ summary, C, loading }) {
+  const [focus, setFocus] = useState(null);
+  if (!summary) return loading ? <div className="fst-skel" style={{ height: 246, borderRadius: 22 }} aria-hidden="true" /> : null;
   const bySrc = summary.leadsBySource || { landing: 0, meta: 0, broad: 0 };
   // La LP `/v2` (A/B déployé le 02/07) remonte en source `landing-v2`, exposée
   // par l'API sous `landingV2`. Elle capte aujourd'hui la quasi-totalité du
@@ -30,7 +31,8 @@ export default function SourceBreakdown({ summary, C }) {
       sub: bySrc.landingV2
         ? `${fmtInt(summary.visitors)} visiteurs · dont ${fmtInt(bySrc.landingV2)} via /v2`
         : `${fmtInt(summary.visitors)} visiteurs uniques`,
-      tone: C.blue,
+      color: C.blue.strong,
+      tagTone: 'blue',
     },
     {
       key: 'meta',
@@ -39,7 +41,8 @@ export default function SourceBreakdown({ summary, C }) {
       pct: share(bySrc.meta || 0),
       tag: 'Lead Form → n8n',
       sub: 'Ingestion webhook',
-      tone: C.fuchsia,
+      color: C.fuchsia.strong,
+      tagTone: 'lilac',
     },
     {
       key: 'broad',
@@ -48,80 +51,53 @@ export default function SourceBreakdown({ summary, C }) {
       pct: share(bySrc.broad || 0),
       tag: '/broad · cold outreach',
       sub: 'Anciens prospects relancés',
-      tone: C.amber,
+      color: C.amber.strong,
+      tagTone: 'yellow',
     },
   ];
 
+  const known = cards.filter((card) => card.value > 0);
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 16,
-    }}>
-      {cards.map((card, i) => (
-        <motion.div
-          key={card.key}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-          whileHover={{ y: -2 }}
-          style={{
-            background: card.tone.bg,
-            borderRadius: 18,
-            padding: '20px 22px',
-            border: `1px solid ${card.tone.bg}`,
-            boxShadow: C.shadow,
-            transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: card.tone.fg,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-            }}>
-              {card.title}
-            </span>
-            <span style={{
-              padding: '3px 9px',
-              borderRadius: 50,
-              background: card.tone.strong + '22',
-              color: card.tone.fg,
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-            }}>
-              {card.tag}
-            </span>
-          </div>
-          <div style={{
-            fontSize: 36,
-            fontWeight: 700,
-            color: card.tone.fg,
-            letterSpacing: '-0.025em',
-            fontVariantNumeric: 'tabular-nums',
-            lineHeight: 1,
-          }}>
-            {fmtInt(card.value)}
-          </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: C.muted, fontWeight: 500 }}>
-            {fmtPct(card.pct)} des inscrits · {card.sub}
-          </div>
-          {card.key === 'landing' && summary.budgetSource === 'meta' && (
-            <div style={{ marginTop: 10, fontSize: 12, color: C.muted, lineHeight: 1.5 }}>
-              Budget et CPL LP : non isolables. Les dépenses de campagne ne sont pas ventilées entre formulaires Meta, LP et LP V2.
+    <motion.section variants={ITEM} className="wb-card" style={{ background: C.surface, borderColor: C.border }}>
+      <header className="wb-card-head">
+        <div>
+          <h3 className="wb-card-title">Inscrits par source</h3>
+          <p className="wb-card-hint" style={{ color: C.muted }}>{fmtInt(total)} inscrits sur la fenêtre, répartis entre la landing, Meta Ads et Broad.</p>
+        </div>
+      </header>
+      <div className="wb-card-body">
+        <div className="wb-src-stack" role="img" aria-label={cards.map((card) => `${card.title} ${fmtPct(card.pct)}`).join(', ')}
+          data-focus={focus || undefined}>
+          {known.map((card) => (
+            <i key={card.key} data-on={focus === card.key || undefined} style={{ flexGrow: card.value, background: card.color }} />
+          ))}
+        </div>
+        <div className="wb-src-grid">
+          {cards.map((card) => (
+            <div key={card.key} className="wb-src" onMouseEnter={() => setFocus(card.key)} onMouseLeave={() => setFocus(null)}>
+              <div className="wb-src-head">
+                <span className="wb-src-name"><i style={{ background: card.color }} aria-hidden="true" />{card.title}</span>
+                <span className="fst-tag" data-tone={card.tagTone} title={card.tag}>{card.tag}</span>
+              </div>
+              <div className="wb-src-value">
+                <b className="fst-num">{fmtInt(card.value)}</b>
+                <span>{fmtPct(card.pct)} des inscrits</span>
+              </div>
+              <div className="wb-src-sub">{card.sub}</div>
+              {card.key === 'landing' && summary.budgetSource === 'meta' && (
+                <div className="wb-src-note">
+                  Budget et CPL LP : non isolables. Les dépenses de campagne ne sont pas ventilées entre formulaires Meta, LP et LP V2.
+                </div>
+              )}
+              {card.key === 'meta' && summary.metaBudgetStatus === 'available' && (
+                <div className="wb-src-note">
+                  {fmtInt(summary.metaLeads)} leads déclarés par Meta, toutes destinations confondues. Attribution et déduplication peuvent différer des inscriptions reçues.
+                </div>
+              )}
             </div>
-          )}
-          {card.key === 'meta' && summary.metaBudgetStatus === 'available' && (
-            <div style={{ marginTop: 10, fontSize: 12, color: C.muted, lineHeight: 1.5 }}>
-              {fmtInt(summary.metaLeads)} leads déclarés par Meta, toutes destinations confondues. Attribution et déduplication peuvent différer des inscriptions reçues.
-            </div>
-          )}
-        </motion.div>
-      ))}
-    </div>
+          ))}
+        </div>
+      </div>
+    </motion.section>
   );
 }

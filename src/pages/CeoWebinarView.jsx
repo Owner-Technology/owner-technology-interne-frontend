@@ -122,10 +122,10 @@ export default function CeoWebinarView() {
       style={{
         display: "flex",
         minHeight: "100vh",
-        // Aligné sur le `backdrop` Marketing (theme.js → #ecedf2 light /
-        // #0f1117 dark) pour éviter une bande de couleur différente sous
-        // la SharedNavbar dans la zone paddingTop:64 du wrapper droit.
-        background: darkMode ? "#0f1117" : "#ecedf2",
+        // Aligné sur le `backdrop` de la page (theme.js → buildOwnerTheme : toile
+        // grège #f4f2ef en clair, #0f1117 en sombre) : aucune bande d'une autre
+        // couleur au-dessus de la page.
+        background: darkMode ? "#0f1117" : "#f4f2ef",
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",

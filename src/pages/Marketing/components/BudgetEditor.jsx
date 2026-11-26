@@ -144,7 +144,7 @@ export default function BudgetEditor({ webinarId, C, onChange, readOnly = false,
               background: C.accent,
               color: '#fff',
               fontSize: 13,
-              fontWeight: 700,
+              fontWeight: 500,
               cursor: submitting ? 'wait' : 'pointer',
               fontFamily: 'inherit',
               transition: 'all 0.15s',
@@ -166,7 +166,7 @@ export default function BudgetEditor({ webinarId, C, onChange, readOnly = false,
           background: C.rose.bg,
           color: C.rose.fg,
           fontSize: 12,
-          fontWeight: 600,
+          fontWeight: 500,
         }}>
           {err}
         </div>
@@ -195,7 +195,7 @@ export default function BudgetEditor({ webinarId, C, onChange, readOnly = false,
                     style={{ borderTop: `1px solid ${C.hairline}` }}
                   >
                     <td style={BC(C)}>{b.date}</td>
-                    <td style={{ ...BC(C), fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                    <td style={{ ...BC(C), fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
                       {fmtEur(parseFloat(b.amountEur), { decimals: 2 })}
                     </td>
                     <td style={{ ...BC(C), color: C.muted }}>{b.source || '—'}</td>
@@ -211,7 +211,7 @@ export default function BudgetEditor({ webinarId, C, onChange, readOnly = false,
                             background: 'transparent',
                             color: C.rose.fg,
                             fontSize: 11,
-                            fontWeight: 600,
+                            fontWeight: 500,
                             cursor: 'pointer',
                             fontFamily: 'inherit',
                             transition: 'background 0.15s',
@@ -251,13 +251,12 @@ const INPUT = (C) => ({
 });
 
 const BH = (C) => ({
-  padding: '8px 12px',
-  fontSize: 10,
-  fontWeight: 700,
-  color: C.faded,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
+  padding: '10px 12px',
+  fontSize: 12.5,
+  fontWeight: 500,
+  color: C.text,
   textAlign: 'left',
+  borderBottom: `1px solid ${C.border}`,
 });
 
 const BC = (C) => ({

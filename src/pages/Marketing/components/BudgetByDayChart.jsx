@@ -37,14 +37,14 @@ export default function BudgetByDayChart({ budgetByDay = [], C, darkMode }) {
         const { ctx: c, chartArea } = chart;
         if (!chartArea) return C.accentSoft;
         const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        grad.addColorStop(0, darkMode ? 'rgba(124,138,219,0.95)' : 'rgba(91,106,191,0.95)');
-        grad.addColorStop(1, darkMode ? 'rgba(124,138,219,0.25)' : 'rgba(91,106,191,0.15)');
+        grad.addColorStop(0, darkMode ? 'rgba(124,138,219,0.95)' : 'rgba(43,41,39,0.9)');
+        grad.addColorStop(1, darkMode ? 'rgba(124,138,219,0.25)' : 'rgba(43,41,39,0.18)');
         return grad;
       },
-      borderRadius: 10,
+      borderRadius: 7,
       borderSkipped: false,
       maxBarThickness: 36,
-      hoverBackgroundColor: darkMode ? 'rgba(124,138,219,1)' : 'rgba(91,106,191,1)',
+      hoverBackgroundColor: darkMode ? 'rgba(124,138,219,1)' : '#2b2927',
     }],
   }), [days, C, darkMode]);
 
@@ -126,9 +126,9 @@ export default function BudgetByDayChart({ budgetByDay = [], C, darkMode }) {
               borderRadius: 12,
               padding: '8px 12px',
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 500,
               color: C.text,
-              boxShadow: '0 8px 24px rgba(15,18,30,0.10)',
+              boxShadow: '0 8px 24px rgba(50,40,30,0.10)',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
               zIndex: 4,

@@ -1,253 +1,74 @@
 import React from 'react';
-// eslint-disable-next-line no-unused-vars -- motion used via JSX (false positive)
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
+import { Building2, CalendarCheck, MailOpen, MousePointerClick, Receipt, Timer, Video, Wallet } from 'lucide-react';
 import { fmtInt, fmtEur, fmtPct, fmtDuration } from '../theme';
+import { ITEM, useCountUp, useRevealed } from '../../../components/perfSales/motion.jsx';
+import { Stat } from '../../TrackingSheetFinance/components/PageKit.jsx';
 import Skeleton from './Skeleton';
 
 /**
- * Top of the page : one large gradient-violet HERO card (ref image 5
- * "99% Data Accuracy" style) sitting next to a strip of small white
- * KPI tiles (ref image 2 "All Orders / Order Created" style).
- *
- * The hero shows : webinar title + headline number (Inscrits DB) + caption.
- * The strip shows : 9 small KPI tiles, each with label, large tabular
- * number, and an optional hint or trend pill.
+ * Vue d'ensemble de la page Webinar (refonte du 26/11/2026, langage de Finance → Statistiques) :
+ *  - à gauche, la carte de la cohorte (anthracite, seul aplat sombre de la page) : titre, source, inscrits totaux dont
+ *    le chiffre défile, et les signés ;
+ *  - au centre et à droite, le classement des sales et les RDV par source (panneaux passés par le parent) ;
+ *  - dessous, les huit chiffres clés en tuiles du kit, chacune avec son picto et sa note.
+ * Les calculs des tuiles sont ceux d'avant la refonte, inchangés ; seule la présentation a changé.
  */
 
-function HeroCard({ webinar, summary, realtimeLeads, C }) {
+const fmtCount = (n) => fmtInt(Math.round(n));
+
+// Chiffre qui défile jusqu'à sa valeur quand la rubrique entre à l'écran.
+function CountTo({ value, format }) {
+  const revealed = useRevealed();
+  const shown = useCountUp(revealed && Number.isFinite(value) ? value : 0, { duration: 1000 });
+  return <>{format(shown)}</>;
+}
+
+function HeroCard({ webinar, summary, realtimeLeads }) {
   const leadsDb = summary?.leadsDb ?? 0;
   const signedCount = realtimeLeads?.signed ?? 0;
   const signedPct = leadsDb > 0 ? (signedCount / leadsDb) * 100 : null;
-  // Subtle aurora / glow inside the violet card — purely visual, ref image 5
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        background: C.heroViolet,
-        borderRadius: 24,
-        padding: '32px 36px',
-        color: '#fff',
-        boxShadow: C.shadow,
-        minHeight: 220,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-      }}
-    >
-      {/* Aurora highlight (ref-image-5 style — soft top-right glow) */}
-      <div style={{
-        position: 'absolute',
-        top: -80,
-        right: -60,
-        width: 280,
-        height: 280,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 70%)',
-        pointerEvents: 'none',
-      }} />
-      {/* Bottom-left subtle glow */}
-      <div style={{
-        position: 'absolute',
-        bottom: -120,
-        left: -40,
-        width: 260,
-        height: 260,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 70%)',
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '4px 10px',
-          background: 'rgba(255,255,255,0.18)',
-          borderRadius: 50,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          backdropFilter: 'blur(8px)',
-        }}>
-          <span style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: '#fff',
-            boxShadow: '0 0 8px rgba(255,255,255,0.8)',
-          }} />
-          {webinar?.source || 'Landing webinaire'}
-        </div>
-        <h1 style={{
-          margin: '14px 0 0',
-          fontSize: 26,
-          fontWeight: 800,
-          letterSpacing: '-0.025em',
-          lineHeight: 1.1,
-        }}>
-          {webinar?.title || 'Webinaire'}
-        </h1>
-        <p style={{
-          margin: '6px 0 0',
-          fontSize: 13,
-          color: 'rgba(255,255,255,0.78)',
-          fontWeight: 500,
-        }}>
-          Performance landing & pipeline prospects
-        </p>
+    <Motion.div variants={ITEM} className="wb-hero">
+      <div>
+        <span className="wb-hero-tag"><i aria-hidden="true" />{webinar?.source || 'Landing webinaire'}</span>
+        <h3 className="wb-hero-title">{webinar?.title || 'Webinaire'}</h3>
+        <p className="wb-hero-sub">Performance landing & pipeline prospects</p>
       </div>
-
-      {/* Bloc bottom : grand chiffre en haut + pills en colonne en dessous.
-          Ancien layout (chiffre + pills côte à côte) cassait les pills sur 2
-          lignes dans la grille 3 colonnes. Le stack vertical respire mieux. */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div>
-          <div style={{
-            fontSize: 56,
-            fontWeight: 800,
-            lineHeight: 1,
-            letterSpacing: '-0.04em',
-            fontVariantNumeric: 'tabular-nums',
-            animation: 'mktNumberTick 0.6s cubic-bezier(0.34,1.56,0.64,1) both',
-          }}>
-            {fmtInt(leadsDb)}
-          </div>
-          <div style={{
-            marginTop: 4,
-            fontSize: 12,
-            color: 'rgba(255,255,255,0.85)',
-            fontWeight: 600,
-            letterSpacing: '0.02em',
-          }}>
-            Inscrits totaux (DB)
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {signedPct !== null && (
-            <HeroPill>
-              {fmtInt(signedCount)} signés ({fmtPct(signedPct)})
-            </HeroPill>
-          )}
-        </div>
+      <div>
+        <div className="wb-hero-big fst-num"><CountTo value={leadsDb} format={fmtCount} /></div>
+        <div className="wb-hero-label">Inscrits totaux (DB)</div>
+        {signedPct !== null && (
+          <span className="wb-hero-pill">{fmtInt(signedCount)} signés ({fmtPct(signedPct)})</span>
+        )}
       </div>
-    </motion.div>
+    </Motion.div>
   );
 }
 
-/** Petite pastille blanche translucide pour le hero violet — taille
- *  ajustée pour qu'elles tiennent en ligne dans la grille 3-colonnes. */
-function HeroPill({ children }) {
-  return (
-    <span style={{
-      display: 'inline-block',
-      padding: '5px 11px',
-      background: 'rgba(255,255,255,0.16)',
-      borderRadius: 50,
-      fontSize: 12,
-      fontWeight: 700,
-      backdropFilter: 'blur(8px)',
-      whiteSpace: 'nowrap',
-    }}>
-      {children}
-    </span>
-  );
-}
-
-/** Small white KPI tile. Tone changes the value color when highlighted. */
-function KpiTile({ label, value, hint, tone, C, delay = 0, compact = false }) {
-  const valueColor = tone === 'emerald' ? C.emerald.fg
-    : tone === 'amber' ? C.amber.fg
-    : tone === 'rose' ? C.rose.fg
-    : C.text;
-  const borderColor = tone === 'emerald' ? C.emerald.bg
-    : tone === 'amber' ? C.amber.bg
-    : tone === 'rose' ? C.rose.bg
-    : C.hairline;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        background: C.surface,
-        borderRadius: compact ? 12 : 16,
-        padding: compact ? '12px 14px' : '18px 20px',
-        boxShadow: C.shadow,
-        border: `1px solid ${borderColor}`,
-        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-        cursor: 'default',
-      }}
-      whileHover={{ y: -2 }}
-    >
-      <div style={{
-        fontSize: compact ? 9 : 10,
-        fontWeight: 700,
-        color: C.faded,
-        textTransform: 'uppercase',
-        letterSpacing: '0.08em',
-        lineHeight: 1.2,
-      }}>
-        {label}
-      </div>
-      <div style={{
-        marginTop: compact ? 6 : 8,
-        fontSize: compact ? 20 : 26,
-        fontWeight: 700,
-        color: valueColor,
-        letterSpacing: '-0.02em',
-        fontVariantNumeric: 'tabular-nums',
-        lineHeight: 1,
-      }}>
-        {value}
-      </div>
-      {hint && (
-        <div style={{
-          marginTop: compact ? 4 : 6,
-          fontSize: compact ? 10 : 11,
-          color: C.muted,
-          fontWeight: 500,
-          lineHeight: 1.3,
-        }}>
-          {hint}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingPanel, donutPanel, C, loading }) {
+export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingPanel, donutPanel, loading }) {
   if (!summary) {
-    // Initial-load skeleton — same footprint as the real hero+tiles grid
-    // (hero 220px tall, tiles 96px) so the swap to real data is shift-free.
-    // Uses the shimmer <Skeleton> primitive (light/dark aware) rather than
-    // a flat pulse for the premium feel the rest of the page targets.
+    // Premier chargement : squelettes à l'emprise exacte du contenu (carte de 236 px, tuiles de 104 px).
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) 2fr', gap: 16 }}
-      >
-        <Skeleton C={C} height={220} radius={24} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          {Array.from({ length: 9 }).map((_, i) => (
-            <Skeleton key={i} C={C} height={96} radius={16} />
-          ))}
+      <div style={{ display: 'grid', gap: 18 }} aria-busy="true">
+        <div className="wb-top">
+          <Skeleton height={236} radius={22} />
+          <Skeleton height={236} radius={22} />
+          <Skeleton height={236} radius={22} />
         </div>
-      </motion.div>
+        <div className="wb-stats">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={104} radius={18} />)}
+        </div>
+      </div>
     );
   }
 
   const tiles = [
     {
       label: 'Présents au live',
+      Icon: Video,
+      num: realtimeLeads?.live_attendees,
+      fmt: fmtCount,
       value: realtimeLeads?.live_attendees !== undefined
         ? fmtInt(realtimeLeads.live_attendees)
         : '—',
@@ -258,6 +79,9 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
     },
     {
       label: 'Rendez-vous pris',
+      Icon: CalendarCheck,
+      num: realtimeLeads?.rdv_taken,
+      fmt: fmtCount,
       value: realtimeLeads?.rdv_taken !== undefined
         ? fmtInt(realtimeLeads.rdv_taken)
         : '—',
@@ -275,18 +99,19 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
       const known = summary.leadsHeadcountKnown;
       const total = summary.leadsDb || 0;
       const label = 'Prospects 4+ salariés';
+      const Icon = Building2;
       if (known === 0) {
-        return { label, value: '—', tone: 'amber',
+        return { label, Icon, value: '—', tone: 'amber',
           hint: total > 0 ? `Effectif non collecté sur les ${fmtInt(total)} inscrits` : 'Effectif non collecté' };
       }
       if (known == null) {
         // Landing pas encore à jour : lecture historique, sans dénominateur.
-        return { label, value: fmtInt(summary.leadsLargeCompany),
+        return { label, Icon, value: fmtInt(summary.leadsLargeCompany), num: summary.leadsLargeCompany, fmt: fmtCount,
           hint: total > 0 ? `${fmtPct((summary.leadsLargeCompany / total) * 100)} des inscrits` : undefined,
           tone: summary.leadsLargeCompany > 0 ? 'emerald' : undefined };
       }
       const unknown = Math.max(total - known, 0);
-      return { label, value: fmtInt(summary.leadsLargeCompany),
+      return { label, Icon, value: fmtInt(summary.leadsLargeCompany), num: summary.leadsLargeCompany, fmt: fmtCount,
         hint: `${fmtPct((summary.leadsLargeCompany / known) * 100)} des ${fmtInt(known)} effectifs renseignés`
           + (unknown > 0 ? ` · ${fmtInt(unknown)} non renseignés` : ''),
         tone: unknown > known ? 'amber' : summary.leadsLargeCompany > 0 ? 'emerald' : undefined };
@@ -311,6 +136,9 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
         const lp = summary.lpComparison[0];
         return {
           label: 'Taux conversion LP',
+          Icon: MousePointerClick,
+          num: lp.conversionPct,
+          fmt: fmtPct,
           value: fmtPct(lp.conversionPct),
           hint: `${lp.path} : ${fmtInt(lp.leadsDb)} inscrits / ${fmtInt(lp.visitors)} visiteurs`,
           tone: lp.conversionPct >= 10 ? 'emerald' : undefined,
@@ -321,22 +149,22 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
       if (!isV2Cohort || !lp1 || !lp2) {
         return {
           label: 'Taux conversion LP',
+          Icon: MousePointerClick,
+          num: summary.conversionPct,
+          fmt: fmtPct,
           value: fmtPct(summary.conversionPct),
           hint: 'Inscrits landing ÷ Visiteurs (hors Meta/Broad)',
           tone: summary.conversionPct >= 10 ? 'emerald' : undefined,
         };
       }
-      const tag = (t) => (
-        <span style={{ fontSize: 11, fontWeight: 700, color: C.faded, marginLeft: 4, letterSpacing: '0.05em' }}>
-          {t}
-        </span>
-      );
+      const tag = (t) => <span className="wb-stat-tag">{t}</span>;
       return {
         label: 'Taux conversion LP · V1 vs V2',
+        Icon: MousePointerClick,
         value: (
-          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', flexWrap: 'wrap' }}>
             <span>{fmtPct(lp1.conversionPct)}{tag('LP')}</span>
-            <span style={{ color: C.faded, fontWeight: 400 }}>·</span>
+            <span className="wb-stat-sep">·</span>
             <span>{fmtPct(lp2.conversionPct)}{tag('V2')}</span>
           </span>
         ),
@@ -346,6 +174,9 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
     })(),
     {
       label: summary.budgetSource === 'meta' ? 'Budget engagé · Meta' : 'Budget engagé',
+      Icon: Wallet,
+      num: summary.budgetEur,
+      fmt: (n) => fmtEur(n, { decimals: 2 }),
       value: fmtEur(summary.budgetEur, { decimals: 2 }),
       hint: summary.budgetSource === 'meta'
         ? summary.metaBudgetStatus === 'available' ? 'Dépenses réelles · période sélectionnée · actualisation 20 min' : 'Dépenses Meta indisponibles pour le moment'
@@ -353,6 +184,9 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
     },
     {
       label: summary.budgetSource === 'meta' ? 'Coût par lead · Meta' : 'Coût par lead',
+      Icon: Receipt,
+      num: summary.cplEur,
+      fmt: (n) => fmtEur(n, { decimals: 2 }),
       value: fmtEur(summary.cplEur, { decimals: 2 }),
       hint: summary.budgetSource === 'meta'
         ? summary.metaBudgetStatus === 'available'
@@ -362,6 +196,9 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
     },
     {
       label: "Taux d'ouverture",
+      Icon: MailOpen,
+      num: summary.globalOpenRatePct,
+      fmt: fmtPct,
       value: fmtPct(summary.globalOpenRatePct),
       hint: summary.globalClickRatePct !== null && summary.globalClickRatePct !== undefined
         ? `${fmtPct(summary.globalClickRatePct)} de clic`
@@ -370,6 +207,7 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
     },
     {
       label: 'Durée moy. visite',
+      Icon: Timer,
       value: fmtDuration(summary.visitDurationSeconds),
       hint: summary.bounceRatePct !== null && summary.bounceRatePct !== undefined
         ? `${fmtPct(summary.bounceRatePct)} de rebond`
@@ -377,57 +215,29 @@ export default function HeroKpiStrip({ webinar, summary, realtimeLeads, rankingP
     },
   ];
 
-  // Trois modes de layout :
-  // 1. `donutPanel` + `rankingPanel` (cas /marketing actuel) → hero 3 cols
-  //    [HeroCard | Ranking | Donut] + tiles dans une row 2 (4 cols).
-  // 2. `rankingPanel` seul → 3 cols [HeroCard | Ranking | Tiles compacts]
-  //    (legacy avant ajout du donut, conservé pour rétro-compat).
-  // 3. Sans aucun panel additionnel → 2 cols [HeroCard | Tiles 3 cols]
-  //    (encore plus legacy, conservé au cas où).
-  const tilesGrid = (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: donutPanel
-        ? 'repeat(4, 1fr)'                          // mode 1 — row pleine sous le hero
-        : rankingPanel ? 'repeat(2, 1fr)'           // mode 2 — col 3 partagée
-        : 'repeat(3, 1fr)',                         // mode 3 — col 2 large
-      gap: 10,
-      opacity: loading ? 0.7 : 1,
-      transition: 'opacity 0.25s ease',
-      alignContent: 'start',
-    }}>
-      {tiles.map((t, i) => (
-        <KpiTile
-          key={t.label}
-          {...t}
-          C={C}
-          delay={i * 0.04}
-          compact={!!rankingPanel && !donutPanel}
-        />
-      ))}
-    </div>
-  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: donutPanel
-          ? 'minmax(300px, 1fr) minmax(280px, 1.1fr) minmax(320px, 1.2fr)'
-          : rankingPanel
-            ? 'minmax(280px, 1fr) minmax(280px, 1.2fr) minmax(360px, 1.6fr)'
-            : 'minmax(320px, 1.2fr) 2.4fr',
-        gap: 16,
-        alignItems: 'stretch',
-      }}>
-        <HeroCard webinar={webinar} summary={summary} realtimeLeads={realtimeLeads} C={C} />
+    <div style={{ display: 'grid', gap: 18 }}>
+      <div className="wb-top">
+        <HeroCard webinar={webinar} summary={summary} realtimeLeads={realtimeLeads} />
         {rankingPanel}
-        {donutPanel || tilesGrid}
+        {donutPanel}
       </div>
-
-      {/* Quand le donut occupe la 3e colonne du hero, on rend les tiles
-          en row dédiée juste en dessous (4 cols × 2 rows pour 8 tiles). */}
-      {donutPanel && tilesGrid}
+      <Motion.div variants={ITEM} className="wb-stats" style={{ opacity: loading ? 0.7 : 1 }}>
+        {tiles.map((t) => (
+          <Stat
+            key={t.label}
+            Icon={t.Icon}
+            label={t.label}
+            text={Number.isFinite(t.num) ? <CountTo value={t.num} format={t.fmt} /> : t.value}
+            note={t.hint}
+            tone={TONES[t.tone]}
+          />
+        ))}
+      </Motion.div>
     </div>
   );
 }
+
+// Tons des tuiles d'avant la refonte → tons du kit (valeur verte, jaune ou rouge).
+const TONES = { emerald: 'green', amber: 'amber', rose: 'red' };

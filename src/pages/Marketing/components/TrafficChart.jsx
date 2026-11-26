@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 import Card from './Card';
 import { fmtInt, fmtEur, fmtShortDate } from '../theme';
+import { Segmented } from '../../TrackingSheetFinance/statistics/parts.jsx';
 
 /**
  * Trafic & inscriptions chart card.
@@ -75,7 +76,7 @@ export default function TrafficChart({ pageviews = [], leadsByDay = [], budgetBy
   }, [merged]);
 
   // ── Light / dark color picks for charts ──────────────────────────
-  const gridColor = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(15,18,30,0.06)';
+  const gridColor = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(50,40,30,0.07)';
   const tickColor = C.muted;
 
   // ── TRAFFIC chart : visitors area + leads line + per-source overlays ──
@@ -125,6 +126,8 @@ export default function TrafficChart({ pageviews = [], leadsByDay = [], budgetBy
         pointHoverBackgroundColor: C.surface,
         pointHoverBorderColor: C.emerald.strong,
         pointHoverBorderWidth: 2.5,
+        // Axe à droite : une dizaine d'inscrits par jour se lit mal sur l'échelle des centaines de visiteurs.
+        yAxisID: 'y1',
       },
     ],
   }), [merged, C]);
@@ -161,8 +164,15 @@ export default function TrafficChart({ pageviews = [], leadsByDay = [], budgetBy
         border: { display: false },
         beginAtZero: true,
       },
+      y1: {
+        position: 'right',
+        grid: { display: false },
+        ticks: { color: C.emerald.fg, font: { size: 11, weight: 500 }, precision: 0 },
+        border: { display: false },
+        beginAtZero: true,
+      },
     },
-  }), [tickColor, gridColor, externalTooltipHandler]);
+  }), [tickColor, gridColor, externalTooltipHandler, C]);
 
   // ── BUDGET chart : 2 line + area (style Trafic) ─────────────────
   const budgetData = useMemo(() => ({
@@ -266,58 +276,22 @@ export default function TrafficChart({ pageviews = [], leadsByDay = [], budgetBy
     ...(budgetAvailable ? [{ key: 'budget', label: 'Budget & coût / inscrit' }] : []),
   ];
 
-  const TabsControl = (
-    <div style={{
-      display: 'inline-flex',
-      gap: 4,
-      padding: 4,
-      background: C.subtle,
-      borderRadius: 10,
-      border: `1px solid ${C.hairline}`,
-    }}>
-      {tabs.map((t) => {
-        const active = tab === t.key;
-        return (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => { setTab(t.key); setTooltip(null); }}
-            style={{
-              padding: '5px 12px',
-              borderRadius: 7,
-              border: 'none',
-              background: active ? C.surface : 'transparent',
-              color: active ? C.text : C.muted,
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              boxShadow: active ? C.shadow : 'none',
-              transition: 'all 0.18s cubic-bezier(0.4,0,0.2,1)',
-            }}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+  // Bascule à pouce blanc du kit Finance ; absente quand il n'y a qu'une vue (budget Meta non ventilé par jour).
+  const TabsControl = tabs.length > 1 ? (
+    <Segmented small options={tabs} value={tab} label="Vue du graphique"
+      onChange={(key) => { setTab(key); setTooltip(null); }} />
+  ) : null;
+
+  // Légende sous le graphique : la couleur de chaque courbe et l'axe qui la porte.
+  const keys = tab === 'traffic'
+    ? [{ label: 'Visiteurs · axe de gauche', color: C.blue.strong }, { label: 'Inscrits · axe de droite', color: C.emerald.strong }]
+    : [{ label: 'Budget · axe de gauche', color: C.violet.strong }, { label: 'Coût / inscrit reçu · axe de droite', color: C.amber.strong }];
 
   return (
     <Card title="Trafic & inscriptions" subtitle="Fenêtre courante par jour" C={C} action={TabsControl} noPadding>
-      <div ref={containerRef} style={{ position: 'relative', height: 280, padding: '20px 24px 12px' }}>
+      <div ref={containerRef} style={{ position: 'relative', height: 292, padding: '18px 20px 8px' }}>
         {isEmpty ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            color: C.muted,
-            fontSize: 14,
-            fontWeight: 500,
-          }}>
-            Aucune donnée sur la fenêtre sélectionnée.
-          </div>
+          <div className="wb-chart-empty">Aucune donnée sur la fenêtre sélectionnée.</div>
         ) : tab === 'traffic' ? (
           <Line data={trafficData} options={trafficOptions} />
         ) : (
@@ -353,73 +327,25 @@ export default function TrafficChart({ pageviews = [], leadsByDay = [], budgetBy
           />
         )}
       </div>
+      {!isEmpty && (
+        <div className="fst-keys" style={{ margin: '4px 24px 20px', paddingTop: 12 }}>
+          {keys.map((k) => <span key={k.label}><i className="fst-dot" style={{ background: k.color }} />{k.label}</span>)}
+        </div>
+      )}
     </Card>
   );
 }
 
 /** Floating chart tooltip (ref image 4 style — clean white pill, soft shadow). */
-function FloatingTooltip({ x, y, label, rows, C }) {
-  const TOOLTIP_W = 180;
-  // Clamp position so it doesn't escape the chart edges (basic centering)
+function FloatingTooltip({ x, y, label, rows }) {
+  // Bulle anthracite du kit Finance (fst-tip) : date en gris, une ligne par courbe.
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: x,
-        top: y,
-        transform: 'translate(-50%, calc(-100% - 18px))',
-        background: C.surface,
-        borderRadius: 12,
-        padding: '10px 14px',
-        minWidth: TOOLTIP_W,
-        boxShadow: C.shadowFloat,
-        border: `1px solid ${C.hairline}`,
-        pointerEvents: 'none',
-        zIndex: 5,
-        fontFamily: 'inherit',
-        animation: 'mktNumberTick 0.18s ease-out both',
-      }}
-    >
-      <div style={{
-        fontSize: 11,
-        fontWeight: 700,
-        color: C.muted,
-        textTransform: 'uppercase',
-        letterSpacing: '0.06em',
-        marginBottom: 6,
-      }}>
-        {label}
-      </div>
+    <div className="wb-tip" style={{ left: x, top: y }}>
+      <div className="wb-tip-title">{label}</div>
       {rows.map((r) => (
-        <div key={r.label} style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          marginTop: 3,
-          opacity: r.faded ? 0.75 : 1,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{
-              display: 'inline-block',
-              width: 8,
-              height: 8,
-              borderRadius: 50,
-              background: r.color,
-              flexShrink: 0,
-            }} />
-            <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>
-              {r.label}
-            </span>
-          </div>
-          <span style={{
-            fontSize: 13,
-            color: C.text,
-            fontWeight: 700,
-            fontVariantNumeric: 'tabular-nums',
-          }}>
-            {r.value}
-          </span>
+        <div key={r.label} className={`wb-tip-row${r.faded ? ' is-faded' : ''}`}>
+          <span><i style={{ background: r.color }} />{r.label}</span>
+          <b>{r.value}</b>
         </div>
       ))}
     </div>

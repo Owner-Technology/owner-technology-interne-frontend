@@ -120,7 +120,7 @@ export default function NurtureTable({ webinarId, C }) {
           background: C.rose.bg,
           color: C.rose.fg,
           fontSize: 13,
-          fontWeight: 600,
+          fontWeight: 500,
         }}>
           Données indisponibles — {error}
         </div>
@@ -155,14 +155,13 @@ export default function NurtureTable({ webinarId, C }) {
 
   const HEADER_CELL = {
     padding: '14px 16px',
-    fontSize: 10,
-    fontWeight: 700,
-    color: C.faded,
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
+    fontSize: 12.5,
+    fontWeight: 500,
+    color: C.text,
+    letterSpacing: '-0.003em',
     textAlign: 'left',
-    background: C.subtle,
-    borderBottom: `1px solid ${C.hairline}`,
+    background: C.surface,
+    borderBottom: `1px solid ${C.border}`,
     whiteSpace: 'nowrap',
   };
   const CELL = {
@@ -209,7 +208,7 @@ export default function NurtureTable({ webinarId, C }) {
                       padding: '3px 9px',
                       borderRadius: 50,
                       fontSize: 9,
-                      fontWeight: 700,
+                      fontWeight: 500,
                       textTransform: 'uppercase',
                       letterSpacing: '0.06em',
                       background: C[badge.tone].bg,
@@ -218,23 +217,23 @@ export default function NurtureTable({ webinarId, C }) {
                       {badge.label}
                     </span>
                   </td>
-                  <td style={{ ...CELL, fontFamily: 'ui-monospace, SF Mono, Menlo, monospace', fontSize: 11, color: C.muted }}>
+                  <td style={{ ...CELL, fontVariantNumeric: 'tabular-nums', fontSize: 12.5, color: C.muted }}>
                     {when}
                   </td>
                   <td style={{ ...CELL, fontWeight: 500 }}>{subject}</td>
-                  <td style={{ ...CELL, textAlign: 'right', color: C.emerald.fg, fontWeight: 700 }}>
+                  <td style={{ ...CELL, textAlign: 'right', color: C.emerald.fg, fontWeight: 500 }}>
                     {fmtInt(r.sent)}
                   </td>
                   <td style={{ ...CELL, textAlign: 'right', color: C.muted }}>{fmtInt(r.pending)}</td>
                   <td style={{ ...CELL, textAlign: 'right' }}>
-                    <span style={{ color: C.text, fontWeight: 600 }}>{fmtInt(r.opened)}</span>
+                    <span style={{ color: C.text, fontWeight: 500 }}>{fmtInt(r.opened)}</span>
                     {openRate !== null && (
                       <span style={{ marginLeft: 6, color: C.faded, fontSize: 11 }}>
                         ({openRate}%)
                       </span>
                     )}
                   </td>
-                  <td style={{ ...CELL, textAlign: 'right', color: C.text, fontWeight: 600 }}>
+                  <td style={{ ...CELL, textAlign: 'right', color: C.text, fontWeight: 500 }}>
                     {fmtInt(r.clicked)}
                   </td>
                 </tr>
