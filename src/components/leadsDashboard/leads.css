@@ -366,4 +366,18 @@
 .ld-seller-money small { font-size: 11.5px; font-weight: 400; color: #8b867e; white-space: nowrap; }
 .ld-pay .ld-seller .ld-seller-name { display: flex; align-items: center; }
 .ld-seller-count { margin-left: auto; padding-left: 16px; justify-items: end; text-align: right; }
-.ld-seller-channels { flex-wrap: nowrap; }
+.ld-seller-channels { flex-wrap: wrap; }
+
+/* Colonnes zébrées : une colonne sur deux légèrement teintée, de l'en-tête aux ventes (les lignes des sales gardent
+   leur bande). */
+.ld-pay .fst-table thead tr:last-child th:nth-child(even),
+.ld-pay .fst-table tbody tr:not(.ld-seller) td:nth-child(even) { background: #f5f2ec; }
+.ld-pay .fst-table tbody tr:not(.ld-seller):hover td { background: #fcfbf9; }
+.ld-pay .fst-table tbody tr:not(.ld-seller):hover td:nth-child(even) { background: #f0ece5; }
+/* Phase et prise de RDV d'une vente webinaire sous l'origine, pas à côté : la colonne garde sa largeur. */
+.ld-pay .ld-sale-webinar { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; }
+.ld-pay .ld-seller-channels { max-width: 520px; }
+/* Le tableau tient dans la carte même tout déplié : client coupé (nom complet au survol), statut finance sur deux lignes. */
+.ld-pay .fst-table td.ld-pay-client { max-width: 230px; }
+.ld-pay .fst-table td:last-child { min-width: 150px; white-space: normal; line-height: 1.3; }
+.ld-pay .fst-table td:last-child > * { white-space: normal; }
