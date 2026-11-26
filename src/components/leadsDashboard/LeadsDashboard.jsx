@@ -1120,12 +1120,21 @@ const originName = (origin) => (origin ? ORIGIN_NAMES[String(origin).trim().toLo
 const saleDay = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-function SaleRow({ sale, who = false }) {
+// La photo d'un sales (photo de profil de la fiche utilisateur), sinon ses initiales.
+function Face({ name, src }) {
+  const [broken, setBroken] = useState(false);
+  const letters = (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+  return src && !broken
+    ? <img className="ld-face" src={src} alt="" loading="lazy" onError={() => setBroken(true)} />
+    : <span className="ld-face" aria-hidden="true">{letters}</span>;
+}
+
+function SaleRow({ sale, who = false, avatar = null }) {
   return (
     <tr data-off={sale.retracted || undefined}>
       <td className="is-nowrap fst-cell-muted">{saleDay(sale.signed_at)}</td>
       <td className={`is-wrap ld-pay-client${who ? '' : ' is-heavy'}`}>{sale.client}</td>
-      {who && <td className="is-heavy"><Who name={sale.sales_person} /></td>}
+      {who && <td className="is-heavy"><span className="ld-sale-who"><Face name={sale.sales_person} src={avatar} />{sale.sales_person}</span></td>}
       <td className="is-nowrap">
         <Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag>
         {sale.part_label && <small className="ld-sale-part">{sale.part_label}</small>}
@@ -1170,6 +1179,7 @@ function BoardSalesCard({ state, only = null }) {
   const filtered = Boolean(only) || channel !== 'all' || query.trim() !== '';
   const people = (state.data?.people || []).filter((p) => !filtered || bySeller.has(p.name));
   const everyOpen = people.length > 0 && people.every((p) => opened.has(p.name));
+  const avatars = useMemo(() => Object.fromEntries((state.data?.people || []).map((p) => [p.name, p.avatar])), [state.data]);
   const toggle = (name) => setOpened((s) => { const n = new Set(s); if (n.has(name)) n.delete(name); else n.add(name); return n; });
   return (
     <Card title="Suivi des ventes" Icon={Users} state={state} skeleton={420}
@@ -1205,7 +1215,7 @@ function BoardSalesCard({ state, only = null }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : people.map((person, index) => {
+                  {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who avatar={avatars[x.sales_person]} />) : people.map((person, index) => {
                     const mine = bySeller.get(person.name) || [];
                     const isOpen = opened.has(person.name);
                     const arr = filtered ? mine.filter((x) => !x.retracted).reduce((s, x) => s + x.arr_eur, 0) : person.arr_eur;
@@ -1214,13 +1224,16 @@ function BoardSalesCard({ state, only = null }) {
                       <Fragment key={person.name}>
                         <tr className="ld-seller" data-alt={index % 2 === 1 || undefined} data-can={mine.length > 0 || undefined} data-open={isOpen || undefined}
                           onClick={mine.length ? () => toggle(person.name) : undefined}>
-                          <td colSpan={2} className="is-heavy">
-                            <span className="ld-seller-name">
-                              {mine.length > 0 && <ChevronRight size={14} className="fst-chev" />}<Who name={person.name} />
-                              <span className="ld-seller-count">
+                          <td className="ld-seller-face">
+                            {mine.length > 0 && <ChevronRight size={14} className="fst-chev" />}<Face name={person.name} src={person.avatar} />
+                          </td>
+                          <td className="is-heavy">
+                            <span className="ld-seller-who">
+                              <b>{person.name}</b>
+                              <small>
                                 {plural(filtered ? mine.length : person.sales, 'vente')}
-                                {!filtered && person.retracted > 0 && <small>dont {plural(person.retracted, 'rétractation')}</small>}
-                              </span>
+                                {!filtered && person.retracted > 0 && ` · dont ${plural(person.retracted, 'rétractation')}`}
+                              </small>
                             </span>
                           </td>
                           <td colSpan={3} className="is-heavy">
