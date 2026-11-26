@@ -202,7 +202,7 @@
 /* Board général (dev 24/11/2026) : les canaux en lignes, ventes, ARR Owner et coût en face. */
 .ld-board-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 44px; }
 .ld-board-facts { margin-top: 0; border-top: 0; }
-.ld-board-scroll { overflow-x: auto; margin-top: 24px; }
+.ld-board-scroll { overflow-x: auto; margin-top: 6px; }
 .ld-board { min-width: 940px; margin-top: 0; }
 .ld-board-row { cursor: pointer; }
 .ld-board-row[data-open] { background: var(--hover); }
@@ -275,3 +275,116 @@
 .ld-pay .ld-seller:hover td { background: #f4f2ee; }
 .ld-pay .ld-seller-facts b { font-weight: 500; color: #1c1b19; }
 .ld-pay .fst-table tr[data-off] td { color: #a8a39b; }
+
+/* KPI de rentabilité : six chiffres qui se lisent de gauche à droite, puis les canaux. */
+.ld-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 6px; }
+.ld-kpi-tile { display: grid; gap: 6px; align-content: start; padding: 4px 20px 6px; border-left: 1px solid var(--line-soft); min-width: 0; }
+.ld-kpi-tile:first-child { padding-left: 0; border-left: 0; }
+.ld-kpi-value { font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; color: var(--ink); white-space: nowrap; }
+.ld-kpi-tile[data-tone="good"] .ld-kpi-value { color: var(--green); }
+.ld-kpi-tile[data-tone="low"] .ld-kpi-value { color: var(--red); }
+.ld-kpi-sub { font-size: 12px; line-height: 1.45; color: var(--muted); white-space: nowrap; }
+.ld-kpi-channels { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.ld-kpi-channels .ld-stat-text small { white-space: nowrap; }
+.ld-seller-pay b { font-weight: 500; color: #1c1b19; }
+@media (max-width: 1180px) { .ld-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 18px; } .ld-kpi-tile:nth-child(4) { padding-left: 0; border-left: 0; } }
+
+.ld-sale-webinar { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: middle; }
+
+/* Bandeau de rentabilité, lisible : sous-textes plus grands, détail du coût en lignes, un bloc par canal. */
+.ld-kpis { gap: 0; margin-top: 10px; }
+.ld-kpi-tile { gap: 8px; padding: 2px 22px 4px; }
+.ld-kpi-tile .ld-eyebrow { font-size: 11.5px; }
+.ld-kpi-value { font-size: 32px; }
+.ld-kpi-sub { font-size: 13px; line-height: 1.55; color: var(--ink-soft, #5d5952); white-space: normal; }
+.ld-kpi-lines { display: grid; gap: 3px; }
+.ld-kpi-lines > span { display: flex; justify-content: space-between; gap: 12px; }
+.ld-kpi-lines i { font-style: normal; color: var(--muted); }
+.ld-kpi-lines b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ld-kpi-channels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 26px; padding-top: 22px; }
+.ld-channel { display: grid; gap: 14px; padding: 16px 18px; border: 1px solid var(--line-soft); border-radius: 16px; background: #fff; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s; }
+.ld-channel:hover { border-color: var(--line); transform: translateY(-1px); }
+.ld-channel-head { display: flex; align-items: center; gap: 10px; }
+.ld-channel-ico { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; flex: none; }
+.ld-channel-name { font-size: 14.5px; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; }
+.ld-channel-rate { font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+.ld-channel-facts { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 10px; }
+.ld-channel-facts > span { display: grid; gap: 3px; }
+.ld-channel-facts i { font-style: normal; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ld-channel-facts b { font-size: 14px; font-weight: 500; color: var(--ink); }
+@media (max-width: 1180px) { .ld-kpi-channels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Survol du suivi des ventes : une teinte à peine posée, d'un seul tenant, sans bouger les filets ; client sur une ligne. */
+.ld-pay .fst-table tbody tr, .ld-pay .fst-table tbody tr:hover { background: none; transition: none; }
+.ld-pay .fst-table tbody td { transition: background .12s ease; }
+.ld-pay .fst-table tbody tr:hover td { background: #fcfbf9; }
+.ld-pay .fst-table tbody tr.ld-seller:hover td { background: #f4f2ee; }
+.ld-pay .fst-table td.ld-pay-client { white-space: nowrap; max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
+.ld-kpi-lines i, .ld-kpi-lines b { white-space: nowrap; }
+.ld-board-none td { text-align: left !important; padding-left: 46px !important; }
+.ld-board-none .fst-link { margin-left: 12px; }
+
+/* Un lead s'ouvre sur les notes du sales et la frise de ses appels. */
+.ld-lead[data-open] { cursor: pointer; border-radius: 12px; transition: background .12s; }
+.ld-lead[data-open]:hover { background: var(--hover); }
+.ld-lead-notes { display: grid; gap: 8px; margin-bottom: 22px; padding: 16px 18px; border: 1px solid var(--line-soft, #f1eee9); border-radius: 14px; background: #faf9f7; }
+.ld-lead-notes-who { font-size: 16px; font-weight: 500; color: #1c1b19; }
+.ld-lead-notes-who small { margin-left: 10px; font-size: 13px; font-weight: 400; color: #8b867e; }
+.ld-lead-notes p { margin: 0; font-size: 14px; line-height: 1.55; color: #1c1b19; white-space: pre-wrap; }
+
+/* Refonte du 26/11 : mois au calendrier, board des leads à la renta, suivi des ventes replié et filtré. */
+.ld-month { display: inline-flex; align-items: center; gap: 6px; }
+.ld-month .fst-btn { padding-left: 8px; padding-right: 8px; }
+.ld-month .fst-btn:disabled { opacity: .35; cursor: default; }
+.ld-month-select { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px; }
+.ld-month-select svg { color: var(--muted); }
+.ld-month-select select { appearance: none; border: 0; background: none; font: inherit; font-weight: 500; color: inherit; cursor: pointer; padding-right: 2px; outline: none; }
+.ld-board-toggle:disabled { cursor: default; }
+.ld-board-nochev { display: inline-block; width: 14px; }
+.ld-board-small { display: block; font-size: 11.5px; font-weight: 400; color: var(--muted); }
+.ld-board-life { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.ld-board-sub td:first-child { white-space: nowrap; }
+.ld-sale-part { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+.ld-sales-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.ld-sales-search { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--muted); }
+.ld-sales-search input { border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink); width: 180px; }
+.ld-pay .ld-seller[data-can] td { cursor: pointer; }
+.ld-pay .ld-seller .fst-chev { margin-right: 8px; color: var(--muted); transition: transform .2s; vertical-align: middle; }
+.ld-pay .ld-seller[data-open] .fst-chev { transform: rotate(90deg); color: var(--ink); }
+.ld-seller-name { align-items: center; }
+
+/* Suivi des ventes, ligne d'un sales : chaque information dans sa colonne (nom et nombre de ventes sous Vente, canaux
+   nommés sous Acquisition, commission et ce que touche le sales sous Owner). */
+.ld-pay .ld-seller td { height: 58px; font-weight: 400; }
+.ld-pay .ld-seller td.is-heavy { border-right: 3px solid #e8e4de; }
+.ld-seller-name { gap: 0; margin: 0; }
+.ld-seller-count { display: inline-grid; margin-left: 14px; font-size: 13px; font-weight: 500; color: #1c1b19; line-height: 1.25; white-space: nowrap; }
+.ld-seller-count small { font-size: 11.5px; font-weight: 400; color: #a8a39b; }
+.ld-seller-channels { display: flex; flex-wrap: wrap; gap: 6px; }
+.ld-seller-channels b { margin-left: 4px; font-weight: 600; }
+.ld-seller-money { display: inline-grid; justify-items: end; line-height: 1.25; font-weight: 500; }
+.ld-seller-money small { font-size: 11.5px; font-weight: 400; color: #8b867e; white-space: nowrap; }
+.ld-pay .ld-seller .ld-seller-name { display: flex; align-items: center; }
+.ld-seller-count { margin-left: auto; padding-left: 16px; justify-items: end; text-align: right; }
+.ld-seller-channels { flex-wrap: nowrap; }
+
+/* Lignes des sales en alternance : un sales sur deux plus foncé, pour suivre chaque ligne d'un bout à l'autre. */
+.ld-pay .fst-table tbody tr.ld-seller[data-alt] td,
+.ld-pay .fst-table tbody tr.ld-seller[data-alt]:hover td { background: #e9e5de; }
+.ld-pay .fst-table tbody tr.ld-seller:not([data-alt]) td,
+.ld-pay .fst-table tbody tr.ld-seller:not([data-alt]):hover td { background: #faf8f5; }
+
+/* Ligne d'un sales : la photo sous « Signée le », le nom et ses ventes alignés à gauche comme les clients ; alternance
+   claire / foncée adoucie. */
+.ld-pay .fst-table tbody tr.ld-seller:not([data-alt]) td,
+.ld-pay .fst-table tbody tr.ld-seller:not([data-alt]):hover td { background: #f8f6f2; }
+.ld-pay .fst-table tbody tr.ld-seller[data-alt] td,
+.ld-pay .fst-table tbody tr.ld-seller[data-alt]:hover td { background: #f0ede7; }
+.ld-face { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #2a2825; color: #fff; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; vertical-align: middle; box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(50, 40, 30, .18); }
+.ld-pay .ld-seller-face { white-space: nowrap; }
+.ld-pay .ld-seller-face .fst-chev { margin-right: 10px; }
+.ld-seller-who { display: grid; line-height: 1.3; }
+.ld-seller-who b { font-size: 14px; font-weight: 500; color: #1c1b19; white-space: nowrap; }
+.ld-seller-who small { font-size: 12px; color: #8b867e; white-space: nowrap; }
+.ld-sale-who { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.ld-sale-who .ld-face { width: 24px; height: 24px; font-size: 9px; }
