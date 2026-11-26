@@ -1225,7 +1225,7 @@ function BoardSalesCard({ state, only = null }) {
                         <tr className="ld-seller" data-alt={index % 2 === 1 || undefined} data-can={mine.length > 0 || undefined} data-open={isOpen || undefined}
                           onClick={mine.length ? () => toggle(person.name) : undefined}>
                           <td className="ld-seller-face">
-                            {mine.length > 0 && <ChevronRight size={14} className="fst-chev" />}<Face name={person.name} src={person.avatar} />
+                            <ChevronRight size={14} className="fst-chev" style={mine.length ? undefined : { visibility: 'hidden' }} /><Face name={person.name} src={person.avatar} />
                           </td>
                           <td className="is-heavy">
                             <span className="ld-seller-who">
