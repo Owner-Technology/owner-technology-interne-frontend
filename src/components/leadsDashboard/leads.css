@@ -367,3 +367,9 @@
 .ld-pay .ld-seller .ld-seller-name { display: flex; align-items: center; }
 .ld-seller-count { margin-left: auto; padding-left: 16px; justify-items: end; text-align: right; }
 .ld-seller-channels { flex-wrap: nowrap; }
+
+/* Lignes des sales en alternance : un sales sur deux plus foncé, pour suivre chaque ligne d'un bout à l'autre. */
+.ld-pay .fst-table tbody tr.ld-seller[data-alt] td,
+.ld-pay .fst-table tbody tr.ld-seller[data-alt]:hover td { background: #e9e5de; }
+.ld-pay .fst-table tbody tr.ld-seller:not([data-alt]) td,
+.ld-pay .fst-table tbody tr.ld-seller:not([data-alt]):hover td { background: #faf8f5; }

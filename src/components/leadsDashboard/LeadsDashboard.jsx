@@ -1205,14 +1205,14 @@ function BoardSalesCard({ state, only = null }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : people.map((person) => {
+                  {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : people.map((person, index) => {
                     const mine = bySeller.get(person.name) || [];
                     const isOpen = opened.has(person.name);
                     const arr = filtered ? mine.filter((x) => !x.retracted).reduce((s, x) => s + x.arr_eur, 0) : person.arr_eur;
                     const commissions = filtered ? mine.filter((x) => !x.retracted).reduce((s, x) => s + x.commission_eur, 0) : person.commissions_eur;
                     return (
                       <Fragment key={person.name}>
-                        <tr className="ld-seller" data-can={mine.length > 0 || undefined} data-open={isOpen || undefined}
+                        <tr className="ld-seller" data-alt={index % 2 === 1 || undefined} data-can={mine.length > 0 || undefined} data-open={isOpen || undefined}
                           onClick={mine.length ? () => toggle(person.name) : undefined}>
                           <td colSpan={2} className="is-heavy">
                             <span className="ld-seller-name">
