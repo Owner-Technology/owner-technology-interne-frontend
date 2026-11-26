@@ -6,8 +6,9 @@ export const RESILIATION = 'En cours de résiliation';
 export const RETRACTATION = 'En cours de rétractation';
 // Les états où le Client Success peut encore repêcher le client (même liste que le serveur, dev 18/11/2026).
 export const CONSERVATION_STATES = [RESILIATION, RETRACTATION];
-// Qui remplit la fiche de conservation : le Client Success et la direction (même liste que le serveur).
-export const CONSERVATION_ROLES = ['customer_success_manager', 'admin', 'ceo'];
+// Qui remplit la fiche de conservation : le Client Success, la direction et la finance (même liste que le serveur ;
+// finance depuis le 25/11/2026).
+export const CONSERVATION_ROLES = ['customer_success_manager', 'admin', 'ceo', 'finance_team', 'finance_director'];
 export const CONSERVATION_ISSUES = [
   { key: 'repeche', label: 'Repêché' },
   { key: 'probleme_operationnel', label: 'Problème opérationnel' },
