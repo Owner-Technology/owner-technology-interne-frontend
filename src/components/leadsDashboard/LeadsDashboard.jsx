@@ -1214,19 +1214,31 @@ function BoardSalesCard({ state, only = null }) {
                       <Fragment key={person.name}>
                         <tr className="ld-seller" data-can={mine.length > 0 || undefined} data-open={isOpen || undefined}
                           onClick={mine.length ? () => toggle(person.name) : undefined}>
-                          <td colSpan={5}>
-                            <span className="ld-seller-name">{mine.length > 0 && <ChevronRight size={14} className="fst-chev" />}<Who name={person.name} /></span>
-                            <span className="ld-seller-facts">
-                              <b>{plural(filtered ? mine.length : person.sales, 'vente')}</b>{!filtered && person.retracted > 0 && <span>{plural(person.retracted, 'rétractation')}</span>}
+                          <td colSpan={2} className="is-heavy">
+                            <span className="ld-seller-name">
+                              {mine.length > 0 && <ChevronRight size={14} className="fst-chev" />}<Who name={person.name} />
+                              <span className="ld-seller-count">
+                                {plural(filtered ? mine.length : person.sales, 'vente')}
+                                {!filtered && person.retracted > 0 && <small>dont {plural(person.retracted, 'rétractation')}</small>}
+                              </span>
+                            </span>
+                          </td>
+                          <td colSpan={3} className="is-heavy">
+                            <span className="ld-seller-channels">
                               {BOARD_ORDER.filter((key) => person.by_channel?.[key] && (!filtered || mine.some((x) => x.channel === key))).map((key) => (
-                                <i key={key} className="ld-seller-mark" title={labels[key]}><i className="ld-capsule" style={{ background: channelColor(key) }} />{filtered ? mine.filter((x) => x.channel === key).length : person.by_channel[key]}</i>
+                                <Tag key={key} tone={channelTone(key)}>{labels[key] || key} <b>{filtered ? mine.filter((x) => x.channel === key).length : person.by_channel[key]}</b></Tag>
                               ))}
-                              {!filtered && person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
-                              {!filtered && person.payout_eur != null && <span className="ld-seller-pay">touche ce mois-ci <b>{euros(person.payout_eur)}</b></span>}
                             </span>
                           </td>
                           <td className="is-num ld-pay-amount">{euros(arr)}</td>
-                          <td className="is-num">{euros(commissions)}</td>
+                          <td className="is-num is-heavy">
+                            <span className="ld-seller-money">
+                              {euros(commissions)}
+                              {!filtered && person.payout_eur != null && (
+                                <small>{person.fixed_eur != null ? `fixe ${euros(person.fixed_eur)} · ` : ''}touche {euros(person.payout_eur)}</small>
+                              )}
+                            </span>
+                          </td>
                           <td />
                         </tr>
                         {isOpen && mine.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} />)}
