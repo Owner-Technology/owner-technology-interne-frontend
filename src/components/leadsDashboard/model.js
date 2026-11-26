@@ -55,14 +55,14 @@ export const signed = (n) => (n > 0 ? `+${n.toLocaleString('fr-FR')}` : n.toLoca
 // Teinte de chaque canal, reprise des Statistiques Finance pour les mêmes familles (ads en bleu, cold call setter en
 // jaune, parrainage en pêche, LinkedIn en rouge, webinaire en vert tendre).
 export const CHANNEL_COLOR = {
-  meta_ads: '#8fbdf3', google_ads: '#7fd3df', chatgpt_ads: '#aaa5ee', youtube_ads: '#f0a3b8', partners: '#f1b76a', webinar: '#b9dc8a', old_webinar: '#d9c7a3',
+  meta_ads: '#8fbdf3', google_ads: '#7fd3df', chatgpt_ads: '#aaa5ee', youtube_ads: '#f0a3b8', partners: '#f1b76a', webinar: '#b9dc8a', old_webinar: '#d9c7a3', setters: '#ecd36a', organic: '#86d3a6',
   ccs: '#ecd36a', cold_call: '#cfc8bd', referral: '#f4b183', linkedin: '#f2a0a0', web: '#86d3a6', simulator: '#c4e9d3', other: '#dedad3',
 };
 export const channelColor = (key) => CHANNEL_COLOR[key] || CHANNEL_COLOR.other;
 
 // Ton de l'étiquette pastel (charte Owner) d'un canal et d'une catégorie Meta, et l'encre de chaque ton.
 const CHANNEL_TONE = {
-  meta_ads: 'blue', google_ads: 'cyan', chatgpt_ads: 'lilac', partners: 'peach', webinar: 'lime', old_webinar: 'beige', ccs: 'yellow',
+  meta_ads: 'blue', google_ads: 'cyan', chatgpt_ads: 'lilac', partners: 'peach', webinar: 'lime', old_webinar: 'beige', ccs: 'yellow', setters: 'yellow', organic: 'green',
   cold_call: 'beige', referral: 'peach', linkedin: 'red', web: 'green', simulator: 'green', other: 'beige',
 };
 export const channelTone = (key) => CHANNEL_TONE[key] || 'beige';

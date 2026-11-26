@@ -331,3 +331,24 @@
 .ld-lead-notes-who { font-size: 16px; font-weight: 500; color: #1c1b19; }
 .ld-lead-notes-who small { margin-left: 10px; font-size: 13px; font-weight: 400; color: #8b867e; }
 .ld-lead-notes p { margin: 0; font-size: 14px; line-height: 1.55; color: #1c1b19; white-space: pre-wrap; }
+
+/* Refonte du 26/11 : mois au calendrier, board des leads à la renta, suivi des ventes replié et filtré. */
+.ld-month { display: inline-flex; align-items: center; gap: 6px; }
+.ld-month .fst-btn { padding-left: 8px; padding-right: 8px; }
+.ld-month .fst-btn:disabled { opacity: .35; cursor: default; }
+.ld-month-select { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px; }
+.ld-month-select svg { color: var(--muted); }
+.ld-month-select select { appearance: none; border: 0; background: none; font: inherit; font-weight: 500; color: inherit; cursor: pointer; padding-right: 2px; outline: none; }
+.ld-board-toggle:disabled { cursor: default; }
+.ld-board-nochev { display: inline-block; width: 14px; }
+.ld-board-small { display: block; font-size: 11.5px; font-weight: 400; color: var(--muted); }
+.ld-board-life { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.ld-board-sub td:first-child { white-space: nowrap; }
+.ld-sale-part { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+.ld-sales-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.ld-sales-search { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--muted); }
+.ld-sales-search input { border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink); width: 180px; }
+.ld-pay .ld-seller[data-can] td { cursor: pointer; }
+.ld-pay .ld-seller .fst-chev { margin-right: 8px; color: var(--muted); transition: transform .2s; vertical-align: middle; }
+.ld-pay .ld-seller[data-open] .fst-chev { transform: rotate(90deg); color: var(--ink); }
+.ld-seller-name { align-items: center; }

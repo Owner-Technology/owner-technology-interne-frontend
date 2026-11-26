@@ -14,12 +14,11 @@ import apiClient from '../../services/apiClient';
 import { EASE, useCountUp, useDrawn, useRevealed } from '../perfSales/motion.jsx';
 import { Avatar, Card, Collapse, Num, Page, Pill, Reveal, Segmented, TableBox, Tag, Th, Who } from '../../pages/TrackingSheetFinance/components/PageKit.jsx';
 import { Fill, ProgressRing } from '../../pages/TrackingSheetFinance/statistics/parts.jsx';
-import { PeriodPicker } from '../../pages/TrackingSheetFinance/statistics/PeriodPicker.jsx';
 import { barHeights, count, dayShort, eur, originGroups, pct, plural } from '../../pages/TrackingSheetFinance/statistics/model.js';
 import { parisParts, parisToday } from '../../utils/parisDates.js';
 import {
   byKey, canReadCalls, categoryColor, categoryTone, channelColor, channelTone, compareWord, TONE_INK, comparisonFor, dayLabel, delta, groupChannels,
-  byWeek, headcountText, presetRange, PRESETS, provenanceColor, revenueText,
+  byWeek, headcountText, provenanceColor, revenueText,
 } from './model.js';
 import LeadHistoryPanel from '../perfSales/v2/LeadHistory.jsx';
 import '../perfSales/v2/v2.css';
@@ -177,7 +176,7 @@ function DayBars({ days, inPeriod, values, stacks, format = count, tip, onPick, 
 
 // ── Leads reçus ───────────────────────────────────────────────────────────────────────────────────
 
-function LeadsCard({ state, prev, cmp, when, onPickDay, onSeeLeads }) {
+function LeadsCard({ state, prev, cmp, when, onPickDay, onSeeLeads, only = false }) {
   const d = state.data;
   const h = useMemo(() => (d?.history ? byWeek(d.history) : null), [d]);
   const channels = (d?.channels || []).filter((c) => h?.channels?.[c.key]);
@@ -196,14 +195,14 @@ function LeadsCard({ state, prev, cmp, when, onPickDay, onSeeLeads }) {
               <Versus value={d.total.leads} previous={prev?.total?.leads} cmp={cmp} />
             </div>
           </div>
-          <div className="ld-stats">
+          {!only && <div className="ld-stats">
             <StatChip value={d.total.r1} label={d.total.r1 > 1 ? 'R1 placés' : 'R1 placé'} share={d.total.leads ? d.total.r1 / d.total.leads : 0}
               sub={`${pct(d.total.leads ? d.total.r1 / d.total.leads : 0, 0)} des leads`} color={TONE_INK.green} icon={<CalendarCheck size={15} strokeWidth={2} />} />
             <StatChip value={d.total.r2} label={d.total.r2 > 1 ? 'R2 placés' : 'R2 placé'} share={d.total.leads ? d.total.r2 / d.total.leads : 0}
               sub={`${pct(d.total.leads ? d.total.r2 / d.total.leads : 0, 0)} des leads`} color={TONE_INK.blue} icon={<CalendarClock size={15} strokeWidth={2} />} />
             <StatChip value={d.total.duplicates} label={d.total.duplicates > 1 ? 'doublons écartés' : 'doublon écarté'}
               share={d.total.raw ? d.total.duplicates / d.total.raw : 0} sub={`sur ${plural(d.total.raw, 'fiche')}`} color={TONE_INK.peach} icon={<CopyX size={15} strokeWidth={2} />} />
-          </div>
+          </div>}
           <div className="fst-chart">
             <div className="fst-chart-title"><span>{h.weeks ? 'Semaine par semaine' : 'Jour par jour'}</span><span>{h.weeks ? plural(h.days.length, 'semaine') : plural(h.days.length, 'jour')}</span></div>
             <DayBars days={h.days} inPeriod={h.in_period} values={h.total} stacks={stacks} onPick={h.weeks ? undefined : onPickDay} weeks={h.weeks}
@@ -973,24 +972,6 @@ const orDash = (v, format = euros) => (v == null ? '—' : format(v));
 const marginTone = (v) => { if (v == null) return undefined; if (v >= 60) return 'good'; return v >= 30 ? 'mid' : 'low'; };
 const Margin = ({ value }) => <span className="ld-board-margin" data-tone={marginTone(value)}>{orDash(value, rate)}</span>;
 
-// `whole` : une ligne de canal ou de total. Une origine dépliée s'arrête aux commissions : le budget ads se lit au
-// canal, son coût et sa rentabilité aussi.
-function BoardCells({ row, whole: full = true }) {
-  return (
-    <>
-      <td className="fst-num is-strong">{count(row.sales)}</td>
-      <td className="fst-num" data-none={!row.retracted || undefined}>{count(row.retracted)}</td>
-      <td className="fst-num is-strong">{count(row.net)}</td>
-      <td className="fst-num is-strong">{euros(row.arr_eur)}</td>
-      <td className="fst-num">{full ? orDash(row.ads_spend_eur) : ''}</td>
-      <td className="fst-num">{euros(row.commissions_eur)}</td>
-      <td className="fst-num">{full ? euros(row.cost_eur) : ''}</td>
-      <td className="fst-num">{full ? <Margin value={row.margin_pct} /> : ''}</td>
-      <td className="fst-num">{full ? orDash(row.cac_eur) : ''}</td>
-    </>
-  );
-}
-
 // Les KPI du haut : ce que l'acquisition a rapporté face à ce qu'elle a coûté sur la période. Une ligne qui se lit de
 // gauche à droite (leads reçus → clients signés → ARR Owner → coût → rentabilité), puis la même lecture canal par canal.
 function Kpi({ label, value, format = whole, sub, tone }) {
@@ -1003,144 +984,141 @@ function Kpi({ label, value, format = whole, sub, tone }) {
   );
 }
 
-function BoardKpisCard({ state, leads, when, onSeeLeads }) {
+function BoardKpisCard({ state, when, onSeeLeads, row = null }) {
   const b = state.data;
-  const t = b?.totals;
-  const received = useMemo(() => byKey(leads?.channels || []), [leads]);
-  const totalLeads = leads?.total?.leads || 0;
-  const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
+  const t = row || b?.totals;
+  const fixed = !row && t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
   const spend = (key) => b?.channels.find((c) => c.key === key)?.ads_spend_eur || 0;
+  const leads = t?.leads || 0;
   return (
-    <Card title={`Rentabilité de l'acquisition, ${when}`} Icon={Target} state={state} skeleton={230} className="ld-glow" data-glow="blue"
-      actions={leads && <button type="button" className="fst-btn is-small" onClick={() => onSeeLeads(null)}><List size={14} />Voir les leads</button>}>
+    <Card title={row ? `${row.label}, ${when}` : `Rentabilité de l'acquisition, ${when}`} Icon={Target} state={state} skeleton={200}
+      className="ld-glow" data-glow="blue"
+      actions={b && !row && <button type="button" className="fst-btn is-small" onClick={() => onSeeLeads(null)}><List size={14} />Voir les leads</button>}>
       {b && t && (
-        <>
-          <div className="ld-kpis">
-            <Kpi label="Leads reçus" value={totalLeads} sub="Tous canaux d'acquisition" />
-            <Kpi label="Clients signés" value={t.net}
-              sub={<>{plural(t.sales, 'vente')}, {plural(t.retracted, 'rétractation')}{totalLeads > 0 && <><br />{pct(t.net / totalLeads, 1)} des leads reçus</>}</>} />
-            <Kpi label="ARR Owner généré" value={t.arr_eur} format={euros} sub={t.net ? `${euros(t.arr_eur / t.net)} par client` : ''} />
-            <Kpi label="Coût d'acquisition" value={t.cost_eur} format={euros}
-              sub={(
-                <span className="ld-kpi-lines">
-                  <span><i>Ads</i><b>{euros(spend('meta_ads'))}</b></span>
-                  <span><i>Webinaire</i><b>{euros(spend('webinar'))}</b></span>
-                  <span><i>Commissions</i><b>{euros(t.commissions_eur)}</b></span>
-                  {fixed != null && <span><i>Fixes</i><b>{euros(fixed)}</b></span>}
-                </span>
-              )} />
-            <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={<>{euros(t.margin_eur)} de marge<br />ARR moins coût</>} />
-            <Kpi label="Coût par client" value={t.cac_eur} format={euros} sub={t.people != null ? `${plural(t.people, 'sales', 'sales')} dans le mois` : ''} />
-          </div>
-          <div className="ld-kpi-channels">
-            {b.channels.map((c) => {
-              const ChannelIcon = CHANNEL_ICON[c.key] || CircleDot;
-              const n = received[c.key]?.total || 0;
-              return (
-                <button key={c.key} type="button" className="ld-channel" onClick={() => onSeeLeads(c.key)} title="Voir les leads de ce canal">
-                  <span className="ld-channel-head">
-                    <span className="ld-channel-ico" style={{ color: TONE_INK[channelTone(c.key)], background: channelColor(c.key) }}><ChannelIcon size={15} strokeWidth={2} /></span>
-                    <span className="ld-channel-name">{c.label}</span>
-                    <span className="ld-channel-rate ld-board-margin fst-num" data-tone={marginTone(c.margin_pct)}>{c.margin_pct != null ? rate(c.margin_pct) : '—'}</span>
-                  </span>
-                  <span className="ld-channel-facts">
-                    <span><i>Leads</i><b className="fst-num">{c.key === 'old_webinar' ? '—' : count(n)}</b></span>
-                    <span><i>Clients</i><b className="fst-num">{count(c.net)}</b></span>
-                    <span><i>ARR Owner</i><b className="fst-num">{euros(c.arr_eur)}</b></span>
-                    <span><i>Coût</i><b className="fst-num">{euros(c.cost_eur)}</b></span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
+        <div className="ld-kpis">
+          <Kpi label="Leads reçus" value={leads}
+            sub={t.r1 != null ? <>{plural(t.r1, 'R1 posé', 'R1 posés')} · {plural(t.r2, 'R2 posé', 'R2 posés')}</> : 'Tous canaux d\'acquisition'} />
+          <Kpi label="Clients signés" value={t.net}
+            sub={<>{plural(t.sales, 'vente')}, {plural(t.retracted, 'rétractation')}{leads > 0 && <><br />{pct(t.net / leads, 1)} des leads reçus</>}</>} />
+          <Kpi label="ARR Owner généré" value={t.arr_eur} format={euros} sub={t.net ? `${euros(t.arr_eur / t.net)} par client` : ''} />
+          <Kpi label="Coût d'acquisition" value={t.cost_eur} format={euros}
+            sub={(
+              <span className="ld-kpi-lines">
+                {row ? (t.ads_spend_eur != null && <span><i>Budget ads</i><b>{euros(t.ads_spend_eur)}</b></span>) : (
+                  <>
+                    <span><i>Ads</i><b>{euros(spend('meta_ads'))}</b></span>
+                    <span><i>Webinaire</i><b>{euros(spend('webinar'))}</b></span>
+                  </>
+                )}
+                <span><i>Commissions</i><b>{euros(t.commissions_eur)}</b></span>
+                {fixed != null && <span><i>Fixes</i><b>{euros(fixed)}</b></span>}
+              </span>
+            )} />
+          <Kpi label="Rentabilité" value={t.margin_pct} format={rate} tone={marginTone(t.margin_pct)} sub={<>{euros(t.margin_eur)} de marge<br />ARR moins coût</>} />
+          <Kpi label="Coût par client" value={t.cac_eur} format={euros} sub={!row && t.people != null ? `${plural(t.people, 'sales', 'sales')} dans le mois` : ''} />
+        </div>
       )}
     </Card>
   );
 }
 
-function BoardCard({ state, leads, onSeeLeads }) {
-  const [open, setOpen] = useState(null);
+// Une ligne du tableau : des leads à la renta. `sub` : une sous-ligne (cohorte, part des setters, de l'organique) ou une
+// origine de vente, sans budget à elle quand il se lit sur la ligne.
+const rdv = (v, known) => (known && v != null ? count(v) : '—');
+function BoardCells({ row, rdvKnown, sub = false }) {
+  const costTitle = [row.ads_spend_eur != null && `Budget ads ${euros(row.ads_spend_eur)}`, `Commissions ${euros(row.commissions_eur)}`].filter(Boolean).join(' · ');
+  return (
+    <>
+      <td className="fst-num is-strong">{row.leads == null ? '' : count(row.leads)}</td>
+      <td className="fst-num">{row.leads == null ? '' : rdv(row.r1, rdvKnown)}</td>
+      <td className="fst-num">{row.leads == null ? '' : rdv(row.r2, rdvKnown)}</td>
+      <td className="fst-num is-strong">
+        {count(row.net)}
+        {row.retracted > 0 && <small className="ld-board-small">{plural(row.retracted, 'rétractation')}</small>}
+      </td>
+      <td className="fst-num is-strong">{euros(row.arr_eur)}</td>
+      <td className="fst-num" title={costTitle}>{euros(row.cost_eur)}</td>
+      <td className="fst-num"><Margin value={row.margin_pct} /></td>
+      <td className="fst-num">{sub && !row.net ? '' : orDash(row.cac_eur)}</td>
+    </>
+  );
+}
+
+// Le board : un canal par ligne, des leads à la renta. Webinaires (par cohorte), Setters et Organique se déplient sur
+// leurs parts ; les autres canaux sur les origines de leurs ventes.
+function BoardCard({ state, only = null }) {
+  const [open, setOpen] = useState(only ? only[0] : null);
   const b = state.data;
   const t = b?.totals;
-  // Les leads reçus de chaque canal (même période), et les canaux qui ont reçu des leads sans vente signée.
-  const received = useMemo(() => byKey(leads?.channels || []), [leads]);
-  const rows = useMemo(() => {
-    if (!b) return [];
-    const sold = new Set(b.channels.map((c) => c.key));
-    const silent = (leads?.channels || []).filter((c) => c.total > 0 && !sold.has(c.key))
-      .map((c) => ({ key: c.key, label: c.label, sales: 0, retracted: 0, net: 0, arr_eur: 0, ads_spend_eur: null, commissions_eur: 0, cost_eur: 0, margin_pct: null, cac_eur: null, share_pct: null, origins: [] }));
-    return [...b.channels, ...silent];
-  }, [b, leads]);
-  // Les anciens webinaires ne reçoivent plus de leads : ce sont des inscrits d'avant, relancés.
-  const leadsOf = (key) => (leads && key !== 'old_webinar' ? count(received[key]?.total || 0) : '—');
-  const fixed = t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
+  const rdvKnown = Boolean(b) && b.period.to >= (b.rdv_since || '2026-10-17');
+  const partial = rdvKnown && b.period.from < (b.rdv_since || '2026-10-17');
+  const rows = (b?.channels || []).filter((c) => !only || only.includes(c.key));
+  const fixed = !only && t?.fixed_eur != null ? t.fixed_eur + (t.bonuses_eur || 0) : null;
   return (
-    <Card title="Board général, canal par canal" Icon={BadgeEuro} state={state} skeleton={460}>
-      {b && t && (
-        <>
-          {rows.length === 0 ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
-            <div className="ld-board-scroll">
-              <table className="fst-months ld-recap ld-board">
-                <thead>
-                  <tr><th>Canal</th><th>Leads reçus</th><th>Ventes</th><th>Rétractations</th><th>Clients nets</th><th>ARR Owner</th><th>Budget ads</th><th>Commissions sales</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th></tr>
-                </thead>
-                <tbody>
-                  {rows.map((c) => (
-                    <Fragment key={c.key}>
-                      <tr data-open={open === c.key || undefined} className="ld-board-row" onClick={() => setOpen(open === c.key ? null : c.key)}>
+    <Card title={only ? (DETAIL_TITLE[only[0]] || 'En détail') : 'Board général, canal par canal'} Icon={BadgeEuro} state={state} skeleton={only ? 220 : 460}>
+      {b && t && (rows.length === 0 ? <div className="fst-empty">Rien sur cette période.</div> : (
+        <div className="ld-board-scroll">
+          <table className="fst-months ld-recap ld-board">
+            <thead>
+              <tr><th>Canal</th><th>Leads reçus</th><th title={partial ? 'Posés depuis le 17/10/2026' : undefined}>R1{partial && '*'}</th><th title={partial ? 'Posés depuis le 17/10/2026' : undefined}>R2{partial && '*'}</th><th>Clients</th><th>ARR Owner</th><th>Coût</th><th>Rentabilité</th><th>Coût par client</th></tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => {
+                const subs = c.parts.length ? c.parts : c.origins.map((o) => ({ ...o, key: o.label, label: originName(o.label), leads: null }));
+                const can = subs.length > 0;
+                const isOpen = open === c.key;
+                return (
+                  <Fragment key={c.key}>
+                    <tr data-open={isOpen || undefined} className="ld-board-row" onClick={can ? () => setOpen(isOpen ? null : c.key) : undefined}>
+                      <td>
+                        <button type="button" className="ld-board-toggle" aria-expanded={can ? isOpen : undefined} disabled={!can}>
+                          {can ? <ChevronRight size={14} /> : <span className="ld-board-nochev" />}
+                          <span className="ld-mark-label"><i className="ld-capsule" style={{ background: channelColor(c.key) }} />{c.label}</span>
+                          {c.share_pct > 0 && !only && <small>{rate(c.share_pct)} de l'ARR</small>}
+                        </button>
+                      </td>
+                      <BoardCells row={c} rdvKnown={rdvKnown} />
+                    </tr>
+                    {isOpen && subs.map((p) => (
+                      <tr key={p.key} className="ld-board-sub">
                         <td>
-                          <button type="button" className="ld-board-toggle" aria-expanded={open === c.key}>
-                            <ChevronRight size={14} />
-                            <span className="ld-mark-label"><i className="ld-capsule" style={{ background: channelColor(c.key) }} />{c.label}</span>
-                            {c.share_pct != null && <small>{rate(c.share_pct)} de l'ARR</small>}
-                          </button>
+                          {p.label}
+                          {p.lifetime && <small className="ld-board-life">Depuis l'ouverture : {plural(p.lifetime.net, 'client')}, {euros(p.lifetime.arr_eur)}, coût {euros(p.lifetime.cost_eur)}, renta {orDash(p.lifetime.margin_pct, rate)}</small>}
                         </td>
-                        <td className="fst-num is-strong">{leadsOf(c.key)}</td>
-                        <BoardCells row={c} />
+                        <BoardCells row={p} rdvKnown={rdvKnown} sub />
                       </tr>
-                      {open === c.key && c.origins.length === 0 && (
-                        <tr className="ld-board-sub ld-board-none">
-                          <td colSpan={11}>
-                            Aucune vente signée sur la période.
-                            {received[c.key]?.total > 0 && (
-                              <button type="button" className="fst-link" onClick={(e) => { e.stopPropagation(); onSeeLeads(c.key); }}>
-                                {received[c.key].total > 1 ? `Voir les ${count(received[c.key].total)} leads reçus` : 'Voir le lead reçu'}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                      {open === c.key && c.origins.map((o) => (
-                        <tr key={o.label} className="ld-board-sub"><td>{originName(o.label)}</td><td /><BoardCells row={o} whole={false} /></tr>
-                      ))}
-                    </Fragment>
-                  ))}
-                </tbody>
-                <tfoot>
-                  {fixed != null && (
-                    <tr className="ld-board-fixed"><td>Fixes et primes des sales</td><td colSpan={7} /><td className="fst-num">{euros(fixed)}</td><td colSpan={2} /></tr>
-                  )}
-                  <tr><td>Total</td><td className="fst-num">{leads ? count(leads.total?.leads || 0) : '—'}</td><BoardCells row={t} /></tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        </>
-      )}
+                    ))}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+            {!only && (
+              <tfoot>
+                {fixed != null && (
+                  <tr className="ld-board-fixed"><td>Fixes et primes des sales</td><td colSpan={5} /><td className="fst-num">{euros(fixed)}</td><td colSpan={2} /></tr>
+                )}
+                <tr><td>Total</td><BoardCells row={t} rdvKnown={rdvKnown} /></tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      ))}
     </Card>
   );
 }
 
-const BOARD_ORDER = ['meta_ads', 'webinar', 'old_webinar', 'cold_call', 'ccs', 'referral', 'linkedin', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'partners', 'simulator', 'web', 'other'];
+const DETAIL_TITLE = { webinar: 'Cohorte par cohorte', setters: 'Cold call et relances', organic: 'Simulateur et site', meta_ads: 'Par origine des ventes' };
+const BOARD_ORDER = ['meta_ads', 'webinar', 'cold_call', 'setters', 'organic', 'referral', 'linkedin', 'partners', 'google_ads', 'chatgpt_ads', 'youtube_ads', 'other'];
 
-// Les ventes de la période, une par ligne, rangées sales par sales (la feuille « Apports d'affaires » du CEO) : le client,
-// l'origine du lead en couleur, l'effectif, l'ARR Owner, la commission et l'état. `Par sales` ou toutes à la suite.
+// Les ventes de la période, rangées sales par sales (la feuille « Apports d'affaires » du CEO) : le client, le canal et sa
+// part (cohorte du webinaire…), l'origine, l'effectif, l'ARR Owner, la commission et l'état. Chaque sales se déplie ; un
+// filtre par canal et une recherche (client ou sales).
 const BOARD_VIEWS = [{ key: 'people', label: 'Par sales' }, { key: 'all', label: 'Toutes les ventes' }];
 // L'origine écrite sur la fiche, en clair : « cc » et « setter » sont des codes du CRM.
 const ORIGIN_NAMES = { cc: 'Cold call sales', 'cold call': 'Cold call sales', 'lien sales': 'Cold call sales', lien_sales: 'Cold call sales', setter: 'Cold call setter', ccs: 'Cold call setter', 'cold call setter': 'Cold call setter' };
 const originName = (origin) => (origin ? ORIGIN_NAMES[String(origin).trim().toLowerCase()] || origin : '–');
 const saleDay = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 function SaleRow({ sale, who = false }) {
   return (
@@ -1148,10 +1126,18 @@ function SaleRow({ sale, who = false }) {
       <td className="is-nowrap fst-cell-muted">{saleDay(sale.signed_at)}</td>
       <td className={`is-wrap ld-pay-client${who ? '' : ' is-heavy'}`}>{sale.client}</td>
       {who && <td className="is-heavy"><Who name={sale.sales_person} /></td>}
-      <td className="is-nowrap"><Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag></td>
+      <td className="is-nowrap">
+        <Tag tone={channelTone(sale.channel)}>{sale.channel_label}</Tag>
+        {sale.part_label && <small className="ld-sale-part">{sale.part_label}</small>}
+      </td>
       <td className="is-nowrap fst-cell-muted">
         {originName(sale.origin)}
-        {sale.webinar && <span className="ld-sale-webinar"><Tag tone="lime">{sale.webinar.phase}</Tag><Tag tone={sale.webinar.via.startsWith('Relance') ? 'yellow' : 'green'}>{sale.webinar.via}</Tag></span>}
+        {sale.webinar && (
+          <span className="ld-sale-webinar">
+            {sale.webinar.phase && <Tag tone="lime">{sale.webinar.phase}</Tag>}
+            <Tag tone={sale.webinar.via.startsWith('Setter') ? 'yellow' : 'green'}>{sale.webinar.via}</Tag>
+          </span>
+        )}
       </td>
       <td className="is-nowrap is-heavy">{sale.headcount || <span className="fst-cell-muted">–</span>}</td>
       <td className="is-num ld-pay-amount">{euros(sale.arr_eur)}</td>
@@ -1162,62 +1148,97 @@ function SaleRow({ sale, who = false }) {
 }
 
 // Le tableau reprend la forme du Suivi des paiements : une bande de familles au-dessus des colonnes, une icône par
-// colonne, des lignes hautes, un filet marqué entre les blocs.
-function BoardSalesCard({ state }) {
+// colonne, des lignes hautes, un filet marqué entre les blocs. `only` : les ventes de ces canaux seulement (onglet canal).
+function BoardSalesCard({ state, only = null }) {
   const [view, setView] = useState('people');
-  const sales = state.data?.sales;
-  const people = state.data?.people;
+  const [channel, setChannel] = useState('all');
+  const [query, setQuery] = useState('');
+  const [opened, setOpened] = useState(() => new Set());
   const all = view === 'all';
+  const labels = useMemo(() => Object.fromEntries((state.data?.channels || []).map((c) => [c.key, c.label])), [state.data]);
+  const sales = useMemo(() => {
+    const q = plain(query.trim());
+    return (state.data?.sales || []).filter((x) => (!only || only.includes(x.channel)) && (channel === 'all' || x.channel === channel)
+      && (!q || plain(x.client).includes(q) || plain(x.sales_person).includes(q)));
+  }, [state.data, only, channel, query]);
+  const channels = useMemo(() => BOARD_ORDER.filter((key) => (state.data?.sales || []).some((x) => x.channel === key && (!only || only.includes(key)))), [state.data, only]);
   const bySeller = useMemo(() => {
     const map = new Map();
-    (sales || []).forEach((x) => { if (!map.has(x.sales_person)) map.set(x.sales_person, []); map.get(x.sales_person).push(x); });
+    sales.forEach((x) => { if (!map.has(x.sales_person)) map.set(x.sales_person, []); map.get(x.sales_person).push(x); });
     return map;
   }, [sales]);
+  const filtered = Boolean(only) || channel !== 'all' || query.trim() !== '';
+  const people = (state.data?.people || []).filter((p) => !filtered || bySeller.has(p.name));
+  const everyOpen = people.length > 0 && people.every((p) => opened.has(p.name));
+  const toggle = (name) => setOpened((s) => { const n = new Set(s); if (n.has(name)) n.delete(name); else n.add(name); return n; });
   return (
     <Card title="Suivi des ventes" Icon={Users} state={state} skeleton={420}
-      actions={sales?.length ? <Segmented small value={view} onChange={setView} label="Présentation" options={BOARD_VIEWS} /> : null}>
-      {sales && (!sales.length ? <div className="fst-empty">Aucune vente signée sur cette période.</div> : (
-        <div className="ld-pay">
-          <TableBox minWidth={all ? 1120 : 980} free={false}>
-            <thead>
-              <tr className="ld-pay-groups">
-                <th colSpan={all ? 3 : 2} className="is-heavy"><i style={{ background: '#1c1b19' }} />Vente</th>
-                <th colSpan={3} className="is-heavy"><i style={{ background: channelColor('meta_ads') }} />Acquisition</th>
-                <th colSpan={2} className="is-heavy"><i style={{ background: '#0b7a4b' }} />Owner</th>
-                <th><i style={{ background: '#a8a39b' }} />Finance</th>
-              </tr>
-              <tr>
-                <Th Icon={CalendarCheck}>Signée le</Th><Th Icon={Briefcase}>Client</Th>{all && <Th Icon={Users}>Sales</Th>}
-                <Th Icon={Target}>Canal</Th><Th Icon={Inbox}>Origine du lead</Th><Th Icon={CircleDot}>Effectif</Th>
-                <Th Icon={BadgeEuro} num>ARR Owner</Th><Th Icon={Calculator} num>Commission</Th><Th Icon={History}>Première échéance</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : (people || []).map((person) => (
-                <Fragment key={person.name}>
-                  <tr className="ld-seller">
-                    <td colSpan={5}>
-                      <span className="ld-seller-name"><Who name={person.name} /></span>
-                      <span className="ld-seller-facts">
-                        <b>{plural(person.sales, 'vente')}</b>{person.retracted > 0 && <span>{plural(person.retracted, 'rétractation')}</span>}
-                        {BOARD_ORDER.filter((key) => person.by_channel?.[key]).map((key) => (
-                          <i key={key} className="ld-seller-mark"><i className="ld-capsule" style={{ background: channelColor(key) }} />{person.by_channel[key]}</i>
-                        ))}
-                        {person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
-                        {person.payout_eur != null && <span className="ld-seller-pay">touche ce mois-ci <b>{euros(person.payout_eur)}</b></span>}
-                      </span>
-                    </td>
-                    <td className="is-num ld-pay-amount">{euros(person.arr_eur)}</td>
-                    <td className="is-num">{euros(person.commissions_eur)}</td>
-                    <td />
+      actions={state.data?.sales?.length ? <Segmented small value={view} onChange={setView} label="Présentation" options={BOARD_VIEWS} /> : null}>
+      {state.data && (
+        <>
+          <div className="ld-sales-filters">
+            {channels.length > 1 && (
+              <Segmented small value={channel} onChange={setChannel} label="Canal"
+                options={[{ key: 'all', label: 'Tous les canaux' }, ...channels.map((key) => ({ key, label: labels[key] || key }))]} />
+            )}
+            <label className="ld-sales-search"><Search size={14} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Client ou sales" /></label>
+            {!all && people.length > 0 && (
+              <button type="button" className="fst-btn is-small" onClick={() => setOpened(everyOpen ? new Set() : new Set(people.map((p) => p.name)))}>
+                {everyOpen ? 'Tout replier' : 'Tout déplier'}
+              </button>
+            )}
+          </div>
+          {!sales.length ? <div className="fst-empty">Aucune vente signée{filtered ? ' pour ce filtre' : ' sur cette période'}.</div> : (
+            <div className="ld-pay">
+              <TableBox minWidth={all ? 1120 : 980} free={false}>
+                <thead>
+                  <tr className="ld-pay-groups">
+                    <th colSpan={all ? 3 : 2} className="is-heavy"><i style={{ background: '#1c1b19' }} />Vente</th>
+                    <th colSpan={3} className="is-heavy"><i style={{ background: channelColor('meta_ads') }} />Acquisition</th>
+                    <th colSpan={2} className="is-heavy"><i style={{ background: '#0b7a4b' }} />Owner</th>
+                    <th><i style={{ background: '#a8a39b' }} />Finance</th>
                   </tr>
-                  {(bySeller.get(person.name) || []).map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} />)}
-                </Fragment>
-              ))}
-            </tbody>
-          </TableBox>
-        </div>
-      ))}
+                  <tr>
+                    <Th Icon={CalendarCheck}>Signée le</Th><Th Icon={Briefcase}>Client</Th>{all && <Th Icon={Users}>Sales</Th>}
+                    <Th Icon={Target}>Canal</Th><Th Icon={Inbox}>Origine du lead</Th><Th Icon={CircleDot}>Effectif</Th>
+                    <Th Icon={BadgeEuro} num>ARR Owner</Th><Th Icon={Calculator} num>Commission</Th><Th Icon={History}>Première échéance</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {all ? sales.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} who />) : people.map((person) => {
+                    const mine = bySeller.get(person.name) || [];
+                    const isOpen = opened.has(person.name);
+                    const arr = filtered ? mine.filter((x) => !x.retracted).reduce((s, x) => s + x.arr_eur, 0) : person.arr_eur;
+                    const commissions = filtered ? mine.filter((x) => !x.retracted).reduce((s, x) => s + x.commission_eur, 0) : person.commissions_eur;
+                    return (
+                      <Fragment key={person.name}>
+                        <tr className="ld-seller" data-can={mine.length > 0 || undefined} data-open={isOpen || undefined}
+                          onClick={mine.length ? () => toggle(person.name) : undefined}>
+                          <td colSpan={5}>
+                            <span className="ld-seller-name">{mine.length > 0 && <ChevronRight size={14} className="fst-chev" />}<Who name={person.name} /></span>
+                            <span className="ld-seller-facts">
+                              <b>{plural(filtered ? mine.length : person.sales, 'vente')}</b>{!filtered && person.retracted > 0 && <span>{plural(person.retracted, 'rétractation')}</span>}
+                              {BOARD_ORDER.filter((key) => person.by_channel?.[key] && (!filtered || mine.some((x) => x.channel === key))).map((key) => (
+                                <i key={key} className="ld-seller-mark" title={labels[key]}><i className="ld-capsule" style={{ background: channelColor(key) }} />{filtered ? mine.filter((x) => x.channel === key).length : person.by_channel[key]}</i>
+                              ))}
+                              {!filtered && person.fixed_eur != null && <span>fixe {euros(person.fixed_eur)}</span>}
+                              {!filtered && person.payout_eur != null && <span className="ld-seller-pay">touche ce mois-ci <b>{euros(person.payout_eur)}</b></span>}
+                            </span>
+                          </td>
+                          <td className="is-num ld-pay-amount">{euros(arr)}</td>
+                          <td className="is-num">{euros(commissions)}</td>
+                          <td />
+                        </tr>
+                        {isOpen && mine.map((x) => <SaleRow key={`${x.signed_at}${x.client}`} sale={x} />)}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </TableBox>
+            </div>
+          )}
+        </>
+      )}
     </Card>
   );
 }
@@ -1310,23 +1331,84 @@ function BoardMonthsCard({ state, range, onPick }) {
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────────────────────────
+// Une seule rangée d'onglets, par canal (dev 26/11/2026, point du CEO du 24/11 : « un focus Meta, un focus webinaire… ») ;
+// la date se choisit au mois, le mois en cours par défaut. Le board général garde les KPI, le tableau des canaux, le
+// suivi des ventes et la vue par mois ; chaque canal a son focus : sa ligne du board, ses leads, ses ventes, et ce qui lui
+// est propre (Meta : dépense, campagnes, coût par client ; Setters : RDV, relances, appels).
+const TABS = [
+  { key: 'board', label: 'Board général' }, { key: 'meta', label: 'Ads Meta' }, { key: 'webinar', label: 'Webinaires' },
+  { key: 'setters', label: 'Setters' }, { key: 'organic', label: 'Organique' },
+];
+// Ligne(s) du board et canaux d'arrivée des leads de chaque onglet.
+const FOCUS = {
+  meta: { rows: ['meta_ads'], leads: ['meta_ads'] },
+  webinar: { rows: ['webinar'], leads: ['webinar'] },
+  setters: { rows: ['setters'], leads: ['ccs'] },
+  organic: { rows: ['organic'], leads: ['simulator', 'web'] },
+};
+const FIRST_MONTH = '2026-01';
 
-const TABS = [{ key: 'board', label: 'Board général' }, { key: 'leads', label: 'Canaux et ads' }, { key: 'setters', label: 'Setters' }, { key: 'calls', label: 'Appels' }, { key: 'sales', label: 'Ventes' }];
+function monthRange(month, today) {
+  const end = `${month}-${String(new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()).padStart(2, '0')}`;
+  return { from: `${month}-01`, to: end > today ? today : end };
+}
+const shiftMonth = (month, n) => {
+  const d = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1 + n, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+
+// Le mois affiché : flèches mois précédent / suivant, et la liste des mois depuis janvier 2026.
+function MonthPicker({ value, onChange, today }) {
+  const current = today.slice(0, 7);
+  const months = useMemo(() => {
+    const out = [];
+    for (let m = current; m >= FIRST_MONTH; m = shiftMonth(m, -1)) out.push(m);
+    return out;
+  }, [current]);
+  return (
+    <div className="ld-month" role="group" aria-label="Mois">
+      <button type="button" className="fst-btn is-small" aria-label="Mois précédent" disabled={value <= FIRST_MONTH} onClick={() => onChange(shiftMonth(value, -1))}>
+        <ChevronRight size={14} style={{ rotate: '180deg' }} />
+      </button>
+      <label className="ld-month-select">
+        <CalendarDays size={14} />
+        <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Choisir le mois">
+          {months.map((m) => <option key={m} value={m}>{monthName(m)}{m === current ? ' (en cours)' : ''}</option>)}
+        </select>
+      </label>
+      <button type="button" className="fst-btn is-small" aria-label="Mois suivant" disabled={value >= current} onClick={() => onChange(shiftMonth(value, 1))}>
+        <ChevronRight size={14} />
+      </button>
+    </div>
+  );
+}
+
+// Les leads d'un onglet canal : la réponse de la vue d'ensemble, restreinte à ses canaux d'arrivée.
+function onlyChannels(data, keys) {
+  if (!data) return data;
+  const channels = (data.channels || []).filter((c) => keys.includes(c.key));
+  const sum = (f) => channels.reduce((s, c) => s + (c[f] || 0), 0);
+  const history = data.history && {
+    ...data.history,
+    channels: Object.fromEntries(Object.entries(data.history.channels).filter(([k]) => keys.includes(k))),
+    total: data.history.days.map((_, i) => keys.reduce((s, k) => s + (data.history.channels[k]?.[i] || 0), 0)),
+  };
+  return { ...data, channels, history, total: { ...data.total, leads: sum('total'), r1: sum('r1'), r2: sum('r2'), raw: sum('raw'), duplicates: sum('duplicates') } };
+}
 
 export default function LeadsDashboard() {
   const today = parisToday();
-  const [preset, setPreset] = useState('this-month');     // la page s'ouvre sur le board du mois
-  const [custom, setCustom] = useState(null);
+  const [month, setMonth] = useState(today.slice(0, 7));      // la page s'ouvre sur le mois en cours
   const [compare, setCompare] = useState(true);
   const [tab, setTab] = useState('board');
   const [campaignsOpen, setCampaignsOpen] = useState(false);
   const [list, setList] = useState({ open: false, channel: null });
   const seeLeads = useCallback((channel) => setList({ open: true, channel }), []);
   const closeLeads = useCallback(() => setList((l) => ({ ...l, open: false })), []);
-  const range = useMemo(() => (custom ? { from: custom.from, to: custom.to } : presetRange(preset, today)), [custom, preset, today]);
-  const compareKey = custom ? 'custom' : preset;
+  const range = useMemo(() => monthRange(month, today), [month, today]);
+  const compareKey = month === today.slice(0, 7) ? 'this-month' : 'last-month';
   const prevRange = useMemo(() => comparisonFor(compareKey, range), [compareKey, range]);
-  // Une période qui finit aujourd'hui se compare à la même heure : hier jusqu'à 10 h 30 face à aujourd'hui à 10 h 30.
+  // Le mois en cours se compare à la même heure : le mois d'avant jusqu'au même jour, à l'heure qu'il est.
   const [clock, setClock] = useState(parisClock);
   const until = range.to === today ? clock : null;
   const word = compareWord(compareKey, range);
@@ -1335,16 +1417,15 @@ export default function LeadsDashboard() {
     label: `${word.charAt(0).toUpperCase()}${word.slice(1)} (${dayShort(prevRange.from)}${prevRange.from === prevRange.to ? '' : ` – ${dayShort(prevRange.to)}`}${until ? `, jusqu'à ${until.replace(':', ' h ')}` : ''})`,
   } : null;
 
+  const focus = FOCUS[tab] || null;
   const current = useLeadStat('overview', range);
-  const previous = useLeadStat('overview', compare ? prevRange : null, until);
+  const previous = useLeadStat('overview', compare && tab !== 'board' ? prevRange : null, until);
   const tooLong = !canReadCalls(range);
-  // Les appels se lisent chez Allo (lent la première fois) : demandés dès que les leads sont là, pour être prêts à
-  // l'ouverture de l'onglet.
-  const calls = useLeadStat('calls', !tooLong && current.fresh ? range : null);
-  const campaigns = useLeadStat('campaigns', tab === 'leads' && campaignsOpen ? range : null);
-  const board = useLeadStat('board', tab === 'board' ? range : null);
+  const calls = useLeadStat('calls', tab === 'setters' && !tooLong && current.fresh ? range : null);
+  const campaigns = useLeadStat('campaigns', tab === 'meta' && campaignsOpen ? range : null);
+  const board = useLeadStat('board', range);
 
-  // Le jour en cours se met à jour tout seul, toutes les cinq minutes.
+  // Le mois en cours se met à jour tout seul, toutes les cinq minutes.
   const { retry } = current;
   useEffect(() => {
     if (range.to !== today) return undefined;
@@ -1354,75 +1435,70 @@ export default function LeadsDashboard() {
 
   const d = current.fresh ? current.data : null;
   const p = compare && current.fresh && previous.fresh ? previous.data : null;
-  const shownRange = current.data?.period ? { from: current.data.period.from, to: current.data.period.to } : range;
-  const when = shownRange.from === shownRange.to
-    ? (shownRange.to === today ? "aujourd'hui" : `le ${dayShort(shownRange.to)}`)
-    : `du ${dayShort(shownRange.from)} au ${dayShort(shownRange.to)}`;
-  const choose = useCallback((next) => { setClock(parisClock()); setCustom(next); }, []);
-  const pickDay = useCallback((day) => choose({ from: day, to: day }), [choose]);
-  // Un mois du board : en entier, ou jusqu'à aujourd'hui pour le mois en cours.
-  const pickMonth = useCallback((month) => {
-    const end = `${month}-${String(new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()).padStart(2, '0')}`;
-    choose({ from: `${month}-01`, to: end > today ? today : end });
-  }, [choose, today]);
+  const when = range.from === range.to ? `le ${dayShort(range.to)}` : `du ${dayShort(range.from)} au ${dayShort(range.to)}`;
+  const pickMonth = useCallback((next) => { setClock(parisClock()); setMonth(next); }, []);
+  const focusState = useMemo(() => (focus ? { ...current, data: onlyChannels(current.data, focus.leads) } : current), [current, focus]);
+  const focusPrev = focus && p ? onlyChannels(p, focus.leads) : p;
+  const focusRow = focus ? board.data?.channels.find((c) => c.key === focus.rows[0]) : null;
 
   return (
     <Page title="Leads"
       actions={(
         <div className="ld-actions">
-          <Segmented small value={custom ? null : preset} label="Période"
-            onChange={(key) => { choose(null); setPreset(key); }} options={PRESETS} />
-          <PeriodPicker value={custom} onChange={choose} label="Autre période" />
           {tab !== 'board' && (
             <button type="button" className="fst-btn is-small" aria-pressed={compare} onClick={() => setCompare(!compare)}>
               <CalendarDays size={14} />{compare ? `Comparé à ${word}${until ? ' à la même heure' : ''}` : 'Sans comparaison'}
             </button>
           )}
+          <MonthPicker value={month} onChange={pickMonth} today={today} />
         </div>
       )}>
-      <div className="ld-tabs"><Segmented value={tab} onChange={setTab} label="Vue" options={TABS} /></div>
+      <div className="ld-tabs"><Segmented value={tab} onChange={setTab} label="Canal" options={TABS} /></div>
 
       {tab === 'board' && (
         <>
-          <Reveal><BoardKpisCard state={board} leads={d} when={when} onSeeLeads={seeLeads} /></Reveal>
-          <Reveal className="ld-gap"><BoardCard state={board} leads={d} onSeeLeads={seeLeads} /></Reveal>
+          <Reveal><BoardKpisCard state={board} when={when} onSeeLeads={seeLeads} /></Reveal>
+          <Reveal className="ld-gap"><BoardCard state={board} /></Reveal>
           <Reveal className="ld-gap"><BoardSalesCard state={board} /></Reveal>
           <Reveal className="ld-gap"><BoardMonthsCard state={board} range={range} onPick={pickMonth} /></Reveal>
         </>
       )}
-      {tab === 'leads' && (
+      {focus && (
         <>
-          <Reveal className="fst-grid">
-            <LeadsCard state={current} prev={p} cmp={cmp} when={when} onPickDay={pickDay} onSeeLeads={seeLeads} />
-            <AdsCard state={current} prev={p} cmp={cmp} campaignsOpen={campaignsOpen} onCampaigns={() => setCampaignsOpen(!campaignsOpen)} />
-          </Reveal>
-          <Collapse open={campaignsOpen}>
-            <Reveal className="ld-gap"><CampaignsCard state={campaigns} /></Reveal>
-          </Collapse>
+          <Reveal><BoardKpisCard state={board} when={when} onSeeLeads={seeLeads} row={focusRow || { label: TABS.find((x) => x.key === tab).label, leads: 0, r1: 0, r2: 0, sales: 0, retracted: 0, net: 0, arr_eur: 0, cost_eur: 0, commissions_eur: 0, margin_eur: 0, margin_pct: null, cac_eur: null }} /></Reveal>
+          {focusRow && (focusRow.parts.length > 0 || focusRow.origins.length > 0) && <Reveal className="ld-gap"><BoardCard state={board} only={focus.rows} /></Reveal>}
           <Reveal className="fst-grid ld-gap">
-            <ChannelsCard state={current} prev={p} cmp={cmp} onSeeLeads={seeLeads} />
-            <RelaunchCard state={current} prev={p} cmp={cmp} />
+            <LeadsCard state={focusState} prev={focusPrev} cmp={cmp} when={when} onSeeLeads={(c) => seeLeads(c || focus.leads[0])} only />
+            {tab === 'meta' && <AdsCard state={current} prev={p} cmp={cmp} campaignsOpen={campaignsOpen} onCampaigns={() => setCampaignsOpen(!campaignsOpen)} />}
+            {tab !== 'meta' && tab !== 'setters' && <ChannelsCard state={focusState} prev={focusPrev} cmp={cmp} onSeeLeads={seeLeads} />}
+            {tab === 'setters' && <SettersCard state={current} prev={p} cmp={cmp} />}
           </Reveal>
+          {tab === 'meta' && (
+            <>
+              <Collapse open={campaignsOpen}>
+                <Reveal className="ld-gap"><CampaignsCard state={campaigns} /></Reveal>
+              </Collapse>
+              <Reveal className="fst-grid ld-gap">
+                <ChannelsCard state={focusState} prev={focusPrev} cmp={cmp} onSeeLeads={seeLeads} />
+                <CacCard state={current} prev={p} cmp={cmp} />
+              </Reveal>
+            </>
+          )}
+          {tab === 'setters' && (
+            <>
+              <Reveal className="fst-grid is-even ld-gap">
+                <SetterPeopleCard state={current} />
+                <RelaunchCard state={current} prev={p} cmp={cmp} />
+              </Reveal>
+              <Reveal className="fst-grid is-even ld-gap">
+                <OldWebinarCard state={current} prev={p} cmp={cmp} />
+                <SecondChanceCard state={current} prev={p} cmp={cmp} />
+              </Reveal>
+              <Reveal className="ld-gap"><CallsCard state={calls} tooLong={tooLong} /></Reveal>
+            </>
+          )}
+          <Reveal className="ld-gap"><BoardSalesCard state={board} only={focus.rows} /></Reveal>
         </>
-      )}
-      {tab === 'setters' && (
-        <>
-          <Reveal className="fst-grid is-even">
-            <SettersCard state={current} prev={p} cmp={cmp} />
-            <SetterPeopleCard state={current} />
-          </Reveal>
-          <Reveal className="fst-grid is-even ld-gap">
-            <OldWebinarCard state={current} prev={p} cmp={cmp} />
-            <SecondChanceCard state={current} prev={p} cmp={cmp} />
-          </Reveal>
-        </>
-      )}
-      {tab === 'calls' && <Reveal><CallsCard state={calls} tooLong={tooLong} /></Reveal>}
-      {tab === 'sales' && (
-        <Reveal className="fst-grid is-even">
-          <SalesCard state={current} prev={p} cmp={cmp} />
-          <CacCard state={current} prev={p} cmp={cmp} />
-        </Reveal>
       )}
       <LeadsDrawer open={list.open} range={range} channel={list.channel} onChannel={(channel) => setList((l) => ({ ...l, channel }))}
         onClose={closeLeads} when={when} />
