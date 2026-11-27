@@ -19,6 +19,10 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
   const [lastMonth, setLastMonth] = useState(null);
   const billedUntil = lastMonth ?? date.slice(0, 7);
   const [version, setVersion] = useState(0);
+  // Renouvellement annuel concerné par la sortie (serveur, selon la date et le dernier mois) et le choix de la
+  // direction, en douzièmes de l'annuel : '' = selon la date, 0 = rien, 1 à 3 = mois de préavis, 12 = l'année.
+  const [renewals, setRenewals] = useState([]);
+  const [twelfths, setTwelfths] = useState('');
   const dialog = useRef(null);
   const withdrawal = payload.etat === 'Rétractation';
   const pause = payload.etat === 'Pause';
@@ -36,6 +40,17 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
       }).catch(e => { if (alive) setError(typeof e?.data?.detail === 'string' ? e.data.detail : 'Impossible de charger les montants. Réessayez.'); });
     return () => { alive = false; };
   }, [numero, version, payload.etat]);
+  const exit = !withdrawal && !pause;
+  useEffect(() => {
+    if (!exit || !date || !/^\d{4}-\d{2}$/.test(billedUntil)) { setRenewals([]); return undefined; }
+    let alive = true;
+    const query = new URLSearchParams({ numero_client: numero, etat_date: date, last_month: billedUntil });
+    apiClient.get(`/api/v1/optilex/exit-finance-preview?${query}`)
+      .then(data => { if (alive) setRenewals(data.renewals || []); })
+      .catch(() => { if (alive) setRenewals([]); });
+    return () => { alive = false; };
+  }, [numero, date, billedUntil, exit]);
+  useEffect(() => { if (!renewals.length) setTwelfths(''); }, [renewals.length]);
   useEffect(() => {
     const previous = document.activeElement;
     dialog.current?.focus();
@@ -67,7 +82,18 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
       </div>
       <label style={{ display: 'block', marginTop: 20 }}>Date d’effet<input required aria-label="Date d’effet" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...input, marginTop: 6 }}/></label>
       {!withdrawal && !datedPause && <label style={{ display: 'block', marginTop: 14 }}>Dernier mois facturé<input required aria-label="Dernier mois facturé" type="month" value={billedUntil} onChange={e => setLastMonth(e.target.value)} style={{ ...input, marginTop: 6 }}/>
-        <small style={{ display: 'block', color: '#8b867e', marginTop: 4 }}>{pause ? 'La facturation est suspendue après ce mois.' : 'Plus aucun attendu après ce mois.'} Un mois déjà encaissé ou fixé à la main n’est jamais effacé.</small></label>}
+        <small style={{ display: 'block', color: '#8b867e', marginTop: 4 }}>{pause
+          ? 'La facturation est suspendue après ce mois. Un mois déjà encaissé ou fixé à la main n’est jamais effacé.'
+          : 'Plus aucun attendu après ce mois, même fixé à la main ou déjà encaissé. Un encaissement d’après la sortie vient sur l’ancien retard, sinon en trop-perçu.'}</small></label>}
+      {exit && renewals.length > 0 && <div style={{ marginTop: 14 }}>
+        {renewals.map(r => <p key={r.entity} style={{ margin: '0 0 6px', padding: 10, background: '#f7f5f2', borderRadius: 10 }}>{r.sentence}</p>)}
+        <label style={{ display: 'block' }}>Renouvellement annuel<select aria-label="Renouvellement annuel" value={twelfths} onChange={e => setTwelfths(e.target.value)} style={{ ...input, marginTop: 6 }}>
+          <option value="">Selon la date ({renewals.every(r => r.billed_by_date) ? 'attendu gardé' : 'non facturé'})</option>
+          <option value="0">Non facturé</option>
+          {[1, 2, 3].map(n => <option key={n} value={n}>{n} mois de préavis ({renewals.map(r => money((r.annual_amount || 0) * n / 12)).join(' + ')})</option>)}
+          <option value="12">Année entière ({renewals.map(r => money(r.annual_amount)).join(' + ')})</option>
+        </select></label>
+      </div>}
       {!preview && !error && <p role="status">Chargement des montants financiers…</p>}
       {error && <div role="alert"><p style={{ color: '#c5221f' }}>{error}</p><button style={button} onClick={() => setVersion(v => v + 1)}><RefreshCw size={14}/> Réessayer</button></div>}
       {preview && <>
@@ -105,7 +131,7 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
       </>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
         <button style={button} onClick={() => onResolve(null)}>Annuler</button>
-        <button disabled={!canConfirm} style={{ ...button, background: '#2b2927', color: '#fff', opacity: canConfirm ? 1 : 0.45 }} onClick={() => onResolve({ ...payload, etat_date: date, finance_decision: { token: preview.token, ...(withdrawal ? {} : datedPause ? pauseAmounts : pause ? { ...pauseAmounts, last_month: billedUntil } : { ...amounts, all_remaining: allRemaining, last_month: billedUntil }), reason, link_loss_id: linked ? loss?.id : null } })}>Confirmer et appliquer en Finance</button>
+        <button disabled={!canConfirm} style={{ ...button, background: '#2b2927', color: '#fff', opacity: canConfirm ? 1 : 0.45 }} onClick={() => onResolve({ ...payload, etat_date: date, finance_decision: { token: preview.token, ...(withdrawal ? {} : datedPause ? pauseAmounts : pause ? { ...pauseAmounts, last_month: billedUntil } : { ...amounts, all_remaining: allRemaining, last_month: billedUntil, renewal_twelfths: twelfths === '' ? null : Number(twelfths) }), reason, link_loss_id: linked ? loss?.id : null } })}>Confirmer et appliquer en Finance</button>
       </div>
     </section>
   </div>;

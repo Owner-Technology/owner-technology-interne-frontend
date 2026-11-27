@@ -671,12 +671,19 @@ export default function TrackingSheetFinance() {
       .catch(() => {});
   }, []);
   useEffect(() => { loadFormulaChecks(); }, [loadFormulaChecks]);
+  // Paiements sans attendu en face comptés en avance (serveur, direction seule ; refusé ailleurs : liste vide).
+  const [advanceChecks, setAdvanceChecks] = useState(() => new Set());
+  useEffect(() => {
+    apiClient.get('/api/v1/finance-periods/advance-checks')
+      .then((d) => setAdvanceChecks(new Set((d?.items || []).map((it) => it.client_id))))
+      .catch(() => {});
+  }, []);
 
   // Prédicat d'une vue-filtre pour une row, dans la vision active.
   const matchesView = useCallback((r, filterKey) => {
     switch (filterKey) {
       case 'a_verifier':
-        return formulaChecks.has(r.client_id);
+        return formulaChecks.has(r.client_id) || advanceChecks.has(r.client_id);
       case 'a_jour':
         return scopedOverdueCurrent(r, scope) === 0 && scopedOverdueCum(r, scope) === 0;
       case 'retard_mois':
@@ -740,7 +747,7 @@ export default function TrackingSheetFinance() {
       default:
         return true; // 'all'
     }
-  }, [scope, boardMap, boardEtatOf, relanceMonths, creanceAge, onboardingPhase, optilexPhase, period, formulaChecks, lateOnboarding, renewals, noShowStateOf, noShowPhase]);
+  }, [scope, boardMap, boardEtatOf, relanceMonths, creanceAge, onboardingPhase, optilexPhase, period, formulaChecks, advanceChecks, lateOnboarding, renewals, noShowStateOf, noShowPhase]);
 
   // Filtre « Météo client » (menu Filtre), réservé à deux personnes : les
   // bandes du board avec leur volume, plus « Sans météo ».

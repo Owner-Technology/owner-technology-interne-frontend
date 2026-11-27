@@ -652,7 +652,7 @@ test('pause : venue du Sheet ou sans aucune date, les dates sont « non définie
 // le mois en cours. Il va soit aller payer un retard, soit aller payer la
 // prochaine mensualité. » Novembre garde ses 231 € d'attendu, déjà payés.
 import {
-  scopedPaidForMonth, scopedAdvance, advanceNote, surplusNote, advanceLinks, monthsLabel, formatPercent,
+  scopedPaidForMonth, scopedAdvance, advanceNote, surplusNote, advanceLinks, unmatchedAdvanceMonths, monthsLabel, formatPercent,
 } from './constants.js';
 
 const imp = (o = {}) => ({
@@ -684,6 +684,19 @@ test('trop-perçu : novembre est payé par l’avance d’octobre, sans encaisse
   assert.equal(k.cashTotal, 0);
   assert.equal(k.advanceTotal, 231);
   assert.equal(k.receivedPct, formatPercent(231, 231));
+});
+
+test('avance née d’un paiement sans attendu en face : à vérifier, plus en silence', () => {
+  const renewal = row({
+    expected_owner: '4200.00', received_owner: null,
+    imputation_owner: imp({ advance_applied: '4200.00', paid_for_month: '4200.00',
+      advance_from: [{ period: null, amount: '4200.00' }], unmatched_from: [{ period: '2025-12', amount: '4200.00' }] }),
+  });
+  const note = advanceNote(renewal, 'owner');
+  assert.equal(note.text, 'avance à vérifier');
+  assert.equal(note.unmatched, true);
+  assert.match(note.title, /sans attendu en face \(décembre 2025\)/);
+  assert.deepEqual(unmatchedAdvanceMonths(renewal, 'optilex'), []);
 });
 
 test('trop-perçu : chaque euro compte une fois sur les deux mois', () => {
