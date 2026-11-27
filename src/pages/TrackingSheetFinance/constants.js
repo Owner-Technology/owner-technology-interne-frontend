@@ -202,6 +202,30 @@ export const stripEntitySuffix = (label) =>
 // ── Editable enums (backend Pydantic strict) ─────────────────────────────
 export const PSP_OPTIONS = ['Learnypay', 'IFX', 'whop', 'Quonto', 'Owner Pay'];
 
+// Deux PSP au plus sur un encaissement Owner (facturation, 27/11/2026) :
+// `psp_owner` reste le premier, `psp_owner_2` porte le second. Opti'Lex n'en a
+// qu'un. Liste des PSP cochés d'une ligne, dans la vision active.
+export const MAX_OWNER_PSP = 2;
+export const pspList = (row, scope) => {
+  if (scope === 'optilex') return [row?.psp_optilex].filter(Boolean);
+  return [row?.psp_owner, row?.psp_owner_2].filter(Boolean);
+};
+// « Learnypay + Owner Pay » : un encaissement à deux PSP se lit (et se
+// regroupe) sous ce libellé, son montant ne se partage pas entre les deux.
+export const pspLabel = (list) => (list || []).filter(Boolean).join(' + ');
+// Coche ou décoche `option` dans `values`, `max` valeurs au plus. Rend la même
+// liste quand rien ne change (liste pleine), pour ne rien enregistrer.
+export const toggleValue = (values, option, max = MAX_OWNER_PSP) => {
+  if (values.includes(option)) return values.filter((v) => v !== option);
+  if (values.length >= max) return values;
+  return [...values, option];
+};
+// Corps du PATCH pour la liste cochée : les deux colonnes ensemble, toujours.
+export const ownerPspPatch = (list) => {
+  const [first = null, second = null] = (list || []).filter(Boolean);
+  return { psp_owner: first, psp_owner_2: second };
+};
+
 // 2026-08-18 : `ETAT_OPTIONS` (enum snake_case `clients.etat`) et
 // `FINANCE_STATUS_DETAILS` (colonne « État détail ») supprimés. La colonne
 // État du tableau affiche/pose désormais l'état du board Owner/Opti'Lex
@@ -1155,6 +1179,7 @@ export const AUDIT_FIELD_LABELS = {
   payment_date_owner:            'Date paiement Owner',
   payment_date_optilex:          'Date paiement Opti\'Lex',
   psp_owner:                     'PSP Owner',
+  psp_owner_2:                   'Second PSP Owner',
   psp_optilex:                   'PSP Opti\'Lex',
   finance_status_detail:         'Détail état finance',
   payment_specificity:           'Particularité',

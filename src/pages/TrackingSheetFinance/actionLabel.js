@@ -27,6 +27,7 @@ const ENTITY_OF_FIELD = {
   payment_date_owner:           'owner',
   payment_date_optilex:         'optilex',
   psp_owner:                    'owner',
+  psp_owner_2:                  'owner',
   psp_optilex:                  'optilex',
   expected_owner:               'owner',
   expected_optilex_ttc:         'optilex',
@@ -99,6 +100,9 @@ export function describeAction({ field, from, to, period = null, effectiveOn = n
     case 'psp_optilex':
       if (isBlank(to)) return `a décoché le PSP ${entity}${ofMonth(period)}`;
       return `a coché ${to} comme PSP ${entity}${ofMonth(period)}`;
+    case 'psp_owner_2':
+      if (isBlank(to)) return `a décoché le second PSP ${entity}${ofMonth(period)}`;
+      return `a coché ${to} comme second PSP ${entity}${ofMonth(period)}`;
     case 'finance_status_detail':
       if (isBlank(to)) return `a retiré l'état détail${ofMonth(period)}`;
       return `a passé l'état détail à « ${to} »${forMonth(period)}`;
