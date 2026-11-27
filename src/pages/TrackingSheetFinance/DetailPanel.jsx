@@ -183,6 +183,8 @@ export default function DetailPanel({
   // Rubrique ouverte, gardée d'un client à l'autre : on relit souvent la même rubrique sur plusieurs fiches.
   // Détails s'ouvre d'abord (dev 17/11/2026), Paiements vient ensuite.
   const [tab, setTab] = useState('details');
+  // Un recalage fait depuis la fiche relit la ligne « Facturation menée par » (nouvel horaire, nouvelle personne).
+  const [onboardingVersion, setOnboardingVersion] = useState(0);
   // Résumé du fil d'échanges (nombre, derniers messages), remonté par ExchangeThread : pastille de l'onglet et
   // rappel dans « Paiements ». `null` tant que le fil charge.
   const [exchangeSummary, setExchangeSummary] = useState(null);
@@ -1044,6 +1046,7 @@ export default function DetailPanel({
                     readOnly={readOnly}
                     clientId={clientId}
                     onProfileChanged={refreshProfileAndRows}
+                    onOnboardingRescheduled={() => setOnboardingVersion((v) => v + 1)}
                     onContractChanged={reloadAfterExit}
                     onContractSaved={onContractSaved}
                     formulaCheck={formulaCheck}
@@ -1064,7 +1067,7 @@ export default function DetailPanel({
                       {/* Validation FACTURATION du RDV d'onboarding + recalage (finance).
                           Statut propre à la finance, indépendant de celui de Vincent ;
                           le recalage, lui, déplace le RDV partagé (agendas liés). */}
-                      <OnboardingFacturation numeroClient={numeroClient} boardRow={boardRow} readOnly={readOnly}
+                      <OnboardingFacturation numeroClient={numeroClient} boardRow={boardRow} readOnly={readOnly} version={onboardingVersion}
                         alreadyPaid={!!focusedRow && hasEverPaid(focusedRow)} />
                     </>
                   ) : <p className="fd-empty">Aucun rendez-vous renseigné pour ce dossier.</p>}
@@ -1775,6 +1778,7 @@ function ContractInfoList({
   formulaCheck = null, onContractSaved,
   wide = false,   // fiche en plein écran : la carte se répartit en colonnes (présentation seulement)
   salesNote = null, onOpenSalesNote, // dernier commentaire du sales (Échanges) et son ouverture, sous « Sales »
+  onOnboardingRescheduled,           // après un recalage depuis la ligne : la facturation de l'onboarding se relit
 }) {
   // Séparation nom du client / société (2026-08-21) : « Nom du client » =
   // la/les personne(s), la société a sa propre ligne. Pas de personne
@@ -1894,7 +1898,7 @@ function ContractInfoList({
   // de la facturation ; la fiche est relue ensuite. Le bouton suit le rendez-vous de la plateforme.
   const rescheduleButton = (
     <OnboardingRescheduleButton numeroClient={client?.numero_client || profile?.numero_client} boardRow={boardRow}
-      readOnly={readOnly} onDone={() => { onProfileChanged?.(); onContractChanged?.(); }} />
+      readOnly={readOnly} onDone={() => { onProfileChanged?.(); onContractChanged?.(); onOnboardingRescheduled?.(); }} />
   );
 
   const rows = [

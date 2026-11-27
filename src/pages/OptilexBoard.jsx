@@ -29,7 +29,8 @@ import MentionTextarea, { MentionedText } from "../components/MentionTextarea";
 import { mentionedIds, notifiedSummary } from "../utils/mentions.js";
 import { VisibilityBadge, VisibilityToggle, useMentionDirectories } from "../components/clientComments/CommentAudience.jsx";
 import { canChooseVisibility, scopeOf, sendBlocker } from "../utils/commentVisibility.js";
-import { isOnboardingToReschedule, onboardingDateOf, onboardingSituation } from "../utils/boardIntegration.js";
+import { canRescheduleOnboarding, isOnboardingToReschedule, onboardingDateOf, onboardingSituation } from "../utils/boardIntegration.js";
+import OnboardingBilling, { useOnboardingBilling } from "../components/OnboardingBilling.jsx";
 import { isOnboardingUpcoming, isOnboardingOverdue, isIntegrationUpcoming, isIntegrationOverdue } from "../utils/boardPredicates.js";
 import { createLatestRequestTracker, displayEtat, EXITED_ETATS, isOutOfOnboarding, matchesSignedClient, withConfirmedEtat } from "../utils/boardClientState.js";
 import { Fragment, createContext, memo, useContext, useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useId } from "react";
@@ -3099,7 +3100,7 @@ const fullDay = (p) => (p ? `${p.label.replace(".", "")} ${p.year}` : "");
 // réalisé (parcours, réalisé, date de réalisation : `onStart` et `onManualDone` absents) ; elle garde ce que sa liste de
 // rendez-vous lui donnait en plus : « effectué » des rendez-vous du cabinet (`onLegDone`) et lien de prise de rendez-vous
 // (`legLinks`).
-function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onReschedule, onCancel, onDateSaved, hostInfo, onTransfer, onNoShow, onLegDone, legLinks = false }) {
+function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onReschedule, onCancel, onDateSaved, hostInfo, onTransfer, onNoShow, onLegDone, legLinks = false, billing = null, onBillingChanged }) {
   const reduce = useReducedMotion();
   const date = row.rdv_onboarding_date_manual || row.rdv_onboarding_date;
   const done = !!row.rdv_onboarding_done;
@@ -3123,7 +3124,8 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
     ["Lancement fiscal", launchDate(row, "fiscal"), row.rdv_fiscal_done, "fiscal", "rdv_fiscal_done", row.fiscal_url],
     ["Lancement social", launchDate(row, "social"), row.rdv_social_done, "social", "rdv_social_done", row.social_url],
   ];
-  const host = date && !done ? hostInfo?.host : null;
+  // Reprogrammable tant qu'il n'est pas réalisé, no show et « à recaler » compris (réunion du 27/11/2026).
+  const host = canRescheduleOnboarding(row) ? hostInfo?.host : null;
   // No show du rendez-vous prévu : déjà noté quand le dernier no show qualifié (champ `no_show` du board) est ce jour-là.
   const canNoShow = !!onNoShow && !done && !!plannedDay;
   const noShowNoted = canNoShow && String(row.no_show?.day || "").slice(0, 10) === plannedDay;
@@ -3252,6 +3254,11 @@ function OnboardingCard({ row, holdCut = false, onStart, onManualDone, onResched
               : "—"}</strong></div>
             <div><span>Dossier</span><strong>{row.numero_client || "—"}</strong></div>
           </div>
+          {/* Qui mène la facturation (les CSM le voient) ; la finance la passe à une collègue (réunion du 27/11/2026). */}
+          {!done && billing && (
+            <OnboardingBilling numeroClient={row.numero_client} info={billing} onChanged={onBillingChanged} readOnly={isBoardReadOnly()}
+              label={ov(row, "contact_name_ovr", "contact_name") || row.crm_societe || row.numero_client} style={{ marginTop: 12 }} />
+          )}
           {/* Reprogrammer, et transfert à l'équipe pour le responsable (dev 29/10/2026). No show (dev 18/11/2026) : noté
               d'ici, sans ouvrir le parcours jusqu'à sa dernière étape ; même enregistrement que cette étape. */}
           {((host && (onReschedule || (onTransfer && hostInfo.transfer_to?.length))) || canNoShow) && (
@@ -4680,7 +4687,8 @@ export function DetailPanel({ row, onClose, reload, reloadRatings, patch, change
   // Le billet d'onboarding : le Client Success, qui mène le parcours, et la finance (dev 25/11/2026).
   const flowRole = ONBOARDING_FLOW_ROLES.includes(roleOf());
   const financeRole = FINANCE_ROLES.includes(roleOf());
-  const onboardingHost = useOnboardingHost(num, (flowRole || financeRole) && !row.rdv_onboarding_done
+  const onboardingHost = useOnboardingHost(num, (flowRole || financeRole) && canRescheduleOnboarding(row), apptVersion);
+  const [onboardingBilling, reloadOnboardingBilling] = useOnboardingBilling(num, (flowRole || financeRole) && !row.rdv_onboarding_done
     && !!(row.rdv_onboarding_date_manual || row.rdv_onboarding_date), apptVersion);
   // Antériorité emails : à l'ouverture d'une fiche, on enregistre les emails vus (Owner + Opti'Lex
   // courant par SIREN) dans l'historique -> on garde la trace même quand l'email change ensuite,
@@ -4748,6 +4756,7 @@ export function DetailPanel({ row, onClose, reload, reloadRatings, patch, change
               onManualDone={flowRole ? (d) => patch(num, { rdv_onboarding_done: true, rdv_onboarding_done_date: d }) : undefined}
               onReschedule={(kind) => setReschedOpen(kind)} onCancel={(kind) => setCancelOpen(kind)}
               hostInfo={onboardingHost} onTransfer={(t) => setTransferTo(t)} onNoShow={() => setNoShowOpen(true)}
+              billing={onboardingBilling} onBillingChanged={() => { reloadOnboardingBilling(); afterHistory(); }}
               onLegDone={financeRole ? (field, v) => patch(num, { [field]: v }) : undefined} legLinks={financeRole} />
           ) : (
             // Liste des rendez-vous : le cabinet et les rôles en lecture seule. Le Client Success et la finance ont le billet,

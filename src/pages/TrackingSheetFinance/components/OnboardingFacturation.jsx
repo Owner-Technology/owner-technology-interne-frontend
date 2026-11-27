@@ -25,6 +25,8 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import apiClient from "../../../services/apiClient";
 import { READ_ONLY_PROPS } from "../../../utils/readOnlyRoles.js";
+import { canRescheduleOnboarding } from "../../../utils/boardIntegration.js";
+import OnboardingBilling, { useOnboardingBilling } from "../../../components/OnboardingBilling.jsx";
 
 const GREEN = "#0b7a4b";
 const NAVY = "#2b2927";
@@ -228,13 +230,16 @@ function ReschedModal({ numeroClient, label, onClose, onDone }) {
 // ── Bloc principal, inséré dans la section « Rendez-vous » du panneau détail ──
 // `readOnly` (rôles en lecture seule) : les deux boutons restent visibles, désactivés.
 // `alreadyPaid` : le client a déjà réglé, la question de la validation ne se pose plus (dev 17/11/2026).
-export default function OnboardingFacturation({ numeroClient, boardRow, readOnly = false, alreadyPaid = false }) {
+export default function OnboardingFacturation({ numeroClient, boardRow, readOnly = false, alreadyPaid = false, version = 0 }) {
   const [done, setDone] = useState(!!boardRow?.rdv_onboarding_facturation_done);
   const [when, setWhen] = useState(
     boardRow?.rdv_onboarding_date_manual || boardRow?.rdv_onboarding_date || null
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  // Qui mène la facturation, et la passer à une collègue (réunion du 27/11/2026).
+  // `version` : un recalage fait depuis la fiche la fait relire.
+  const [billing, reloadBilling] = useOnboardingBilling(numeroClient, !!numeroClient && !!boardRow, version);
 
   useEffect(() => {
     setDone(!!boardRow?.rdv_onboarding_facturation_done);
@@ -286,6 +291,9 @@ export default function OnboardingFacturation({ numeroClient, boardRow, readOnly
         {when ? whenLabel(when) : "Aucune date de rendez-vous connue"}
       </div>
 
+      <OnboardingBilling numeroClient={numeroClient} info={billing} onChanged={reloadBilling} readOnly={readOnly}
+        label={boardRow.crm_societe || boardRow.contact_name || numeroClient} style={{ marginTop: 8 }} />
+
       {alreadyPaid ? (
         <div style={{ fontSize: 11.5, color: MUTED, marginTop: 10 }}>
           Le client a déjà payé : rien à valider.
@@ -312,12 +320,12 @@ export default function OnboardingFacturation({ numeroClient, boardRow, readOnly
 
 // ── Bouton « Reprogrammer » posé sur la ligne « RDV d'onboarding » de la fiche (dev 2026-10-29 :
 //    dans la section repliée, la finance ne le trouvait pas). Même fenêtre, même endpoint, mêmes
-//    agendas qu'avant ; visible tant que l'onboarding daté n'est pas réalisé.
+//    agendas qu'avant ; visible tant que l'onboarding n'est pas réalisé, no show et « à recaler » compris
+//    (`canRescheduleOnboarding`, réunion du 27/11/2026).
 // `readOnly` (rôles en lecture seule) : bouton visible, désactivé, la fenêtre ne s'ouvre pas.
 export function OnboardingRescheduleButton({ numeroClient, boardRow, onDone, readOnly = false }) {
   const [open, setOpen] = useState(false);
-  const date = boardRow?.rdv_onboarding_date_manual || boardRow?.rdv_onboarding_date;
-  if (!numeroClient || !boardRow || !date || boardRow.rdv_onboarding_done) return null;
+  if (!numeroClient || !canRescheduleOnboarding(boardRow)) return null;
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} title="Reprogrammer le rendez-vous d’onboarding"
