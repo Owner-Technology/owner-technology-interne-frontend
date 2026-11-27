@@ -16,3 +16,12 @@ export function orderedReceipts(items, scope = 'global') {
 export const receiptPspLabel = (r) => pspLabel([r?.psp, r?.psp_2]);
 // Pastille verte quand chaque PSP de l'encaissement est connu de la liste.
 export const receiptPspKnown = (r, colors) => !!r?.psp && [r.psp, r.psp_2].filter(Boolean).every((p) => !!colors[p]);
+// Filtre « Prestataire » des reçus : un encaissement reste dès qu'un de ses PSP
+// correspond, comme le filtre de la grille et les séquences. Choisir
+// « Learnypay » garde « Learnypay + IFX » ; choisir « Learnypay + IFX » garde
+// les encaissements qui portent ces deux PSP. `none` : la clé « non renseigné ».
+export const receiptMatchesPsp = (r, key, none) => {
+  const mine = [r?.psp, r?.psp_2].filter(Boolean);
+  if (key === none) return mine.length === 0;
+  return String(key || '').split(' + ').filter(Boolean).every((p) => mine.includes(p));
+};

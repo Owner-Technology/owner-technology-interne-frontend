@@ -60,3 +60,16 @@ test('les reçus se regroupent sous les deux PSP, une ligne Opti’Lex reste seu
   assert.equal(receiptPspKnown({ psp: 'Learnypay', psp_2: 'Owner Pay' }, PSP_COLORS), true);
   assert.equal(receiptPspKnown({ psp: 'Learnypay', psp_2: 'Stripe' }, PSP_COLORS), false);
 });
+
+test('le filtre « Prestataire » des reçus garde un encaissement dès qu’un de ses PSP correspond', async () => {
+  const { receiptMatchesPsp } = await import('./receipts.js');
+  const both = { psp: 'Learnypay', psp_2: 'IFX' };
+  const none = 'Non renseigné';
+  assert.equal(receiptMatchesPsp(both, 'Learnypay', none), true);
+  assert.equal(receiptMatchesPsp(both, 'IFX', none), true);
+  assert.equal(receiptMatchesPsp(both, 'Learnypay + IFX', none), true);
+  assert.equal(receiptMatchesPsp({ psp: 'Learnypay' }, 'Learnypay + IFX', none), false);
+  assert.equal(receiptMatchesPsp(both, 'whop', none), false);
+  assert.equal(receiptMatchesPsp({ psp: null }, none, none), true);
+  assert.equal(receiptMatchesPsp(both, none, none), false);
+});

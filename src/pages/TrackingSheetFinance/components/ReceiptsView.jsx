@@ -23,7 +23,7 @@ import {
 
 import apiClient from '../../../services/apiClient.js';
 import { useDrawn } from '../../../components/perfSales/motion.jsx';
-import { orderedReceipts, receiptPspLabel, receiptPspKnown } from '../receipts.js';
+import { orderedReceipts, receiptPspLabel, receiptPspKnown, receiptMatchesPsp } from '../receipts.js';
 import { formatEUR, formatDateFR, formatMonthLabel, PSP_COLORS } from '../constants.js';
 import {
   Avatar, Card, Empty, OpenCue, Page, RefreshButton, Reveal, Segmented, Stat, Stats, TableBox, Tag, Th, Who,
@@ -319,7 +319,7 @@ function PeopleCard({ people, months, loading, selected, onSelect, month, onMont
 
 const matches = (r, f) => (f.kind === 'all' || r.kind === f.kind)
   && (!f.entity || r.entity === f.entity)
-  && (!f.psp || pspOf(r) === f.psp)
+  && (!f.psp || receiptMatchesPsp(r, f.psp, NO_PSP))
   && (!f.who || whoOf(r) === f.who)
   && (f.month == null || monthOf(r) === f.month);
 
