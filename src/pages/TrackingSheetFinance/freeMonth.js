@@ -11,12 +11,12 @@ const currentMonthKey = () => new Date().toLocaleDateString('en-CA', { timeZone:
 // Un mois offert n'a de sens que sur une échéance mensuelle : un annuel ou un trimestriel n'en a pas.
 const notMonthly = (mode) => ['YEARLY', 'QUARTERLY'].includes(normalizePaymentMode(mode));
 
-// Les échéances qu'on peut offrir : à partir du mois en cours, avec un attendu Owner mensuel. Un mois déjà payé
-// reste proposé : ce qu'il a reçu règle d'abord les dettes du client, puis reste en avance ou est remboursé
-// (dev 2026-11-19). Un Opti'Lex annuel n'est jamais offert : son annuité reste due. Un mois qui a déjà une demande
-// en attente n'est pas proposé une deuxième fois.
+// Les échéances qu'on peut offrir : à partir du mois en cours, avec un attendu Owner mensuel. Le parrainage est un
+// avantage Owner (dev 2026-11-27) : seul l'Owner du mois est offert, l'Opti'Lex reste dû, mensuel ou annuel. Un mois
+// déjà payé reste proposé : ce qu'Owner a reçu règle d'abord les dettes du client, puis reste en avance ou est
+// remboursé (dev 2026-11-19). Un mois qui a déjà une demande en attente n'est pas proposé une deuxième fois.
 export function freeMonthChoices(periods = [], {
-  clientMode = null, optilexMode = null, pendingMonths = [], nowKey = currentMonthKey(),
+  clientMode = null, pendingMonths = [], nowKey = currentMonthKey(),
 } = {}) {
   if (notMonthly(clientMode)) return [];
   const pending = new Set(pendingMonths);
@@ -27,12 +27,7 @@ export function freeMonthChoices(periods = [], {
     .filter((p) => num(p.expected_owner) > 0)
     .sort((a, b) => a.key.localeCompare(b.key))
     .slice(0, MAX_CHOICES)
-    .map((p) => {
-      const optilexMonthly = !notMonthly(p.payment_mode_optilex || optilexMode || p.payment_mode || clientMode);
-      const optilex = optilexMonthly ? num(p.expected_optilex_ttc) : 0;
-      const paid = num(p.received_owner) + (optilexMonthly ? num(p.received_optilex_ttc) : 0);
-      return { key: p.key, owner: num(p.expected_owner), optilex, optilexMonthly, paid: Math.round(paid * 100) / 100 };
-    });
+    .map((p) => ({ key: p.key, owner: num(p.expected_owner), paid: Math.round(num(p.received_owner) * 100) / 100 }));
 }
 
 // Le corps envoyé au geste « mois offert » : le mois, et ce que devient ce qui a déjà été payé.

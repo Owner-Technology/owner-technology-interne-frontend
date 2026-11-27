@@ -16,13 +16,13 @@ test('propose les échéances à venir attendues, payées ou non, dans l’ordre
     row('2027-01-01', 198, 96),
     row('2026-10-01', 198, 96),            // passé
     row('2026-11-01', 198, 96, 198, 96),   // déjà payé : proposé
-    row('2026-12-01', 198, 96, null, 96),  // payé en partie
+    row('2026-12-01', 198, 96, null, 96),  // seul l'Opti'Lex payé
     row('2027-02-01', 0, 0),               // rien d'attendu
   ];
   assert.deepEqual(freeMonthChoices(periods, { nowKey: '2026-11' }), [
-    { key: '2026-11', owner: 198, optilex: 96, optilexMonthly: true, paid: 294 },
-    { key: '2026-12', owner: 198, optilex: 96, optilexMonthly: true, paid: 96 },
-    { key: '2027-01', owner: 198, optilex: 96, optilexMonthly: true, paid: 0 },
+    { key: '2026-11', owner: 198, paid: 198 },
+    { key: '2026-12', owner: 198, paid: 0 },   // seul l'Opti'Lex est payé : rien à rendre côté Owner
+    { key: '2027-01', owner: 198, paid: 0 },
   ]);
 });
 
@@ -42,11 +42,16 @@ test('le geste envoyé : le mois, et avance par défaut', () => {
   assert.deepEqual(freeMonthBody('2026-12', 'autre'), { period: '2026-12', settle: 'advance' });
 });
 
-test('un Opti’Lex annuel n’est pas offert : son annuité et son paiement restent hors du mois', () => {
-  const periods = [row('2026-12-01', 198, 1152, 198, 1152)];
-  assert.deepEqual(freeMonthChoices(periods, { optilexMode: 'YEARLY', nowKey: '2026-11' }), [
-    { key: '2026-12', owner: 198, optilex: 0, optilexMonthly: false, paid: 198 },
-  ]);
+test('le parrainage n’offre que l’Owner : l’Opti’Lex, mensuel ou annuel, reste dû et hors de ce qui est rendu', () => {
+  const monthly = [row('2026-12-01', 198, 96, 198, 96)];
+  assert.deepEqual(freeMonthChoices(monthly, { nowKey: '2026-11' }), [{ key: '2026-12', owner: 198, paid: 198 }]);
+  const yearly = [{ ...row('2026-12-01', 198, 1152, 198, 1152), payment_mode_optilex: 'YEARLY' }];
+  assert.deepEqual(freeMonthChoices(yearly, { nowKey: '2026-11' }), [{ key: '2026-12', owner: 198, paid: 198 }]);
+});
+
+test('un Owner trimestriel n’a pas de mois offert', () => {
+  assert.deepEqual(freeMonthChoices([row('2027-01-01', 594, 96)], { clientMode: 'QUARTERLY', nowKey: '2026-11' }), []);
+  assert.deepEqual(freeMonthChoices([row('2027-01-01', 594, 96, null, null, 'QUARTERLY')], { nowKey: '2026-11' }), []);
 });
 
 test('un mois avec une demande en attente n’est pas proposé deux fois', () => {
