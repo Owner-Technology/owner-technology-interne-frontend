@@ -56,6 +56,7 @@ import apiClient from '../../../services/apiClient.js';
 import { formatEUR, formatMonthLabel, formatDateFR, currentPeriod, deferralsByMonth, deferralLinks, outstandingByMonth, reportsByMonth, deMonthLabel } from '../constants.js';
 import { EXPLAIN_OPS_LIMIT, expectedOpsByMonth, explainExpectedMonth } from '../expectedExplain.js';
 import { buildStatement } from '../statement.js';
+import { receiptEditable, FUTURE_RECEIPT_TITLE } from '../futureReceipt.js';
 
 const N = {
   text: '#1c1b19',
@@ -477,7 +478,9 @@ export default function ExpectedManager({
   // affichait encore 338 € saisis « sur retard », dans la grille et le relevé).
   const recEdits = useMemo(() => Object.entries(recDrafts)
     .map(([id, v]) => ({ row: byId.get(id), value: v }))
-    .filter(({ row, value }) => row && value !== '' && round2(value) !== row.recu),
+    .filter(({ row, value }) => row && value !== '' && round2(value) !== row.recu
+      // Mois à venir : seule une remise à zéro passe (facturation, 27/11/2026).
+      && !(row.futur && round2(value) !== 0)),
   [recDrafts, byId]);
   // Reste dû : seulement un mois passé ou en cours, et seulement si la valeur change.
   const resteEdits = useMemo(() => Object.entries(resteDrafts)
@@ -1157,12 +1160,16 @@ export default function ExpectedManager({
                             />
                           </span>
                           <span style={{ textAlign: 'right' }}>
-                            <AmountInput
-                              width={82}
-                              value={recDrafts[r.id] ?? ''}
-                              placeholder={formatEUR(r.recu, { withSymbol: false })}
-                              onChange={(v) => setRecDrafts((d) => ({ ...d, [r.id]: v }))}
-                            />
+                            {receiptEditable(r.key, r.recu) ? (
+                              <AmountInput
+                                width={82}
+                                value={recDrafts[r.id] ?? ''}
+                                placeholder={formatEUR(r.recu, { withSymbol: false })}
+                                onChange={(v) => setRecDrafts((d) => ({ ...d, [r.id]: v }))}
+                              />
+                            ) : (
+                              <span title={FUTURE_RECEIPT_TITLE} style={{ fontSize: 11.5, color: N.textFaint }}>—</span>
+                            )}
                           </span>
                           <span style={{ textAlign: 'right' }}>
                             {r.futur ? (

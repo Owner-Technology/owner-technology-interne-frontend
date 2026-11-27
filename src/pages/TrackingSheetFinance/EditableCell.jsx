@@ -446,6 +446,9 @@ export const EditableDate = React.memo(function EditableDate({
   // Échéance ATTENDUE (jour du dernier paiement reporté sur le mois), pas un
   // encaissement : affichée en retrait, jamais comme une date réelle.
   projected = false,
+  // Date la plus tardive proposée (« YYYY-MM-DD ») : pas de paiement daté
+  // dans un mois futur (facturation, 27/11/2026).
+  max,
 }) {
   const [editing, setEditing] = useState(false);
   const [state, flash] = useSaveFlash();
@@ -486,6 +489,7 @@ export const EditableDate = React.memo(function EditableDate({
         ref={inputRef}
         type="date"
         defaultValue={isoValue}
+        max={max}
         onKeyDown={(e) => {
           if (e.key === 'Enter') { e.currentTarget.blur(); }
           if (e.key === 'Escape') { e.preventDefault(); setEditing(false); }
