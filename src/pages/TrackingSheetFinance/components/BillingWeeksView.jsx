@@ -5,6 +5,9 @@
 // semaine non réglée garde l'existant (tout le monde, dans l'ordre de priorité). Les noms et le droit de régler
 // (`can_edit` : la direction financière) viennent du serveur ; les autres lisent.
 //
+// Rien n'est réattribué tout seul : les onboardings de la semaine déjà attribués à une personne retirée sont listés sous
+// la semaine (`to_move` : client, date, personne), avec « Passer à … » comme sur la fiche (`can_transfer`).
+//
 // Source : GET / PUT /optilex/billing-roster.
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -12,7 +15,8 @@ import { CalendarDays, UserCheck, UserPen } from 'lucide-react';
 
 import apiClient from '../../../services/apiClient.js';
 import { READ_ONLY_PROPS } from '../../../utils/readOnlyRoles.js';
-import { toggleWeekPerson } from '../../../utils/onboardingBilling.js';
+import { toggleWeekPerson, weekMoveInfo } from '../../../utils/onboardingBilling.js';
+import OnboardingBilling from '../../../components/OnboardingBilling.jsx';
 import { Card, Empty, Page, RefreshButton, Reveal, TableBox, Tag, Th } from './PageKit.jsx';
 
 const WEEKS = 8;
@@ -23,6 +27,12 @@ const weekLabel = (iso) => {
   const end = new Date(y, m - 1, d + 4);
   const fmt = (date) => date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   return `Du ${fmt(start)} au ${fmt(end)}`;
+};
+
+const atLabel = (iso) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? String(iso || '') : d.toLocaleString('fr-FR', {
+    timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 };
 
 export default function BillingWeeksView({ readOnly = false }) {
@@ -78,7 +88,8 @@ export default function BillingWeeksView({ readOnly = false }) {
             </thead>
             <tbody>
               {data.weeks.map((week) => (
-                <tr key={week.week_start}>
+                <React.Fragment key={week.week_start}>
+                <tr>
                   <td>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       {weekLabel(week.week_start)}
@@ -103,6 +114,26 @@ export default function BillingWeeksView({ readOnly = false }) {
                   </td>
                   <td className="fst-cell-muted">{week.set ? (week.updated_by || '–') : '–'}</td>
                 </tr>
+                {(week.to_move || []).map((move) => (
+                  <tr key={`${week.week_start}-${move.numero_client}-${move.at}`}>
+                    <td style={{ paddingLeft: 28 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <Tag tone="yellow">À passer</Tag>
+                        <span>{move.client || move.numero_client || '–'}</span>
+                      </span>
+                    </td>
+                    <td colSpan={2}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                        <span className="fst-cell-muted">{atLabel(move.at)}</span>
+                        {move.forced && <Tag>Choisie à la main</Tag>}
+                        <OnboardingBilling numeroClient={move.numero_client} readOnly={readOnly}
+                          label={`${move.client || move.numero_client || ''} · ${atLabel(move.at)}`}
+                          info={weekMoveInfo(move, week, people, data.can_transfer)} onChanged={load} />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                </React.Fragment>
               ))}
             </tbody>
           </TableBox>

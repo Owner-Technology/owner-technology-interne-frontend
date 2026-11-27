@@ -1,10 +1,12 @@
 // Facturation d'un onboarding (réunion du 27/11/2026) : qui la mène, et à qui la passer au dernier moment. Les noms
 // viennent du serveur (`/optilex/board-onboarding-billing`) : aucune personne n'est écrite dans le front.
 
-// Le nom à afficher, ou null quand le rendez-vous n'a pas de facturation à mener.
+// Le nom à afficher, « À attribuer » quand personne n'est libre, ou null : pas de facturation à mener ('none'), dossier
+// réservé avant la répartition ('unmanaged'), onboarding à recaler ou événement absent ('inactive'). Rien de faux à l'écran.
 export function billingLeader(info) {
-    if (!info || info.state === 'none') return null;
-    return info.name || 'À attribuer';
+    if (info?.state === 'assigned') return info.name || null;
+    if (info?.state === 'unassigned') return 'À attribuer';
+    return null;
 }
 
 // Les personnes à qui la passer : toutes sauf celle qui la mène, dans l'ordre du serveur, seulement si le serveur dit
@@ -37,4 +39,21 @@ export function toggleWeekPerson(week, people, name) {
     }
     const names = people.filter((person) => current.has(person));
     return names.length === people.length ? [] : names;
+}
+
+// Réponse d'un passage à une collègue : la décision est enregistrée, mais Google n'a pas tout fait (copie pas encore
+// posée, ancienne copie pas retirée, ou synchronisation en erreur). Le serveur reprend au passage suivant du cron ;
+// l'écran le dit en une ligne.
+export function transferLeftCalendarsPending(result) {
+    return !!result && (result.sync === 'error' || result.calendars_done === false);
+}
+
+// Les personnes proposées pour un onboarding listé dans une semaine réglée : la même forme que la fiche
+// (`/board-onboarding-billing`), à partir de la semaine elle-même.
+export function weekMoveInfo(move, week, people, canTransfer) {
+    const canChange = !!canTransfer && !!move?.numero_client;
+    return {
+        state: 'assigned', name: move?.name || null, can_change: canChange,
+        options: canChange ? people.map((name) => ({ name, this_week: (week?.names || []).includes(name) })) : [],
+    };
 }

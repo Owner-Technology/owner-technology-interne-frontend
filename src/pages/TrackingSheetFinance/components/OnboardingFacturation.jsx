@@ -230,7 +230,7 @@ function ReschedModal({ numeroClient, label, onClose, onDone }) {
 // ── Bloc principal, inséré dans la section « Rendez-vous » du panneau détail ──
 // `readOnly` (rôles en lecture seule) : les deux boutons restent visibles, désactivés.
 // `alreadyPaid` : le client a déjà réglé, la question de la validation ne se pose plus (dev 17/11/2026).
-export default function OnboardingFacturation({ numeroClient, boardRow, readOnly = false, alreadyPaid = false }) {
+export default function OnboardingFacturation({ numeroClient, boardRow, readOnly = false, alreadyPaid = false, version = 0 }) {
   const [done, setDone] = useState(!!boardRow?.rdv_onboarding_facturation_done);
   const [when, setWhen] = useState(
     boardRow?.rdv_onboarding_date_manual || boardRow?.rdv_onboarding_date || null
@@ -238,7 +238,8 @@ export default function OnboardingFacturation({ numeroClient, boardRow, readOnly
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   // Qui mène la facturation, et la passer à une collègue (réunion du 27/11/2026).
-  const [billing, reloadBilling] = useOnboardingBilling(numeroClient, !!numeroClient && !!boardRow);
+  // `version` : un recalage fait depuis la fiche la fait relire.
+  const [billing, reloadBilling] = useOnboardingBilling(numeroClient, !!numeroClient && !!boardRow, version);
 
   useEffect(() => {
     setDone(!!boardRow?.rdv_onboarding_facturation_done);

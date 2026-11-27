@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { billingLeader, billingTargets, mondayOf, toggleWeekPerson } from './onboardingBilling.js';
+import { billingLeader, billingTargets, mondayOf, toggleWeekPerson, transferLeftCalendarsPending, weekMoveInfo } from './onboardingBilling.js';
 import { canRescheduleOnboarding } from './boardIntegration.js';
 
 const PEOPLE = ['A', 'B', 'C'];
@@ -10,6 +10,9 @@ test('the billing leader is the name served, or « À attribuer », or nothing w
     assert.equal(billingLeader({ state: 'unassigned', name: null }), 'À attribuer');
     assert.equal(billingLeader({ state: 'none', name: null }), null);
     assert.equal(billingLeader(null), null);
+    // Réservé avant la répartition, ou à recaler : rien de faux (pas de « À attribuer » rouge), le bloc est masqué.
+    assert.equal(billingLeader({ state: 'unmanaged', name: null }), null);
+    assert.equal(billingLeader({ state: 'inactive', name: null }), null);
 });
 
 test('the colleagues offered are everyone but the current one, only when the server allows the change', () => {
@@ -44,4 +47,20 @@ test('an onboarding can be rescheduled until it is done, no show and to reschedu
     assert.equal(canRescheduleOnboarding({ ...base, rdv_onboarding_date: '2026-11-20', rdv_onboarding_done: true }), false);
     assert.equal(canRescheduleOnboarding({ rdv_onboarding_date: '2026-11-20' }), false);
     assert.equal(canRescheduleOnboarding(null), false);
+});
+
+test('a transfer whose calendars are not done yet says so in one line', () => {
+    assert.equal(transferLeftCalendarsPending({ sync: 'assigned', calendars_done: true }), false);
+    assert.equal(transferLeftCalendarsPending({ sync: 'error', calendars_done: false }), true);
+    assert.equal(transferLeftCalendarsPending({ sync: 'assigned', calendars_done: false }), true);   // ancienne copie restée
+    assert.equal(transferLeftCalendarsPending({ name: 'B', changed: false, copy: true }), false);     // même personne
+});
+
+test('an onboarding still at a removed person offers the colleagues of the week', () => {
+    const week = { names: ['A', 'B'] };
+    const info = weekMoveInfo({ numero_client: 'n°1', name: 'C' }, week, PEOPLE, true);
+    assert.equal(billingLeader(info), 'C');
+    assert.deepEqual(billingTargets(info), [{ name: 'A', offWeek: false }, { name: 'B', offWeek: false }]);
+    assert.deepEqual(billingTargets(weekMoveInfo({ numero_client: 'n°1', name: 'C' }, week, PEOPLE, false)), []);  // lecture
+    assert.deepEqual(billingTargets(weekMoveInfo({ numero_client: null, name: 'C' }, week, PEOPLE, true)), []);    // sans fiche
 });

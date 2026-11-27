@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { motion as Motion } from "framer-motion";
 import apiClient from "../services/apiClient";
 import { READ_ONLY_PROPS } from "../utils/readOnlyRoles.js";
-import { billingLeader, billingTargets } from "../utils/onboardingBilling.js";
+import { billingLeader, billingTargets, transferLeftCalendarsPending } from "../utils/onboardingBilling.js";
 
 const INK = "#1c1b19";
 const MUTED = "#8b867e";
@@ -32,11 +32,13 @@ export function useOnboardingBilling(numeroClient, enabled = true, version = 0) 
 function TransferBillingModal({ numeroClient, label, target, current, onClose, onDone }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [pending, setPending] = useState(false);     // enregistré, agendas pas encore à jour (le serveur reprend seul)
   const confirm = async () => {
     if (saving) return;
     setSaving(true); setError(null);
     try {
-      await apiClient.post("/api/v1/optilex/board-transfer-billing", { numero_client: numeroClient, name: target.name });
+      const result = await apiClient.post("/api/v1/optilex/board-transfer-billing", { numero_client: numeroClient, name: target.name });
+      if (transferLeftCalendarsPending(result)) { setPending(true); setSaving(false); return; }
       onDone();
     } catch (e) {
       const d = e?.data?.detail;
@@ -45,15 +47,15 @@ function TransferBillingModal({ numeroClient, label, target, current, onClose, o
     }
   };
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" && !saving) onClose(); };
+    const onKey = (e) => { if (e.key === "Escape" && !saving) (pending ? onDone : onClose)(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [saving, onClose]);
+  }, [saving, pending, onClose, onDone]);
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={`Passer la facturation à ${target.name}`}
       style={{ position: "fixed", inset: 0, zIndex: 10080, display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" }}>
-      <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => { if (!saving) onClose(); }}
+      <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => { if (!saving) (pending ? onDone : onClose)(); }}
         style={{ position: "absolute", inset: 0, background: "rgba(28,27,25,.22)" }} />
       <Motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         style={{ position: "relative", width: "min(420px, 100%)", background: CARD, borderRadius: 22, border: `1px solid ${BORDER}`,
@@ -63,6 +65,18 @@ function TransferBillingModal({ numeroClient, label, target, current, onClose, o
           {label}{current ? ` · ${current}` : ""}{target.offWeek ? " · hors de sa semaine" : ""}
         </div>
         {error && <div role="alert" style={{ marginTop: 10, fontSize: 12, color: RED, lineHeight: 1.5 }}>{error}</div>}
+        {pending ? (
+          <>
+            <div role="status" style={{ marginTop: 12, fontSize: 12.5, color: "#7a5a05", lineHeight: 1.5 }}>
+              Enregistré. Les agendas seront mis à jour dans quelques minutes.
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <button type="button" onClick={onDone}
+                style={{ padding: "9px 16px", borderRadius: 10, border: "none", background: CHARCOAL, color: "#fff", fontSize: 13,
+                  fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Fermer</button>
+            </div>
+          </>
+        ) : (
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
           <button type="button" disabled={saving} onClick={onClose}
             style={{ padding: "9px 14px", borderRadius: 10, border: `1px solid ${BORDER}`, background: CARD, color: INK, fontSize: 13,
@@ -73,6 +87,7 @@ function TransferBillingModal({ numeroClient, label, target, current, onClose, o
             {saving ? "Enregistrement…" : "Confirmer"}
           </Motion.button>
         </div>
+        )}
       </Motion.div>
     </div>,
     document.body,
