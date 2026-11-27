@@ -45,3 +45,5 @@ export const futureReceiptError = ({ period, amount, paidOn } = {}, now = curren
 };
 
 export const FUTURE_RECEIPT_TITLE = 'Mois à venir : l’encaissement se saisit à partir de son mois';
+// Montant tapé sur un mois à venir dans « Gérer les attendus » : non envoyé.
+export const FUTURE_RECEIPT_MESSAGE = 'Mois à venir : seul 0 € est accepté pour le reçu.';

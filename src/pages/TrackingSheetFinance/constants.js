@@ -1,5 +1,6 @@
 import { parisWallTime } from '../../utils/boardIntegration.js';
 import { READ_ONLY_DIRECTION_ROLES } from '../../utils/readOnlyRoles.js';
+import { parisToday } from '../../utils/parisDates.js';
 
 // constants.js — single source of truth for the Tracking Finance page.
 //
@@ -1132,10 +1133,10 @@ export const shiftMonth = (period, delta) => {
   return `${yy}-${mm}`;
 };
 
-export const currentPeriod = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-};
+// Le mois en cours à l'heure de Paris, comme le serveur (`business_today`) :
+// un poste sur un autre fuseau ne change pas de mois à son minuit local
+// (facturation, 27/11/2026 : le blocage des mois futurs suit ce mois-là).
+export const currentPeriod = (now = new Date()) => parisToday(now).slice(0, 7);
 
 // 'YYYY-MM-DD' (returned by backend) → 'YYYY-MM' for the period selector
 export const periodFromDate = (dateStr) => {

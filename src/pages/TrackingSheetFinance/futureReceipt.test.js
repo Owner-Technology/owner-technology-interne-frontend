@@ -45,3 +45,12 @@ test('refuse un montant ou une date dans un mois futur, laisse passer un effacem
   assert.equal(futureReceiptError({ period: '2026-12-01', amount: 0, paidOn: null }, NOW), null);
   assert.equal(futureReceiptError({ period: '2026-11-01', amount: 50, paidOn: '2026-11-30' }, NOW), null);
 });
+
+test('le mois courant est celui de Paris, comme le serveur', async () => {
+  const { currentPeriod } = await import('./constants.js');
+  // 30/11 à 23 h 30 UTC = 1er décembre à Paris.
+  assert.equal(currentPeriod(new Date('2026-11-30T23:30:00Z')), '2026-12');
+  assert.equal(currentPeriod(new Date('2026-11-30T22:30:00Z')), '2026-11');
+  const { FUTURE_RECEIPT_MESSAGE } = await import('./futureReceipt.js');
+  assert.match(FUTURE_RECEIPT_MESSAGE, /mois à venir/i);
+});

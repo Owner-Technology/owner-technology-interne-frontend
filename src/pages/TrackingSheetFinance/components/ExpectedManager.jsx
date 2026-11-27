@@ -56,7 +56,7 @@ import apiClient from '../../../services/apiClient.js';
 import { formatEUR, formatMonthLabel, formatDateFR, currentPeriod, deferralsByMonth, deferralLinks, outstandingByMonth, reportsByMonth, deMonthLabel } from '../constants.js';
 import { EXPLAIN_OPS_LIMIT, expectedOpsByMonth, explainExpectedMonth } from '../expectedExplain.js';
 import { buildStatement } from '../statement.js';
-import { receiptEditable, FUTURE_RECEIPT_TITLE } from '../futureReceipt.js';
+import { receiptEditable, FUTURE_RECEIPT_TITLE, FUTURE_RECEIPT_MESSAGE } from '../futureReceipt.js';
 
 const N = {
   text: '#1c1b19',
@@ -482,6 +482,9 @@ export default function ExpectedManager({
       // Mois à venir : seule une remise à zéro passe (facturation, 27/11/2026).
       && !(row.futur && round2(value) !== 0)),
   [recDrafts, byId]);
+  // Montant tapé sur un mois à venir : il n'est pas envoyé, on le dit.
+  const futureRecTyped = useMemo(() => Object.entries(recDrafts)
+    .some(([id, v]) => byId.get(id)?.futur && v !== '' && round2(v) !== 0), [recDrafts, byId]);
   // Reste dû : seulement un mois passé ou en cours, et seulement si la valeur change.
   const resteEdits = useMemo(() => Object.entries(resteDrafts)
     .map(([id, v]) => ({ row: byId.get(id), value: v }))
@@ -1241,6 +1244,11 @@ export default function ExpectedManager({
             display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
             padding: '12px 20px', borderTop: `1px solid ${N.borderSft}`, background: '#fff',
           }}>
+            {mode === 'edit' && futureRecTyped && (
+              <span role="alert" style={{ flexBasis: '100%', fontSize: 12, color: N.amber, lineHeight: 1.5 }}>
+                {FUTURE_RECEIPT_MESSAGE}
+              </span>
+            )}
             {impact && (
               <span style={{ flexBasis: '100%', fontSize: 12, color: N.textMuted, lineHeight: 1.5 }}>
                 <strong style={{ color: N.text }}>Avant d’enregistrer :</strong>
