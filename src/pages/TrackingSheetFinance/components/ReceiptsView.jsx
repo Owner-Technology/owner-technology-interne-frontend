@@ -23,7 +23,7 @@ import {
 
 import apiClient from '../../../services/apiClient.js';
 import { useDrawn } from '../../../components/perfSales/motion.jsx';
-import { orderedReceipts } from '../receipts.js';
+import { orderedReceipts, receiptPspLabel, receiptPspKnown, receiptMatchesPsp } from '../receipts.js';
 import { formatEUR, formatDateFR, formatMonthLabel, PSP_COLORS } from '../constants.js';
 import {
   Avatar, Card, Empty, OpenCue, Page, RefreshButton, Reveal, Segmented, Stat, Stats, TableBox, Tag, Th, Who,
@@ -53,7 +53,8 @@ const SYNC = 'Classeur (sync)';
 const PAGE = 25;
 const SPRING = { type: 'spring', stiffness: 520, damping: 40 };
 
-const pspOf = (r) => r.psp || NO_PSP;
+const pspOf = (r) => receiptPspLabel(r) || NO_PSP;
+const knownPsp = (r) => receiptPspKnown(r, PSP_COLORS);
 // L'auteur d'une saisie ; le sync du classeur n'en a pas.
 const whoOf = (r) => r.who || (r.source === 'classeur' ? SYNC : '—');
 const monthOf = (r) => (r.period ? String(r.period).slice(0, 7) : '');
@@ -318,7 +319,7 @@ function PeopleCard({ people, months, loading, selected, onSelect, month, onMont
 
 const matches = (r, f) => (f.kind === 'all' || r.kind === f.kind)
   && (!f.entity || r.entity === f.entity)
-  && (!f.psp || pspOf(r) === f.psp)
+  && (!f.psp || receiptMatchesPsp(r, f.psp, NO_PSP))
   && (!f.who || whoOf(r) === f.who)
   && (f.month == null || monthOf(r) === f.month);
 
@@ -421,7 +422,7 @@ function Journal({ rows, loading, refreshError, onRetry, days, scope, filter, se
                 </td>
                 <td className="is-num fst-num" style={{ fontWeight: 500 }}>{formatEUR(r.amount)}</td>
                 <td>
-                  <Tag tone={PSP_COLORS[r.psp] ? 'green' : undefined} title="Prestataire renseigné pour cette échéance">{pspOf(r)}</Tag>
+                  <Tag tone={knownPsp(r) ? 'green' : undefined} title="Prestataire renseigné pour cette échéance">{pspOf(r)}</Tag>
                 </td>
                 <td className="fst-cell-muted">{r.period ? formatMonthLabel(String(r.period).slice(0, 7)) : '—'}</td>
                 <td>

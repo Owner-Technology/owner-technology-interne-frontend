@@ -64,6 +64,9 @@ import {
 
 import {
   PSP_OPTIONS,
+  MAX_OWNER_PSP,
+  pspList,
+  ownerPspPatch,
   PSP_COLORS,
   PSP_FALLBACK,
   COLUMN_LABELS,
@@ -179,7 +182,7 @@ function buildCols(scope, paymentDatesEditable = false, role = apiClient.getUser
     // Check / Date paiement : par entité uniquement — pas de somme possible,
     // absentes en vision Globale.
     ...(isGlobal ? {} : {
-      psp:           { icon: CardIcon, w: 100, group: entityGroup,   shortLabel: 'Check',              fullLabel: stripEntitySuffix(COLUMN_LABELS.pspOwner),              kind: 'select', sticky: false, splitVisible: false, align: 'left',   editable: contract },
+      psp:           { icon: CardIcon, w: scope === 'owner' ? 170 : 100, group: entityGroup,   shortLabel: 'Check',              fullLabel: stripEntitySuffix(COLUMN_LABELS.pspOwner),              kind: 'select', sticky: false, splitVisible: false, align: 'left',   editable: contract },
       payDate:       { icon: CalendarIcon, w: 110, group: entityGroup,   shortLabel: 'Date paie.',         fullLabel: stripEntitySuffix(COLUMN_LABELS.payDateOwner),          kind: 'date',   sticky: false, splitVisible: false, align: 'center', editable: amounts || paymentDatesEditable },
     }),
   };
@@ -1044,10 +1047,13 @@ const RowRenderer = React.memo(function RowRenderer({
       {/* Check PSP (entité active — absent en vision Globale) */}
       {keys.includes('psp') && !isGlobal && C('psp', (
         <EditableSelect
-          value={row[fields.psp]}
+          // Owner : deux PSP au plus sur le même encaissement (27/11/2026).
+          {...(scope === 'owner'
+            ? { multiple: true, maxValues: MAX_OWNER_PSP, value: pspList(row, 'owner'),
+                onCommit: (list) => onPatchRow(row.id, ownerPspPatch(list)) }
+            : { value: row[fields.psp], onCommit: patch(fields.psp) })}
           options={PSP_OPTIONS}
           disabled={!cols.psp.editable}
-          onCommit={patch(fields.psp)}
           pillColors={PSP_COLORS}
           pillFallback={PSP_FALLBACK}
           notionSolid
