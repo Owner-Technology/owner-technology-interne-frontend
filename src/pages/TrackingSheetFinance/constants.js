@@ -434,7 +434,26 @@ export const advanceNote = (r, scope) => {
   const text = !months.length ? 'payé d’avance'
     : months.length === 1 && links.length === 1 ? `avance ${deMonth(monthsLabel(months))}` : 'avances antérieures';
   const detail = links.map((l) => `${formatEUR(l.amount)} ${l.month ? `payés en ${formatMonthLabel(l.month).toLowerCase()}` : 'de crédit'}`);
+  // Paiement reçu sur un mois qui n'attendait rien, qui règle un mois lointain (serveur, dev 2026-11-27) : à vérifier,
+  // c'est souvent un attendu effacé ou jamais posé en face du paiement.
+  const unmatched = unmatchedAdvanceMonths(r, scope);
+  if (unmatched.length) {
+    return { amount, text: 'avance à vérifier', unmatched: true,
+      title: `Payé sans attendu en face (${unmatched.map((m) => formatMonthLabel(m).toLowerCase()).join(', ')}) : à vérifier. ${detail.join(', ')}.` };
+  }
   return { amount, text, title: `Déjà payé d’avance : ${detail.join(', ')}.` };
+};
+
+// Mois d'origine des avances reçues sans attendu en face, dans la vision.
+export const unmatchedAdvanceMonths = (r, scope) => {
+  const months = new Set();
+  for (const entity of ['owner', 'optilex']) {
+    if (scope !== 'global' && scope !== entity) continue;
+    for (const link of entityImputation(r, entity).unmatched_from || []) {
+      if (link.period && (toNumber(link.amount) || 0) > 0) months.add(link.period);
+    }
+  }
+  return [...months].sort();
 };
 
 // « → novembre », « → retard, déc. » : où part le trop-perçu du mois.
