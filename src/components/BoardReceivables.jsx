@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import apiClient from "../services/apiClient";
 import { ListRow, Panel, Stat, Tag } from "./DashParts.jsx";
 import "./BoardReceivables.css";
+import { regularizedNote } from "../utils/boardRegularized.js";
 
 export const RECEIVABLES_ROLES = ["admin", "ceo", "finance_director", "finance_team", "customer_success_manager"];
 
@@ -124,7 +125,7 @@ function ReceivablesModal({ data, from, onClose }) {
                 {periods.map((p, i) => (
                   <div key={p.month} role="listitem" className={`rv-m is-${p.state}`} style={{ "--rv-i": i }}
                     title={`${monthLabel(p.month, true)} : ${p.state === "upcoming" ? `à venir, ${money(p.expected)}` : p.state === "none" ? "rien d'attendu"
-                      : p.state === "paused" ? "en pause" : p.state === "deferred" ? `reporté, ${money(p.expected)}` : `${money(p.paid)} payés sur ${money(p.expected)}${p.state === "regularized" ? ", régularisé" : ""}`}`}>
+                      : p.state === "paused" ? "en pause" : p.state === "deferred" ? `reporté, ${money(p.expected)}` : `${money(p.paid)} payés sur ${money(p.expected)}${regularizedNote(p, { day, monthLabel })}`}`}>
                     <span className="rv-m-sq" />
                     <small>{monthLabel(p.month)}</small>
                   </div>

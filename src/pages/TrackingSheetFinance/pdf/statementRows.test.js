@@ -153,3 +153,19 @@ test('un mois offert reste sur l’état de compte, à 0 €, sous son nom', () 
     ['Novembre 2026', 'Mois offert (parrainage)', 0, 0],
   ]);
 });
+
+test('un mois en retard soldé par les mois suivants se dit régularisé, sans changer le restant dû', () => {
+  const statement = [
+    { period: '2026-03', charged: 100, received: 40, received_overdue: 0, adjustment: 0, unpaid: 0,
+      regularized: { period: '2026-11', paid_on: '2026-11-15' } },
+    { period: '2026-11', charged: 100, received: 100, received_overdue: 60, adjustment: 0, unpaid: 0, regularized: null },
+  ];
+  const rows = statementRows({ entity: 'owner', month: '2026-11', offer: '1-5 salariés', statement });
+  assert.equal(rows.length, 2);
+  assert.match(rows[0].offre, /^1-5 salariés · régularisée le 15\/11\/2026$/);
+  assert.equal(rows[1].offre, '1-5 salariés');
+  assert.equal(rows.reduce((sum, r) => sum + r.billed - r.paid, 0), 0);
+  // Encore un reste dû : rien à dire.
+  const owing = statementRows({ entity: 'owner', month: '2026-11', offer: 'x', statement: [{ ...statement[0], unpaid: 20 }] });
+  assert.equal(owing[0].offre, 'x');
+});

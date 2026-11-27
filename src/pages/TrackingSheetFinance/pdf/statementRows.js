@@ -1,5 +1,6 @@
 import { FREE_MONTH_LABEL } from '../freeMonth.js';
-import { scopedPeriodAmounts, formatMonthLabel, toNumber, splitClientIdentity } from '../constants.js';
+import { scopedPeriodAmounts, formatMonthLabel, formatDateFR, toNumber, splitClientIdentity } from '../constants.js';
+import { regularizationText } from '../installmentFollowup.js';
 
 const monthKey = value => String(value || '').slice(0, 7);
 const included = (key, month) => /^\d{4}-\d{2}$/.test(key) && key <= month;
@@ -104,6 +105,9 @@ export function statementAllocationRows({ periods = [], entity, month, splits = 
 export function statementRows({ periods = [], entity, month, offer = '', structure = null, splits = [], refunds = [], priorDebts = [], statement = null, freeMonths = null }) {
   // Mois offerts pour parrainage (dev 2026-11-19) : la ligne reste, même à 0 €, et dit pourquoi rien n'est facturé.
   const free = new Set(freeMonths || []);
+  // Mois en retard soldés par les mois suivants (facturation, 27/11/2026) : la ligne le dit, les montants et le
+  // restant dû cumulé ne bougent pas.
+  const regularized = new Map();
   const byMonth = new Map();
   if (structure) {
     for (const split of splits) {
@@ -124,6 +128,9 @@ export function statementRows({ periods = [], entity, month, offer = '', structu
       const billed = toNumber(m.charged);
       const paid = toNumber(m.received) + toNumber(m.received_overdue);
       if (billed !== 0 || paid !== 0 || (free.has(key) && billed === 0)) byMonth.set(key, { billed, paid });
+      if (m.regularized && !(toNumber(m.unpaid) > 0)) {
+        regularized.set(key, { period: String(m.regularized.period).slice(0, 7), paidOn: m.regularized.paid_on || null });
+      }
     }
   } else {
     for (const period of periods) {
@@ -135,7 +142,7 @@ export function statementRows({ periods = [], entity, month, offer = '', structu
       byMonth.set(key, { billed: amounts.expected, paid });
     }
   }
-  const rows = [...byMonth.entries()].map(([key, value]) => ({ month: key, billed: structure ? 0 : value.billed, paid: structure ? value : value.paid, refund: false, free: !structure && free.has(key) && value.billed === 0 }));
+  const rows = [...byMonth.entries()].map(([key, value]) => ({ month: key, billed: structure ? 0 : value.billed, paid: structure ? value : value.paid, refund: false, free: !structure && free.has(key) && value.billed === 0, regularized: regularized.get(key) || null }));
   if (!structure) {
     for (const debt of priorDebts) {
       const key = String(debt.period || '').slice(0, 7);
@@ -164,7 +171,9 @@ export function statementRows({ periods = [], entity, month, offer = '', structu
   return rows.sort((a, b) => a.month.localeCompare(b.month) || Number(!!b.prior) - Number(!!a.prior) || Number(!!a.refund) - Number(!!b.refund)).map(r => ({
     periodLabel: formatMonthLabel(r.month),
     offre: r.prior ? `Solde antérieur${r.reason ? ` — ${r.reason}` : ''}` : r.refund ? `Remboursement de trop-perçu${r.reason ? ` — ${r.reason}` : ''}`
-      : r.correction ? 'Correction de solde' : r.free ? FREE_MONTH_LABEL : offer,
+      : r.correction ? 'Correction de solde' : r.free ? FREE_MONTH_LABEL
+      : r.regularized ? [offer, regularizationText(r.regularized, { formatDay: formatDateFR, formatMonth: formatMonthLabel })].filter(Boolean).join(' · ')
+      : offer,
     billed: r.billed, paid: r.paid,
   }));
 }
