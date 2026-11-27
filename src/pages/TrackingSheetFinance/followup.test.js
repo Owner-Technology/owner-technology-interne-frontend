@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { reviewedInstallment, statementRegularization, regularizationText } from './installmentFollowup.js';
 import { formatDateLongFR, formatMonthLabel } from './constants.js';
+import { regularizedNote } from '../../utils/boardRegularized.js';
 import { matchesLateOnboarding, matchesAnnualRenewal, isRetractedEtat } from './followupFilters.js';
 import { installmentSubline } from './installmentLabel.js';
 
@@ -74,4 +75,14 @@ test('la ligne de l’échéancier dit le jour, sinon le mois du règlement ; le
   const inst = { month: '2026-03', status: 'regularized', regularizedOn: { period: '2026-11', paidOn: null } };
   assert.match(installmentSubline(inst), /régularisée en novembre 2026$/);
   assert.match(installmentSubline({ ...inst, regularizedOn: null }), /régularisation confirmée$/);
+});
+
+// Board, frise des créances : même régularisation, avec son jour.
+const boardFmt = { day: (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`, monthLabel: () => 'novembre 2026' };
+
+test('la frise du board dit le jour du règlement, sinon son mois, sinon « régularisé »', () => {
+  assert.equal(regularizedNote({ state: 'regularized', regularized: { period: '2026-11', paid_on: '2026-11-20' } }, boardFmt), ', régularisé le 20/11/2026');
+  assert.equal(regularizedNote({ state: 'regularized', regularized: { period: '2026-11', paid_on: null } }, boardFmt), ', régularisé en novembre 2026');
+  assert.equal(regularizedNote({ state: 'regularized' }, boardFmt), ', régularisé');
+  assert.equal(regularizedNote({ state: 'partial' }, boardFmt), '');
 });
