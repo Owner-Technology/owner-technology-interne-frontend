@@ -91,6 +91,7 @@ import {
 } from './constants.js';
 import { upcomingExpectedHint } from './upcomingExpected.js';
 import { EditableNumber, EditableSelect, EditableDate } from './EditableCell.jsx';
+import { receiptEditable, paymentDateEditable, futureReceiptError, lastPaymentDay } from './futureReceipt.js';
 import ModalitesCell from './components/ModalitesCell.jsx';
 import StructureAmountCell from './components/StructureAmountCell.jsx';
 import { CalendarClockIcon, ContractPendingIcon, ExitIcon, NoShowIcon, RecoveredIcon } from './components/FinanceIcons.jsx';
@@ -785,6 +786,19 @@ const RowRenderer = React.memo(function RowRenderer({
   // montant baisse dès qu'un paiement est enregistré.
   const overdueToDate    = scopedOverdueCurrent(row, scope) + scopedOverdueCum(row, scope);
   const recoveredOverdue = sumOrField('received_overdue_owner', 'received_overdue_optilex_ttc', fields?.receivedOverdue);
+  // Pas d'encaissement ni de date de paiement sur un mois futur (facturation,
+  // 27/11/2026) ; le serveur refuse aussi. Un mois futur déjà saisi s'efface.
+  const receiptOpen = receiptEditable(row.period, received);
+  const payDateOpen = !!cols.payDate?.editable && !!fields && paymentDateEditable(row.period, row[fields.payDate]);
+  const payDateField = fields?.payDate;
+  const patchPayDate = useCallback(async (value) => {
+    const refused = futureReceiptError({ period: row.period, paidOn: value });
+    if (refused) {
+      onShowToast?.(refused, 'error');
+      throw new Error(refused);
+    }
+    return onPatchRow(row.id, { [payDateField]: value });
+  }, [row.id, row.period, payDateField, onPatchRow, onShowToast]);
   // Trop-perçus imputés par le serveur (dev 2026-11-06) : ce que le mois a
   // reçu pour lui-même, l'avance qui le paie déjà, où part son surplus.
   const paidForMonth     = scopedPaidForMonth(row, scope);
@@ -948,7 +962,7 @@ const RowRenderer = React.memo(function RowRenderer({
               value={received}
               expected={expected}
               advance={advance?.amount || 0}
-              canEdit={!!fields && amountsEditable}
+              canEdit={!!fields && amountsEditable && receiptOpen}
               // Le serveur a déjà écrit le total (sync_received) ; ce PATCH
               // ne sert qu'au rafraîchissement optimiste de la ligne. Il est
               // sans effet de bord : une valeur inchangée est ignorée côté
@@ -959,7 +973,7 @@ const RowRenderer = React.memo(function RowRenderer({
           ) : (
             <EditableNumber
               value={received}
-              disabled={!amountsEditable}
+              disabled={!amountsEditable || !receiptOpen}
               onCommit={patch(fields.received)}
               align="center"
               placeholderItalic
@@ -1006,7 +1020,7 @@ const RowRenderer = React.memo(function RowRenderer({
         ) : (
           <EditableNumber
             value={recoveredOverdue}
-            disabled={!amountsEditable}
+            disabled={!amountsEditable || !receiptEditable(row.period, recoveredOverdue)}
             onCommit={patch(fields.receivedOverdue)}
             align="center"
             placeholderItalic
@@ -1045,11 +1059,12 @@ const RowRenderer = React.memo(function RowRenderer({
       {/* Date paiement (entité active — absente en vision Globale) */}
       {keys.includes('payDate') && !isGlobal && C('payDate', (
         <EditableDate
-          key={cols.payDate.editable ? 'editable' : 'readonly'}
-          disabled={!cols.payDate.editable}
+          key={payDateOpen ? 'editable' : 'readonly'}
+          disabled={!payDateOpen}
           value={displayedPayDate(row, fields).value}
           projected={displayedPayDate(row, fields).projected}
-          onCommit={patch(fields.payDate)}
+          max={lastPaymentDay()}
+          onCommit={patchPayDate}
         />
       ))}
     </div>
