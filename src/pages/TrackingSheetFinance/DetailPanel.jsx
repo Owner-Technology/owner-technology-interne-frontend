@@ -112,7 +112,7 @@ import StateReview from './components/StateReview.jsx';
 import { CalendarClockIcon, NoShowIcon, RecoveredIcon } from './components/FinanceIcons.jsx';
 import { noShowInfo, noShowOf } from './boardFollow.js';
 import { recoveredInfo } from './recovered.js';
-import { reviewedInstallment } from './installmentFollowup.js';
+import { reviewedInstallment, statementRegularization } from './installmentFollowup.js';
 import InstallmentFollowup from './components/InstallmentFollowup.jsx';
 // Documents, e-mails et appels : le dossier du board, le même des deux côtés.
 import { ClientCalls, ClientDocuments } from './components/ClientFiles.jsx';
@@ -512,6 +512,7 @@ export default function DetailPanel({
   // Mois offerts pour parrainage (dev 2026-11-19) : lus dans le journal des gestes.
   const freeMonths = useMemo(() => freeMonthsFromOps(clientOps), [clientOps]);
 
+  const statement = timeline?.statement || null;
   const installments = useMemo(() => {
     const nowMonth = currentPeriod();
     // `visiblePeriods` : une échéance ne peut pas précéder la signature.
@@ -546,9 +547,15 @@ export default function DetailPanel({
         const d = deferralsByMonth(profile?.deferrals, entity)[month];
         return [entity, (d?.in || 0) - (d?.out || 0)];
       }));
-      if (!free && reviewedInstallment(p, scope, profile?.installment_followups, extraDue)) status = 'regularized';
+      // Régularisée par les mois suivants (facturation, 27/11/2026) : le relevé
+      // du serveur dit que tout son manque a été payé depuis. La confirmation
+      // manuelle garde la priorité.
+      const confirmed = !free && reviewedInstallment(p, scope, profile?.installment_followups, extraDue);
+      const regularizedOn = !confirmed && (status === 'partial' || status === 'late') && month < nowMonth
+        ? statementRegularization(statement, scope, month) : null;
+      if (confirmed || regularizedOn) status = 'regularized';
       list.push({
-        id: p.id, n: list.length + 1, month, status, ...a,
+        id: p.id, n: list.length + 1, month, status, ...a, regularizedOn,
         settled, advance: advanceNote(p, scope), surplus: surplusNote(p, scope),
         deferredOut, deferredIn,
         reportedTo, reportedFrom,
@@ -557,7 +564,7 @@ export default function DetailPanel({
       });
     }
     return list;
-  }, [visiblePeriods, scope, deferred, reported, profile?.installment_followups, profile?.deferrals, freeMonths]);
+  }, [visiblePeriods, scope, deferred, reported, profile?.installment_followups, profile?.deferrals, freeMonths, statement]);
 
   // (Le forfait mensuel dérivé des échéances a été retiré avec le « N × … »
   // de la modalité — 2026-08-25. La Formule affiche la tranche seule.)
@@ -1014,7 +1021,8 @@ export default function DetailPanel({
                     {(canEdit || readOnly) && focusedRow?.id && String(profile?.client_id) === String(clientId) &&
                       <div className="fd-followup">
                         <InstallmentFollowup key={`${clientId}-${focusedRow.id}-${scope}`} clientId={clientId} period={focusedRow}
-                          scope={scope} readOnly={readOnly} reviews={profile.installment_followups || []} onChanged={reviews => {
+                          scope={scope} readOnly={readOnly} reviews={profile.installment_followups || []}
+                          statement={statement} onChanged={reviews => {
                             setProfile(previous => ({ ...previous, installment_followups: reviews })); reloadAfterExit();
                           }}/>
                       </div>
@@ -2324,7 +2332,7 @@ const PAYMENT_DAY_LABELS = Object.fromEntries(
 
 // ── État de compte (échéancier) ─────────────────────────────────────────────
 const INSTALLMENT_BADGES = {
-  regularized: { label: 'Payée', bg: '#e2f6ea', fg: '#0b7a4b' },
+  regularized: { label: 'Encaissée', bg: '#e2f6ea', fg: '#0b7a4b' },
   paid:     { label: 'Encaissée', bg: '#e2f6ea', fg: '#0b7a4b' },
   partial:  { label: 'Partielle', bg: '#fde9da', fg: '#c2500e' },
   late:     { label: 'En retard', bg: '#fde6e6', fg: '#c5221f' },

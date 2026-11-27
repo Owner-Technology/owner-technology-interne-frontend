@@ -1,4 +1,5 @@
 import {formatDateLongFR, formatDateFR, formatMonthLabel, formatEUR, deMonthLabel} from './constants.js';
+import { regularizationText } from './installmentFollowup.js';
 
 export function installmentSubline(inst) {
   // Format long FR (« 12 mars 2026 ») — demande dev 2026-08-19.
@@ -22,7 +23,10 @@ export function installmentSubline(inst) {
   const paidOn = date && !(inst.advance && !(inst.received > 0)) ? ` · Prélevée le ${date}` : '';
   switch (inst.status) {
     case 'regularized':
-      return `${monthLabel} · régularisation confirmée`;
+      // Automatique (relevé) : le jour du règlement ; sinon geste de la finance.
+      return inst.regularizedOn
+        ? `${monthLabel} · ${regularizationText(inst.regularizedOn, { formatDay: formatDateLongFR, formatMonth: formatMonthLabel })}`
+        : `${monthLabel} · régularisation confirmée`;
     case 'deferred':
       return inst.reportedTo?.length
         ? `${monthLabel} · attendu reporté sur ${inst.reportedTo.map((r) => formatMonthLabel(r.month).toLowerCase()).join(', ')}`

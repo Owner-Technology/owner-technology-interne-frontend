@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import apiClient from '../../../services/apiClient.js';
 import { READ_ONLY_PROPS } from '../../../utils/readOnlyRoles.js';
-import { formatMonthLabel } from '../constants.js';
+import { formatMonthLabel, formatDateLongFR, currentPeriod } from '../constants.js';
+import { statementRegularization, regularizationText } from '../installmentFollowup.js';
 
 // `readOnly` (rôles en lecture seule) : précision et confirmation visibles, désactivées.
-export default function InstallmentFollowup({ clientId, period, scope, reviews, onChanged, readOnly = false }) {
+// `statement` : relevé du serveur. Un mois déjà régularisé par les mois suivants (27/11/2026) n'a plus besoin du
+// geste : la fiche le dit, sans bouton. Le geste reste pour un règlement que le moteur ne relie pas au mois.
+export default function InstallmentFollowup({ clientId, period, scope, reviews, onChanged, readOnly = false, statement = null }) {
   const [entity, setEntity] = useState(scope === 'optilex' ? 'optilex' : 'owner');
   const [note, setNote] = useState('');
   const mounted = useRef(true);
@@ -14,6 +17,8 @@ export default function InstallmentFollowup({ clientId, period, scope, reviews, 
   const selectedEntity = scope === 'global' ? entity : scope;
   const review = reviews.find(r => r.period_id === period.id && r.entity === selectedEntity);
   const active = !!review?.regularized;
+  const month = String(period.period).slice(0, 7);
+  const automatic = !active && month < currentPeriod() ? statementRegularization(statement, selectedEntity, month) : null;
   const ro = readOnly ? READ_ONLY_PROPS : {};
   const save = async () => {
     if (readOnly || busy) return;
@@ -32,13 +37,14 @@ export default function InstallmentFollowup({ clientId, period, scope, reviews, 
       onChange={e => { setEntity(e.target.value); setNote(''); setError(''); }} style={{ marginLeft: 12 }}>
       <option value="owner">Owner</option><option value="optilex">Opti’Lex</option>
     </select>}
+    {automatic ? <p role="status" style={{ color: '#0b7a4b', margin: '8px 0' }}>Encaissée, {regularizationText(automatic, { formatDay: formatDateLongFR, formatMonth: formatMonthLabel })}.</p> : <>
     <p style={{ color: '#8b867e', margin: '8px 0' }}>Le règlement est déjà enregistré dans un autre mois ? Confirmez cette échéance comme payée. Aucun montant ne sera ajouté ou déplacé.</p>
     {active && <p role="status" style={{ color: '#0b7a4b' }}>Régularisation confirmée le {new Date(review.updated_at).toLocaleDateString('fr-FR')} par {review.updated_by}{review.note ? ` · ${review.note}` : ''}.</p>}
     <input aria-label="Précision sur la régularisation" placeholder="Précision facultative (ex. règlement saisi en octobre)" maxLength={1000}
       value={note} disabled={busy} onChange={e => setNote(e.target.value)} style={{ boxSizing: 'border-box', width: '100%', padding: 8, border: '1px solid #e8e4de', borderRadius: 6, marginBottom: 8, font: 'inherit' }} {...ro}/>
     <button type="button" onClick={save} disabled={busy} style={{ padding: '7px 12px', border: '1px solid #d7dfda', borderRadius: 6, background: '#fff', color: '#0b7a4b', font: 'inherit', cursor: busy ? 'wait' : 'pointer' }} {...ro}>
       {busy ? 'Enregistrement…' : active ? 'Annuler la confirmation de régularisation' : 'Confirmer la régularisation'}
-    </button>
+    </button></>}
     {error && <p role="alert" style={{ color: '#c5221f' }}>{error}</p>}
   </div>;
 }
