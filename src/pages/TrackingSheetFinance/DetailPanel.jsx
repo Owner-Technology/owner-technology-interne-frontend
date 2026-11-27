@@ -220,7 +220,7 @@ export default function DetailPanel({
   // Poste de pilotage des attendus (direction) : modifier, réduire, reporter,
   // mettre en pause. Distinct d'une perte — rien n'est abandonné ici.
   const [expectedOpen, setExpectedOpen] = useState(false);
-  // Mois offert au client qui a parrainé (dev 2026-11-19) : une échéance à 0 €, Owner et Opti'Lex.
+  // Mois offert au client qui a parrainé (dev 2026-11-19) : l'Owner du mois à 0 €, l'Opti'Lex reste dû (dev 2026-11-27).
   const [freeMonthOpen, setFreeMonthOpen] = useState(false);
   // Structures payantes et ventilation — servent l'état de compte par société.
   const [structures, setStructures] = useState([]);
@@ -1166,12 +1166,11 @@ export default function DetailPanel({
             clientId={clientId}
             periods={periods}
             clientMode={focusedRow?.payment_mode || client?.payment_mode}
-            optilexMode={focusedRow?.payment_mode_optilex || client?.payment_mode_optilex}
             onClose={() => setFreeMonthOpen(false)}
             onSubmit={async (body, month) => {
               const r = await apiClient.post(`/api/v1/finance-periods/client/${clientId}/free-month`, body);
               setFreeMonthOpen(false);
-              const refunded = Object.values(r?.refunds || {}).reduce((a, b) => a + Number(b || 0), 0);
+              const refunded = Number(r?.refunds?.owner || 0); // seul l'Owner est remboursé (dev 2026-11-27)
               const settled = refunded ? ` · ${formatEUR(refunded)} remboursés`
                 : body.settle === 'refund' ? ' · rien à rembourser' : '';
               onShowToast?.(r?.pending ? 'Demande envoyée à la direction'

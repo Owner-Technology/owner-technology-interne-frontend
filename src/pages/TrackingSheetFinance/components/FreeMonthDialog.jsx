@@ -1,9 +1,10 @@
 // FreeMonthDialog.jsx — offrir une échéance au client qui a parrainé (dev 2026-11-19).
 //
-// « Si le parrainage est validé, la facturation a un bouton dans Actions qui annule une des échéances : le client a
-// droit à un mois gratuit Owner et Opti'Lex. » Pas de mécanique nouvelle : le geste existant « réduction » à 100 %
-// sur le mois choisi (POST /expected, kind 'discount'). Il est donc tracé dans l'historique, annulable dans le
-// journal, et une demande de l'équipe passe par la direction comme toute modification d'attendu.
+// « Si le parrainage est validé, la facturation a un bouton dans Actions qui annule une des échéances. » Le
+// parrainage est un avantage Owner (dev 2026-11-27) : seul l'Owner du mois est offert, l'Opti'Lex reste dû. Pas de
+// mécanique nouvelle : le geste existant « réduction » à 100 % sur le mois choisi (POST /expected, kind 'discount').
+// Il est donc tracé dans l'historique, annulable dans le journal, et une demande de l'équipe passe par la direction
+// comme toute modification d'attendu.
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -24,7 +25,7 @@ const N = {
   red: '#c5221f',
 };
 
-export default function FreeMonthDialog({ open, clientId, client, periods, clientMode, optilexMode, onClose, onSubmit }) {
+export default function FreeMonthDialog({ open, clientId, client, periods, clientMode, onClose, onSubmit }) {
   // Les mois qui ont déjà une demande en attente (équipe → direction) ne sont pas proposés une deuxième fois.
   const [pendingMonths, setPendingMonths] = useState([]);
   useEffect(() => {
@@ -39,8 +40,8 @@ export default function FreeMonthDialog({ open, clientId, client, periods, clien
       .catch(() => { if (alive) setPendingMonths([]); });
     return () => { alive = false; };
   }, [open, clientId]);
-  const choices = useMemo(() => freeMonthChoices(periods, { clientMode, optilexMode, pendingMonths }),
-    [periods, clientMode, optilexMode, pendingMonths]);
+  const choices = useMemo(() => freeMonthChoices(periods, { clientMode, pendingMonths }),
+    [periods, clientMode, pendingMonths]);
   const [month, setMonth] = useState('');
   const [settle, setSettle] = useState('advance');
   const [busy, setBusy] = useState(false);
@@ -147,7 +148,7 @@ export default function FreeMonthDialog({ open, clientId, client, periods, clien
                 </select>
                 {picked && (
                   <span style={{ fontSize: 12, color: N.textMuted }}>
-                    Owner {formatEUR(picked.owner)}{picked.optilexMonthly ? <> · Opti&apos;Lex {formatEUR(picked.optilex)}</> : null}
+                    Owner {formatEUR(picked.owner)}
                   </span>
                 )}
               </div>
@@ -157,7 +158,7 @@ export default function FreeMonthDialog({ open, clientId, client, periods, clien
           {picked && picked.paid > 0 && (
             <section style={{ padding: '14px 20px 4px' }}>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: N.text, marginBottom: 8 }}>
-                Déjà payé : {formatEUR(picked.paid)}
+                Déjà payé à Owner : {formatEUR(picked.paid)}
               </div>
               <div style={{ display: 'flex', gap: 6 }} role="radiogroup" aria-label="Ce qui a déjà été payé">
                 {[{ key: 'advance', label: 'Avance' }, { key: 'refund', label: 'Remboursement' }].map((o) => {
