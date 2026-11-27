@@ -60,3 +60,11 @@ export function matchesOverdueOnboarding(row, parisNow) {
     // Date-only appointments have no known hour: never invent a midnight deadline.
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(date) && date.slice(0, 16) < parisNow.slice(0, 16);
 }
+
+// « Reprogrammer » l'onboarding (Finance et board, réunion du 27/11/2026) : tant qu'il n'est pas réalisé, qu'il ait une
+// date (à venir, passée, no show du jour) ou qu'il soit à recaler ou noté no show sans date. La garde du serveur
+// (`/board-reschedule-onboarding`, `/board-reschedule`) reste celle qui fait foi.
+export function canRescheduleOnboarding(row) {
+    if (!row?.numero_client || row.rdv_onboarding_done) return false;
+    return !!(row.rdv_onboarding_date_manual || row.rdv_onboarding_date || row.onboarding_reschedule_pending || row.no_show?.day);
+}

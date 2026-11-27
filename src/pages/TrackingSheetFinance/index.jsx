@@ -53,6 +53,7 @@ import CallsView from './components/CallsView.jsx';
 import ValidationsView from './components/ValidationsView.jsx';
 import { StateReviewQueue } from './components/StateReview.jsx';
 import PromisesView from './components/PromisesView.jsx';
+import BillingWeeksView from './components/BillingWeeksView.jsx';
 import SequencesView from './components/SequencesView.jsx';
 import StatisticsView from './statistics/StatisticsView.jsx';
 // Icônes de navigation dessinées pour la page (barre latérale, onglets,
@@ -1475,6 +1476,7 @@ export default function TrackingSheetFinance() {
           { id: 'losses',   label: 'Pertes',        Icon: LossIcon,    active: activeTab === 'losses',   action: () => setActiveTab('losses') },
           { id: 'promises', label: 'Promesses de règlement', Icon: Handshake, active: activeTab === 'promises', action: () => setActiveTab('promises'), count: promiseRows.length || undefined },
           { id: 'sequences', label: 'Suivi des séquences', Icon: MailCheck, active: activeTab === 'sequences', action: () => setActiveTab('sequences') },
+          { id: 'billing-weeks', label: 'Onboardings par semaine', Icon: CalendarClockIcon, active: activeTab === 'billing-weeks', action: () => setActiveTab('billing-weeks') },
           { id: 'statistics', label: 'Statistiques', Icon: ChartColumn, active: activeTab === 'statistics', action: () => setActiveTab('statistics') },
           ...(canViewCalls ? [{ id: 'calls', label: 'Tracking des appels', Icon: Phone, active: activeTab === 'calls', action: () => setActiveTab('calls') }] : []),
           { id: 'state-reviews', label: 'États à traiter', Icon: CheckCircle2, count: pendingStateReviews || undefined, active: activeTab === 'state-reviews', action: () => setActiveTab('state-reviews') },
@@ -1701,6 +1703,8 @@ export default function TrackingSheetFinance() {
                 <ReceiptsView scope={scope} onOpenClient={openClientById} />
               ) : activeTab === 'promises' ? (
                 <PromisesView scope={scope} onOpenClient={openClientById} />
+              ) : activeTab === 'billing-weeks' ? (
+                <BillingWeeksView readOnly={readOnly} />
               ) : activeTab === 'sequences' ? (
                 <SequencesView onOpenClient={openClientById} readOnly={readOnly} />
               ) : activeTab === 'statistics' ? (
