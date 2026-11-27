@@ -100,7 +100,8 @@ import { departureOf, noShowInfo, noShowOf } from './boardFollow.js';
 // teinte en pastel les cellules sticky N°/société (la colonne État dédiée a
 // été retirée 2026-08-21, l'édition vit dans le DetailPanel), et la météo
 // client s'affiche à côté du nom (MeteoIcon + bandes rouge/orange/vert).
-import { displayEtat, ETAT_STYLE, MeteoIcon, METEO_BANDS, meteoBandOf } from '../OptilexBoard.jsx';
+import { displayEtat, ETAT_STYLE, MeteoIcon } from '../OptilexBoard.jsx';
+import { weatherPresentation } from '../../utils/weatherCase.js';
 import CommentPopup from './CommentPopup.jsx';
 import apiClient from '../../services/apiClient.js';
 import { isReadOnlyViewer, readOnlyProps } from '../../utils/readOnlyRoles.js';
@@ -1251,10 +1252,10 @@ function SocieteCell({ row, boardRow }) {
   const { societeName, representant: repFromSociete } = splitClientIdentity(row.client);
   const representant = row.client?.representative_name || repFromSociete;
 
-  // Météo client (board) : icône MeteoIcon teintée par la bande
-  // rouge/orange/vert, en fin de ligne du nom. Pas de score → pas d'icône.
+  // Météo client (board) : les niveaux du board (Satisfait, À surveiller, Mécontent, Critique, Résiliation), ceux du
+  // filtre Météo de la page (27/11/2026), en fin de ligne du nom. Pas de score → pas d'icône.
   const meteoScore = boardRow?.meteo_score ?? null;
-  const meteoBand = meteoScore != null ? METEO_BANDS[meteoBandOf(meteoScore)] : null;
+  const meteoBand = weatherPresentation(meteoScore, boardRow?.meteo_context);
 
   return (
     <div style={{

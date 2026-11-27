@@ -44,19 +44,6 @@ export const canEditContract = (role) => canWriteFinance(role);
 // par Ismahane (dev 2026-09-23). Le serveur fait la même distinction.
 export const canProposeAmounts = (role) => role === 'finance_team';
 
-// Filtre « Météo client » du menu Filtre : réservé à des personnes, pas à
-// un rôle (décision dev 2026-09-18) — Ismahane (direction financière),
-// Aurélie B (équipe finance) et Paul (CEO, mêmes accès qu'Ismahane depuis le
-// 2026-09-30). Même mécanique que l'onglet des appels.
-const METEO_FILTER_USER_IDS = new Set([
-  '94b5dcc1-a1bb-41ac-94fe-14cf047cffef', // Ismahane
-  '6b32dc17-528d-4e01-b955-2c49a5f44b6a', // Paul (CEO)
-  '6dfc7435-c938-4bd3-b143-a6516b2981bd', // Aurélie B
-  '445a5b0d-61e3-4e3b-b1fc-77b04b66df12', // Youcef Amrane — le dev est toujours inclus (règle 2026-09-19)
-  '3402830c-035f-4617-ac0f-dc42fa00c8a6', // Ben Issa Amrane (admin) : mêmes accès que le dev (2026-10-15)
-]);
-export const canFilterMeteo = (user) => METEO_FILTER_USER_IDS.has(user?.id);
-
 // Vision « Global » (Owner + Opti'lex) : ouverte à tous ceux qui ont accès à
 // la page. Demande dev 2026-09-23 : « il faut qu'on voie tous la même chose »,
 // la vision n'est pas une question de droits (l'équipe finance était limitée
@@ -106,12 +93,17 @@ export const pendingFinanceRow = (br, period) => {
 // Comparaison sur le JOUR calendaire (heure-mur), jamais sur l'instant : une
 // date ISO « 2026-09-18 » est minuit UTC, soit 02:00 à Paris — la lire comme
 // un instant la ferait passer « à venir » le jour même.
-const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-export const onboardingPhaseOf = (r, today = new Date()) => {
+export const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// Jour de l'onboarding Owner de la ligne (« AAAA-MM-JJ »), ou null sans date lisible.
+export const onboardingDayKey = (r) => {
   const raw = r?.client?.rdv_onboarding;
   const d = parseDateFR(raw);
   if (!d) return null;
-  const key = /^\d{4}-\d{2}-\d{2}/.test(String(raw).trim()) ? String(raw).trim().slice(0, 10) : dayKey(d);
+  return /^\d{4}-\d{2}-\d{2}/.test(String(raw).trim()) ? String(raw).trim().slice(0, 10) : dayKey(d);
+};
+export const onboardingPhaseOf = (r, today = new Date()) => {
+  const key = onboardingDayKey(r);
+  if (!key) return null;
   return key > dayKey(today) ? 'upcoming' : 'past';
 };
 
@@ -301,13 +293,15 @@ export const financeAutomationFilter = (value) => {
 
 // Le suivi « Non automatisé » concerne uniquement les clients avec un attendu
 // positif sur le mois et la vision affichés, même s'ils ont déjà réglé ce mois.
-export const matchesNonAutomated = (row, scope) => {
-  if (!(scopedPeriodAmounts(row, scope).expected > 0)) return false;
+// Prélèvement non automatisé dans la vision affichée (pastille rouge ; en Global, aucune des deux entités).
+export const isNonAutomated = (row, scope) => {
   const p = autoDebitPastilles(row.auto_debit);
   if (scope === 'owner') return p.owner === 'red';
   if (scope === 'optilex') return p.optilex === 'red';
   return p.owner === 'red' && p.optilex === 'red';
 };
+export const matchesNonAutomated = (row, scope) =>
+  scopedPeriodAmounts(row, scope).expected > 0 && isNonAutomated(row, scope);
 
 // ── Vision Owner / Opti'lex / Global (phase 2-3) ─────────────────────────
 //

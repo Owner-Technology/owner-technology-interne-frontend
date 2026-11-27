@@ -78,8 +78,13 @@ import { canEditPaymentDates, financeRole, loadPaymentDateAccess, paymentDateIde
 import DetailPanel from './DetailPanel.jsx';
 // `displayEtat` : l'état affiché sur le board Owner/Opti'Lex, calculé par le
 // back (`etat_affiche`) — la même valeur que le board, jamais recalculée ici.
-import { matchesLateOnboarding, matchesAnnualRenewal, isRetractedEtat } from './followupFilters.js';
-import { displayEtat, ETAT_STYLE, MeteoIcon, METEO_BANDS, meteoBandOf } from '../OptilexBoard.jsx';
+import { matchesLateOnboarding, matchesAnnualRenewal, isRetractedEtat, inOnboardingGrace } from './followupFilters.js';
+import {
+  VIEW_GROUPS, subsOf, groupOf, initialSelection, pickGroup, pickSub, toggleSub, activeSubs, isSubActive, onlySub,
+  selectViewRows, viewCountsOf, METEO_LEVELS,
+} from './viewGroups.js';
+import { WEATHER, weatherFilter, weatherPresentation } from '../../utils/weatherCase.js';
+import { displayEtat, ETAT_STYLE, MeteoIcon } from '../OptilexBoard.jsx';
 import {
   ALLOWED_ROLES,
   formatEUR,
@@ -88,6 +93,7 @@ import {
   currentPeriod,
   parseDateFR,
   matchesNonAutomated,
+  isNonAutomated,
   FINANCE_AUTOMATION_FILTERS,
   financeAutomationFilter,
   TERMINATED_BOARD_ETATS,
@@ -99,7 +105,7 @@ import {
   normalizeSearch,
   matchesClientSearch,
   isLiquidationEtat,
-  canFilterMeteo, onboardingPhaseOf, optilexIntegrationPhaseOf, hasEverPaid,
+  onboardingPhaseOf, optilexIntegrationPhaseOf, hasEverPaid,
   PENDING_OPTILEX_LABEL, pendingFinanceRow,
   canUseGlobalScope,
 } from './constants.js';
@@ -325,7 +331,10 @@ const VIEW_ICONS = {
   retard_mois:      ClockIcon,
   creances:         OverdueIcon,
   trop_percu:       RefundIcon,
-  onboarding:       CalendarCheckIcon,
+  onboarding_past:     CalendarCheckIcon,
+  onboarding_upcoming: CalendarClockIcon,
+  recale:              CalendarClockIcon,
+  retard_onboarding:   CalendarCheckIcon,
   non_auto:         BankOffIcon,
   attente_optilex:  ContractPendingIcon,
   resilies:         ExitIcon,
@@ -345,56 +354,16 @@ const SCOPE_LS_KEY = 'tsf-finance-scope-v2';
 // restent calculées même si la colonne « Retard global » a été retirée du
 // tableau : les vues-filtres en dépendent.
 
-// Vues-filtres (chips au-dessus du tableau). Single-select, « Tous » = défaut.
-const VIEW_FILTERS = [
-  { key: 'all',         label: 'Tous' },
-  { key: 'a_jour',      label: 'À jour' },
-  { key: 'retard_mois', label: 'Retard du mois' },
-  { key: 'annual_renewals', label: 'Renouvellements annuels du mois' },
-  { key: 'creances',    label: 'Créances antérieures' },
-  // Trop-perçu reporté (backend `credit_*`) : action finance à faire —
-  // déduire de la prochaine échéance ou rembourser.
-  { key: 'trop_percu',  label: 'Trop-perçu' },
-  // Onboarding Owner, en deux phases comme sur le board (demande dev
-  // 2026-09-18) : « Passés » (date passée, par mois) et « À venir » — pour
-  // les seuls clients qui n'ont JAMAIS encaissé : un seul montant récupéré,
-  // à n'importe quelle date, les sort des deux phases (précision dev le
-  // même jour : « les très anciens clients ne nous intéressent pas »).
-  { key: 'onboarding',  label: 'Onboarding' },
-  // No show d'onboarding (dev 2026-11-18) : la règle du board et le no show qualifié par le Client Success ; une date à
-  // venir qui suit le no show fait passer le client dans « Recalés » (boardFollow.js).
-  { key: 'no_show',     label: 'No show' },
-  { key: 'non_auto',    label: 'Non automatisé' },
-  // Montant déclaré sans tranche dans la modalité du client : l'attendu
-  // retombe sur l'effectif de la fiche. La finance tranche en fixant la
-  // formule, datée, depuis la fiche (dev 2026-09-25).
-  { key: 'a_verifier',  label: 'À vérifier' },
-  // Owner signé, Opti'Lex pas encore : lignes venues du board, sans numéro
-  // ni attendu, flaguées (demande dev 2026-09-18).
-  { key: 'attente_optilex', label: PENDING_OPTILEX_LABEL },
-  { key: 'resilies',    label: 'Résiliés / Rétractés' },
-  // Repassés « Signé » juste après une rétractation ou une résiliation (champ `recupere` du board) : la finance
-  // rétablit leur facturation (dev 2026-11-18).
-  { key: 'recuperes',   label: 'Clients récupérés' },
-  // Clients dont l'état affiché au board est « Pause », puis ceux en
-  // liquidation (« Liquidation » et « En cours de liquidation ») : mêmes
-  // règles d'état que le board et que le masquage des Créances antérieures
-  // (demande dev 2026-10-22).
-  { key: 'pause',       label: 'En pause' },
-  { key: 'liquidation', label: 'Liquidations' },
-];
-
-// Les deux phases de la vue « Onboarding ».
-const ONBOARDING_PHASES = [
-  { key: 'past',     label: 'Passés',  Icon: CalendarCheckIcon },
-  { key: 'upcoming', label: 'À venir', Icon: CalendarClockIcon },
-];
-
-// Les deux temps de la vue « No show » : le no show, puis le recalage quand une nouvelle date suit.
-const NO_SHOW_PHASES = [
-  { key: 'noshow', label: 'No show', Icon: NoShowIcon, hint: 'Onboarding manqué, pas encore recalé' },
-  { key: 'recale', label: 'Recalés', Icon: CalendarClockIcon, hint: 'Nouvel onboarding prévu après le no show' },
-];
+// Vues-filtres : regroupées en filtres principaux à sous-filtres cochables (viewGroups.js, réunion du 27/11/2026).
+// Les prédicats de chaque sous-filtre sont dans `matchesView`. Historique des anciennes vues :
+//  · « Retard du mois » et « Créances antérieures » sont disjointes (dev 2026-09-18, n°164) ;
+//  · « Trop-perçu » : report backend `credit_*`, à déduire ou rembourser ;
+//  · « Onboarding » passé / à venir : seulement les clients qui n'ont JAMAIS encaissé (dev 2026-09-18) ;
+//  · « No show » / « Recalés » : règle du board (boardFollow.js, dev 2026-11-18) ;
+//  · « À vérifier » : montant déclaré sans tranche (dev 2026-09-25) ;
+//  · « Attente Opti'Lex » : Owner signé, Opti'Lex en vol, lignes du board sans numéro en plus (dev 2026-09-18) ;
+//  · « Clients récupérés » : champ `recupere` du board (dev 2026-11-18) ; « En pause », « Liquidations » : état du
+//    board (dev 2026-10-22).
 
 // Sous-filtre de la vue « Attente Opti'Lex » (dev 2026-09-23) : où en est le
 // rendez-vous d'intégration Opti'Lex ? « Effectué » (coché sur le board) et
@@ -405,14 +374,6 @@ const OPTILEX_INTEGRATION_PHASES = [
   { key: 'past',     label: 'Date passée', hint: 'Date du RDV dépassée, mais pas marqué effectué sur le board' },
   { key: 'upcoming', label: 'À venir',     Icon: CalendarClockIcon, hint: 'RDV d’intégration daté aujourd’hui ou plus tard' },
   { key: 'none',     label: 'Sans date',   hint: 'Aucune date de RDV d’intégration' },
-];
-
-// Bandes météo du filtre (menu Filtre). L'icône reprend celle du board,
-// teintée de la bande ; « Sans météo » = aucune note posée.
-const METEO_FILTER_BANDS = [
-  { key: 'rouge',  score: 2 },
-  { key: 'orange', score: 3 },
-  { key: 'vert',   score: 4 },
 ];
 
 // Tiny colored "page emblem" — Notion's signature visual cue per item.
@@ -615,11 +576,15 @@ export default function TrackingSheetFinance() {
   // l'onglet « Tracking des appels » s'en sert pour retrouver le client d'un appel.
   const boardRows = useMemo(() => [...(boardMap ? boardMap.values() : []), ...boardPending], [boardMap, boardPending]);
 
-  // ── Vue-filtre active (chips) — single-select, « Tous » par défaut ────
-  const [viewFilter, setViewFilter] = useState('all');
-  // Vue « Onboarding » : phase ('past' | 'upcoming') puis, pour les passés,
-  // les mois d'onboarding cochés (aucun = tous).
+  // ── Filtre principal + sous-filtres cochés (viewGroups.js), « Tous » par défaut ────
+  const [viewSel, setViewSel] = useState(initialSelection);
+  const viewSubs = useMemo(() => activeSubs(viewSel), [viewSel]);
+  // « En retard » : onboarding passé ou non ('all' | 'past' | 'not_past') et prélèvement non automatisé seulement.
+  // Ils s'appliquent à tous les sous-filtres du retard (ET, comme deux colonnes d'un filtre Excel).
   const [lateOnboarding, setLateOnboarding] = useState('all');
+  const [lateNonAuto, setLateNonAuto] = useState(false);
+  // Météo client (niveaux du board, union ; vide = toutes), en ET avec le reste comme sur le board.
+  const [meteoSel, setMeteoSel] = useState([]);
   const [renewals, setRenewals] = useState(() => new Map());
   const [renewalsError, setRenewalsError] = useState('');
   useEffect(() => {
@@ -629,12 +594,10 @@ export default function TrackingSheetFinance() {
       .catch(() => { if (live) setRenewalsError('Les renouvellements n’ont pas pu être chargés. Actualisez la page pour réessayer.'); });
     return () => { live = false; };
   }, [period, rows]);
-  const [onboardingPhase, setOnboardingPhase] = useState('past');
+  // « Onboarding passé » : mois d'onboarding cochés (aucun = tous).
   const [relanceMonths, setRelanceMonths] = useState(() => new Set());
   // Vue « Attente Opti'Lex » : 'all' | 'done' | 'past' | 'upcoming' | 'none'.
   const [optilexPhase, setOptilexPhase] = useState('all');
-  // Vue « No show » : 'noshow' | 'recale'.
-  const [noShowPhase, setNoShowPhase] = useState('noshow');
   // Sous-filtre des créances antérieures par ANCIENNETÉ (demande dev
   // 2026-09-01) : 'all' | 'old' (≥ 2 mois) | 'recent' (< 2 mois).
   // L'ancienneté vient du serveur (`overdue_*_since`) : c'est le premier mois
@@ -679,6 +642,13 @@ export default function TrackingSheetFinance() {
       .catch(() => {});
   }, []);
 
+  // Jour de référence des règles de date (délai J+5, onboarding passé) : figé au chargement de la liste.
+  const today = useMemo(() => new Date(), [rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Retard sur le mois courant SEUL, hors rétractés : la base du « Retard du mois » et du délai J+5.
+  const isCurrentMonthLate = useCallback((r) =>
+    scopedOverdueCurrent(r, scope) > 0 && scopedOverdueCum(r, scope) <= 0 && !isRetractedEtat(boardEtatOf(r)),
+  [scope, boardEtatOf]);
+
   // Prédicat d'une vue-filtre pour une row, dans la vision active.
   const matchesView = useCallback((r, filterKey) => {
     switch (filterKey) {
@@ -692,15 +662,19 @@ export default function TrackingSheetFinance() {
         // celle-ci : les deux vues sont disjointes (dev 2026-09-18, n°164 :
         // 2 400 € d'antérieur, sortait encore en « retard du mois »).
         // Un client rétracté ne doit rien : il n'a rien à faire ici (dev 17/11/2026).
-        return scopedOverdueCurrent(r, scope) > 0 && scopedOverdueCum(r, scope) <= 0 && matchesLateOnboarding(r, lateOnboarding)
-          && !isRetractedEtat(boardEtatOf(r));
+        // Délai J+5 (27/11/2026) : onboardé il y a moins de 5 jours ouvrés, il passe dans « Délai J+5 après
+        // onboarding » le temps que le prélèvement arrive.
+        return isCurrentMonthLate(r) && !inOnboardingGrace(r, today);
+      case 'retard_onboarding':
+        return isCurrentMonthLate(r) && inOnboardingGrace(r, today);
       case 'annual_renewals': return matchesAnnualRenewal(r, scope, renewals);
       case 'creances':
         // Créances régularisées : sorties de la vue, il ne reste rien à recouvrer (dev 17/11/2026).
         return matchesPriorDebt(r, scope, creanceAge, period);
       case 'trop_percu':
         return scopedCredit(r, scope) > 0;
-      case 'onboarding': {
+      case 'onboarding_upcoming':
+      case 'onboarding_past': {
         // Jamais payé, une seule fois dans sa vie de client, toutes entités
         // et visions confondues : un client qui a déjà réglé n'est plus un
         // onboarding à suivre, passé ou à venir.
@@ -709,15 +683,18 @@ export default function TrackingSheetFinance() {
         if (isRetractedEtat(boardEtatOf(r))) return false;
         // Deux phases, sur la seule date d'onboarding Owner (comme le board) :
         // sans date connue, la ligne n'est ni passée ni à venir.
-        if (onboardingPhaseOf(r) !== onboardingPhase) return false;
-        if (onboardingPhase === 'upcoming' || relanceMonths.size === 0) return true;
+        const phase = filterKey === 'onboarding_past' ? 'past' : 'upcoming';
+        if (onboardingPhaseOf(r) !== phase) return false;
+        if (phase === 'upcoming' || relanceMonths.size === 0) return true;
         // Passés : mois d'onboarding cochés (aucun = tous).
         const onboarding = parseDateFR(r.client?.rdv_onboarding);
         const m = `${onboarding.getFullYear()}-${String(onboarding.getMonth() + 1).padStart(2, '0')}`;
         return relanceMonths.has(m);
       }
       case 'no_show':
-        return noShowStateOf(r)?.kind === noShowPhase;
+        return noShowStateOf(r)?.kind === 'noshow';
+      case 'recale':
+        return noShowStateOf(r)?.kind === 'recale';
       case 'non_auto':
         return matchesNonAutomated(r, scope);
       case 'resilies': {
@@ -747,26 +724,19 @@ export default function TrackingSheetFinance() {
       default:
         return true; // 'all'
     }
-  }, [scope, boardMap, boardEtatOf, relanceMonths, creanceAge, onboardingPhase, optilexPhase, period, formulaChecks, advanceChecks, lateOnboarding, renewals, noShowStateOf, noShowPhase]);
+  }, [scope, boardMap, boardEtatOf, relanceMonths, creanceAge, optilexPhase, period, formulaChecks, advanceChecks, renewals, noShowStateOf, isCurrentMonthLate, today]);
 
-  // Filtre « Météo client » (menu Filtre), réservé à deux personnes : les
-  // bandes du board avec leur volume, plus « Sans météo ».
-  const meteoFilterOptions = useMemo(() => {
-    if (!canFilterMeteo(apiClient.getUser())) return [];
-    const counts = { rouge: 0, orange: 0, vert: 0, none: 0 };
-    for (const r of rows) {
-      const br = (r.client?.numero_client && boardMap) ? boardMap.get(r.client.numero_client) : null;
-      counts[meteoBandOf(br?.meteo_score) || 'none'] += 1;
+  // Un sous-filtre, avec les réglages de son filtre principal (« En retard » : onboarding passé ou non, non
+  // automatisé seulement) et, si `hide`, le masquage des liquidations dans les créances antérieures.
+  const matchSub = useCallback((r, filterKey, hide = true) => {
+    if (!matchesView(r, filterKey)) return false;
+    if (hide && isHiddenInView(r, filterKey)) return false;
+    if (groupOf(filterKey) === 'retard') {
+      if (!matchesLateOnboarding(r, lateOnboarding, today)) return false;
+      if (lateNonAuto && !isNonAutomated(r, scope)) return false;
     }
-    return [
-      ...METEO_FILTER_BANDS.map(({ key, score }) => ({
-        value: `meteo:${key}`,
-        label: `${METEO_BANDS[key].label} (${counts[key]})`,
-        Icon: (p) => <MeteoIcon score={score} size={p.size} color={METEO_BANDS[key].color} strokeWidth={1.8} />,
-      })),
-      { value: 'meteo:none', label: `Sans météo (${counts.none})`, Icon: CircleDashed },
-    ];
-  }, [rows, boardMap]);
+    return true;
+  }, [matchesView, isHiddenInView, lateOnboarding, lateNonAuto, scope, today]);
 
   // Filtre « Responsable » : les personnes qui suivent au moins un client du
   // mois, avec leur volume, et « sans responsable » (demande dev 2026-09-03 :
@@ -840,46 +810,30 @@ export default function TrackingSheetFinance() {
     return counts;
   }, [pendingRows, rows, boardMap, boardEtatOf]);
 
-  // Compteurs de la vue « No show », par temps.
-  const noShowPhaseCounts = useMemo(() => {
-    const counts = { noshow: 0, recale: 0 };
-    for (const r of rows) {
-      const kind = noShowStateOf(r)?.kind;
-      if (kind) counts[kind] += 1;
-    }
-    return counts;
-  }, [rows, noShowStateOf]);
+  // Compteurs des filtres principaux (clients DISTINCTS retenus par leurs sous-filtres cochés : un client en
+  // renouvellement annuel et en retard du mois ne compte qu'une fois) et de chaque sous-filtre, avec les réglages
+  // de son filtre principal. Sur les lignes brutes du mois : indépendants de la recherche, du menu Filtre et de la
+  // météo (le compteur décrit le filtre, pas l'intersection). Les contrats sans numéro client comptent dans « Tous »
+  // et dans « Attente Opti'Lex », nulle part ailleurs ; ce dernier suit le sous-filtre « RDV d'intégration ».
+  const { groups: groupCounts, subs: subCounts } = useMemo(
+    () => viewCountsOf({ sel: viewSel, rows, pendingRows, pendingInPhase: pendingRowsInPhase, matchSub }),
+    [viewSel, rows, pendingRows, pendingRowsInPhase, matchSub],
+  );
 
-  const viewCounts = useMemo(() => {
-    const counts = {};
-    for (const v of VIEW_FILTERS) {
-      const real = v.key === 'all'
-        ? rows.length
-        : rows.filter((r) => matchesView(r, v.key) && !isHiddenInView(r, v.key)).length;
-      // Les contrats sans numéro client (lignes synthétiques) comptent dans
-      // « Tous » et dans « Attente Opti'Lex », nulle part ailleurs.
-      // Le chip « Attente Opti'Lex » suit le sous-filtre « RDV d'intégration ».
-      counts[v.key] = real + (v.key === 'all' ? pendingRows.length : v.key === 'attente_optilex' ? pendingRowsInPhase.length : 0);
-    }
-    return counts;
-  }, [rows, pendingRows, pendingRowsInPhase, matchesView, isHiddenInView]);
+  // « En retard » : compteurs du réglage onboarding passé ou non, sur les sous-filtres cochés.
+  const lateOnboardingCounts = useMemo(() => {
+    const subs = subsOf('retard').map((s) => s.key).filter((k) => viewSel.checks.retard?.has(k));
+    const late = rows.filter((r) => subs.some((k) => matchesView(r, k) && !isHiddenInView(r, k)
+      && (!lateNonAuto || isNonAutomated(r, scope))));
+    const past = late.filter((r) => matchesLateOnboarding(r, 'past', today)).length;
+    return { all: late.length, past, not_past: late.length - past };
+  }, [rows, viewSel, matchesView, isHiddenInView, lateNonAuto, scope, today]);
 
-  // Apply business filters to rows : vue-filtre active (chips) PUIS filtres
-  // dropdown historiques (union : un lead matche s'il satisfait AU MOINS UN
-  // filtre actif). La recherche s'applique en aval dans TableView.
-  const rowsBeforeLiquidationFilter = useMemo(() => {
-    // « Tous » : les contrats sans numéro client en tête, flagués. La vue
-    // « Attente Opti'Lex » = ces contrats + les clients que le board affiche
-    // dans cet état. Les autres vues portent sur des montants que les
-    // contrats sans numéro n'ont pas encore.
-    const viewed = viewFilter === 'all'
-      ? [...pendingRows, ...rows]
-      : viewFilter === 'attente_optilex'
-        ? [...pendingRowsInPhase, ...rows.filter((r) => matchesView(r, viewFilter))]
-        : rows.filter((r) => matchesView(r, viewFilter));
-    if (tableFilters.size === 0) return viewed;
+  // Le menu Filtre (union : une ligne passe si elle satisfait AU MOINS UN filtre coché).
+  const applyMenuFilters = useCallback((list) => {
+    if (tableFilters.size === 0) return list;
     // Parser FR/ISO factorisé dans constants.js (`parseDateFR`).
-    return viewed.filter((r) => {
+    return list.filter((r) => {
       // Sans montant ni état board posé, une ligne en attente ne peut
       // satisfaire aucun filtre du menu.
       if (r.pending) return false;
@@ -911,8 +865,6 @@ export default function TrackingSheetFinance() {
         ? boardMap.get(r.client.numero_client) : null;
       const etat = br ? displayEtat(br) : null;
       if (etat && tableFilters.has(`etat:${etat}`)) return true;
-      // Filtres par météo client (clés « meteo:rouge », « meteo:none »…).
-      if (tableFilters.has(`meteo:${meteoBandOf(br?.meteo_score) || 'none'}`)) return true;
       // Filtres personnels : chacun est une définition à évaluer.
       for (const f of savedFilters) {
         if (tableFilters.has(`saved:${f.id}`)
@@ -922,16 +874,56 @@ export default function TrackingSheetFinance() {
       }
       return false;
     });
-  }, [rows, pendingRows, pendingRowsInPhase, tableFilters, viewFilter, matchesView, boardMap, savedFilters, scope]);
+  }, [tableFilters, boardMap, savedFilters, scope]);
 
-  // Garder le compteur avant masquage permet toujours de réafficher les
-  // clients. Il suit l'ancienneté, les filtres et la recherche de cette vue.
+  // Ligne du board d'une ligne finance (contrat sans numéro : la ligne du board qu'elle porte).
+  const boardRowOf = useCallback((r) => (r.pending ? r.board
+    : (r.client?.numero_client && boardMap) ? boardMap.get(r.client.numero_client) : null), [boardMap]);
+  const meteoLevelOf = useCallback((r) => {
+    const br = boardRowOf(r);
+    return weatherFilter(br?.meteo_score ?? null, br?.meteo_context);
+  }, [boardRowOf]);
+
+  // Lignes retenues par le filtre principal et ses sous-filtres, puis par le menu Filtre. « Tous » : les contrats
+  // sans numéro client en tête, flagués. « Attente Opti'Lex » coché : ces contrats + les clients que le board affiche
+  // dans cet état. Les autres sous-filtres portent sur des montants que les contrats sans numéro n'ont pas encore.
+  // `hide` : liquidations masquées dans les créances antérieures (un client retenu par un autre sous-filtre coché
+  // reste affiché).
+  const selectRows = useCallback((hide) => applyMenuFilters(selectViewRows({
+    sel: viewSel, rows, pendingRows, pendingInPhase: pendingRowsInPhase, matchSub, hide,
+  })), [viewSel, rows, pendingRows, pendingRowsInPhase, matchSub, applyMenuFilters]);
+
+  const rowsBeforeMeteo = useMemo(() => selectRows(hideLiquidations), [selectRows, hideLiquidations]);
+
+  // Compteurs météo, sur la liste avant le filtre météo : le nombre d'une pastille ne bouge pas quand on coche.
+  const meteoCounts = useMemo(() => {
+    const counts = Object.fromEntries(METEO_LEVELS.map((k) => [k, 0]));
+    for (const r of rowsBeforeMeteo) counts[meteoLevelOf(r)] += 1;
+    return counts;
+  }, [rowsBeforeMeteo, meteoLevelOf]);
+
+  const filteredRows = useMemo(() => (meteoSel.length === 0 ? rowsBeforeMeteo
+    : rowsBeforeMeteo.filter((r) => meteoSel.includes(meteoLevelOf(r)))),
+  [rowsBeforeMeteo, meteoSel, meteoLevelOf]);
+
+  // Liquidations que le masquage retire des créances antérieures (« N clients en liquidation masqués / affichés ») :
+  // celles que seules les créances retiennent (un autre sous-filtre coché les garde à l'écran), avec la recherche et
+  // la météo de l'écran. Compté masquage ou non, pour pouvoir les réafficher puis les remasquer.
+  const creancesActive = viewSubs.includes('creances');
   const liquidationCount = useMemo(() => {
-    if (viewFilter !== 'creances') return 0;
+    if (!creancesActive) return 0;
     const query = normalizeSearch(searchQuery.trim());
-    return rowsBeforeLiquidationFilter.filter((r) =>
-      isLiquidationEtat(boardEtatOf(r)) && matchesClientSearch(r, query)).length;
-  }, [rowsBeforeLiquidationFilter, viewFilter, boardEtatOf, searchQuery]);
+    const others = viewSubs.filter((k) => k !== 'creances');
+    return selectRows(false).filter((r) => !r.pending && isLiquidationEtat(boardEtatOf(r))
+      && matchSub(r, 'creances', false) && !others.some((k) => matchSub(r, k, false))
+      && matchesClientSearch(r, query)
+      && (meteoSel.length === 0 || meteoSel.includes(meteoLevelOf(r)))).length;
+  }, [creancesActive, viewSubs, selectRows, matchSub, boardEtatOf, searchQuery, meteoSel, meteoLevelOf]);
+
+  // Lecture du bandeau : les créances antérieures seules ou l'attente Opti'Lex seule ont leurs tuiles propres.
+  const single = onlySub(viewSel);
+  const kpiView = viewSel.group === 'all' ? 'all'
+    : single === 'creances' || single === 'attente_optilex' ? single : viewSel.group;
 
   // Tableau, recherche, export et KPI partagent les mêmes lignes visibles.
   const [activeTab, setActiveTab] = useState('all');
@@ -961,10 +953,6 @@ export default function TrackingSheetFinance() {
     () => rows.filter((r) => !r.pending && r.client?.payment_promise),
     [rows],
   );
-
-  const filteredRows = useMemo(() =>
-    rowsBeforeLiquidationFilter.filter((r) => !isHiddenInView(r, viewFilter)),
-  [rowsBeforeLiquidationFilter, isHiddenInView, viewFilter]);
 
   // Compteur de résultats de recherche — même prédicat que le filtre de
   // TableView (matchesClientSearch), appliqué APRÈS vues-filtres + filtres
@@ -1044,8 +1032,9 @@ export default function TrackingSheetFinance() {
       const meteoOf = (r) => {
         const br = (r.client?.numero_client && boardMap) ? boardMap.get(r.client.numero_client) : null;
         const score = br?.meteo_score ?? null;
-        const band = score != null ? METEO_BANDS[meteoBandOf(score)] : null;
-        return band ? { label: band.label, score, bg: band.bg, fg: band.color } : null;
+        // Les niveaux du board (Satisfait … Résiliation), comme le tableau et le filtre Météo.
+        const level = weatherPresentation(score, br?.meteo_context);
+        return level ? { label: level.label, score, bg: level.bg, fg: level.color } : null;
       };
       // Les mêmes pastilles que le tableau : départ, no show / recalé, récupéré, attente Opti'Lex (règles de la page, non recalculées).
       const boardOf = (r) => {
@@ -1465,12 +1454,20 @@ export default function TrackingSheetFinance() {
   // ── Barre latérale : la navigation de la page ───────────────────────────
   const sidebarSections = useMemo(() => {
     const onTable = activeTab === 'all';
-    const goTable = (filter) => () => { setActiveTab('all'); setViewFilter(filter); };
+    // Une entrée de vue = son sous-filtre seul, dans son filtre principal.
+    const goSub = (sub) => () => { setActiveTab('all'); setViewSel((sel) => pickSub(sel, sub)); };
+    // Le tableau est actif tant qu'aucune vue seule n'est choisie (« Tous », ou plusieurs sous-filtres cochés).
+    const single = onTable ? onlySub(viewSel) : null;
+    const subItem = ({ key, label }) => ({
+      id: `view-${key}`, label, Icon: VIEW_ICONS[key] || CheckCircleIcon,
+      active: single === key, action: goSub(key), count: subCounts[key],
+    });
     return [
       {
         key: 'suivi', label: 'Suivi',
         items: [
-          { id: 'table',    label: 'Suivi mensuel', Icon: TableIcon,   active: onTable && viewFilter === 'all', action: goTable('all') },
+          { id: 'table',    label: 'Suivi mensuel', Icon: TableIcon,   active: onTable && !single, action: () => { setActiveTab('all'); setViewSel((sel) => pickGroup(sel, 'all')); } },
+          subItem(subsOf('a_jour')[0]),
           { id: 'receipts', label: 'Encaissements', Icon: InboxIcon,   active: activeTab === 'receipts', action: () => setActiveTab('receipts') },
           { id: 'losses',   label: 'Pertes',        Icon: LossIcon,    active: activeTab === 'losses',   action: () => setActiveTab('losses') },
           { id: 'promises', label: 'Promesses de règlement', Icon: Handshake, active: activeTab === 'promises', action: () => setActiveTab('promises'), count: promiseRows.length || undefined },
@@ -1481,17 +1478,8 @@ export default function TrackingSheetFinance() {
           ...(showValidations ? [{ id: 'validations', label: 'Validations', Icon: CheckCircle2, active: activeTab === 'validations', action: () => setActiveTab('validations'), count: pendingValidations || undefined }] : []),
         ],
       },
-      {
-        key: 'vues', label: 'Vues du tableau',
-        items: VIEW_FILTERS.filter((v) => v.key !== 'all').map((v) => ({
-          id: `view-${v.key}`,
-          label: v.label,
-          Icon: VIEW_ICONS[v.key] || CheckCircleIcon,
-          active: onTable && viewFilter === v.key,
-          action: goTable(v.key),
-          count: viewCounts[v.key],
-        })),
-      },
+      // Les vues du tableau, rangées sous leur filtre principal (mêmes entrées qu'avant, regroupées).
+      ...VIEW_GROUPS.filter((g) => g.subs.length > 1).map((g) => ({ key: `vues-${g.key}`, label: g.label, items: g.subs.map(subItem) })),
       {
         key: 'outils', label: 'Outils',
         items: [
@@ -1502,7 +1490,7 @@ export default function TrackingSheetFinance() {
         ],
       },
     ];
-  }, [activeTab, viewFilter, viewCounts, exportToExcel, exportedRows.length, canViewCalls, showValidations, pendingValidations, pendingStateReviews, promiseRows.length]);
+  }, [activeTab, viewSel, subCounts, exportToExcel, exportedRows.length, canViewCalls, showValidations, pendingValidations, pendingStateReviews, promiseRows.length]);
 
   if (!authChecked) {
     return null;
@@ -1574,7 +1562,7 @@ export default function TrackingSheetFinance() {
             kpis={kpis}
             loading={loading}
             showKpis={activeTab !== 'calls' && activeTab !== 'validations' && activeTab !== 'promises' && activeTab !== 'sequences' && activeTab !== 'statistics'}
-            view={activeTab === 'all' ? viewFilter : 'all'}
+            view={activeTab === 'all' ? kpiView : 'all'}
             pendingCount={exportedRows.filter((r) => r.pending).length}
           />
 
@@ -1604,7 +1592,6 @@ export default function TrackingSheetFinance() {
             onRemoveSavedFilter={removeSavedFilter}
             readOnly={readOnly}
             responsibleOptions={responsibleFilterOptions}
-            meteoOptions={meteoFilterOptions}
             hiddenColsInfo={hiddenColsInfo}
             onShowAllCols={() => showAllColsRef.current?.()}
             onShowCol={(key) => showColRef.current?.(key)}
@@ -1619,26 +1606,28 @@ export default function TrackingSheetFinance() {
               d'objet. */}
           {activeTab === 'all' && (
             <>
-              <ViewChips
-                active={viewFilter}
-                onChange={setViewFilter}
-                counts={viewCounts}
+              <ViewFilters
+                selection={viewSel}
+                onPickGroup={(g) => setViewSel((sel) => pickGroup(sel, g))}
+                onToggleSub={(k) => setViewSel((sel) => toggleSub(sel, k))}
+                groupCounts={groupCounts}
+                subCounts={subCounts}
                 lateOnboarding={lateOnboarding} onLateOnboardingChange={setLateOnboarding}
-                onboardingPhase={onboardingPhase}
-                onOnboardingPhaseChange={setOnboardingPhase}
+                lateOnboardingCounts={lateOnboardingCounts}
+                lateNonAuto={lateNonAuto} onLateNonAutoChange={setLateNonAuto}
                 relanceMonths={relanceMonths}
+                onRelanceMonthsChange={setRelanceMonths}
                 creanceAge={creanceAge}
                 onCreanceAgeChange={setCreanceAge}
-                onRelanceMonthsChange={setRelanceMonths}
                 optilexPhase={optilexPhase}
                 onOptilexPhaseChange={setOptilexPhase}
                 optilexPhaseCounts={optilexPhaseCounts}
-                noShowPhase={noShowPhase}
-                onNoShowPhaseChange={setNoShowPhase}
-                noShowPhaseCounts={noShowPhaseCounts}
+                meteoSel={meteoSel}
+                onMeteoChange={setMeteoSel}
+                meteoCounts={meteoCounts}
               />
-              {viewFilter === 'annual_renewals' && renewalsError && <p role="alert">{renewalsError}</p>}
-              {viewFilter === 'creances' && (
+              {isSubActive(viewSel, 'annual_renewals') && renewalsError && <p role="alert">{renewalsError}</p>}
+              {creancesActive && (
                 <CreancesExitBanner
                   count={liquidationCount}
                   hidden={hideLiquidations}
@@ -2203,87 +2192,10 @@ const RELANCE_MONTH_COUNT = 12;
 // 2 mois. » Deux populations qui n'appellent pas la même action — une relance
 // pour les récentes, une escalade pour les anciennes.
 const CREANCE_AGES = [
-  { key: 'all',    label: 'Toutes' },
-  { key: 'old',    label: 'Plus de 2 mois' },
-  { key: 'recent', label: 'Moins de 2 mois' },
+  { key: 'all',    label: 'Toutes les créances' },
+  { key: 'old',    label: 'Créances de plus de 2 mois' },
+  { key: 'recent', label: 'De moins de 2 mois' },
 ];
-
-// Phase de la vue « Onboarding » : deux segments, une pastille sombre qui
-// glisse de l'un à l'autre (layoutId) — le même mouvement que les chips.
-function OnboardingPhasePicker({ value, onChange }) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Phase de l’onboarding"
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 4,
-        padding: 2, border: `1px solid ${N.border}`, borderRadius: 999, background: '#fff',
-      }}
-    >
-      {ONBOARDING_PHASES.map((o) => {
-        const actif = value === o.key;
-        return (
-          <button
-            key={o.key}
-            type="button"
-            role="radio"
-            aria-checked={actif}
-            onClick={() => onChange(o.key)}
-            style={{
-              position: 'relative',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              height: 22, padding: '0 10px',
-              border: 'none', borderRadius: 999, background: 'transparent',
-              color: actif ? '#fff' : N.textMuted,
-              fontSize: 12, fontWeight: actif ? 600 : 500,
-              fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'color 0.18s ease',
-            }}
-          >
-            {actif && (
-              <motion.span
-                layoutId="tsf-onboarding-phase-pill"
-                transition={{ type: 'spring', stiffness: 480, damping: 38 }}
-                style={{ position: 'absolute', inset: 0, background: N.text, borderRadius: 999 }}
-              />
-            )}
-            <o.Icon size={13} strokeWidth={1.8} style={{ position: 'relative', zIndex: 1 }} />
-            <span style={{ position: 'relative', zIndex: 1 }}>{o.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function CreanceAgePicker({ value, onChange }) {
-  return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
-      {CREANCE_AGES.map((o) => {
-        const actif = value === o.key;
-        return (
-          <button
-            key={o.key}
-            type="button"
-            onClick={() => onChange(o.key)}
-            style={{
-              border: `1px solid ${actif ? N.text : N.borderSoft}`,
-              background: actif ? N.text : '#fff',
-              color: actif ? '#fff' : N.textMuted,
-              borderRadius: 999, padding: '3px 11px',
-              fontSize: 12, fontWeight: actif ? 600 : 500,
-              fontFamily: 'inherit', cursor: 'pointer',
-              transition: 'background 0.12s, color 0.12s, border-color 0.12s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function RelanceMonthPicker({ selected, onChange }) {
   const [open, setOpen] = useState(false);
@@ -2443,9 +2355,76 @@ function fitChipRow(row) {
   }
 }
 
-function ViewChips({ active, onChange, counts, lateOnboarding, onLateOnboardingChange, onboardingPhase, onOnboardingPhaseChange,
+// Réglage « onboarding passé ou non » du filtre « En retard » (le menu déroulant d'avant, en segments).
+const LATE_ONBOARDING_PHASES = [
+  { key: 'all',      label: 'Tous les onboardings' },
+  { key: 'past',     label: 'Onboarding passé', Icon: CalendarCheckIcon },
+  { key: 'not_past', label: 'À venir ou sans date', Icon: CalendarClockIcon },
+];
+
+// Titre d'une rangée de filtres (Filtre, Détail, Météo), comme les rangées du board.
+function FilterRowLabel({ children }) {
+  return (
+    <span style={{
+      flexShrink: 0, width: 52, fontSize: 11, fontWeight: 500, color: N.textFaint,
+      textTransform: 'uppercase', letterSpacing: '0.04em',
+    }}>
+      {children}
+    </span>
+  );
+}
+
+// Case à cocher en pastille : un sous-filtre (union avec les autres cochés) ou un réglage.
+function CheckChip({ on, label, count, title, onToggle, tone }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={on}
+      title={title}
+      onClick={onToggle}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        height: 26, padding: '0 11px 0 8px',
+        border: `1px solid ${on ? (tone?.border || N.text) : N.border}`, borderRadius: 999,
+        background: on ? (tone?.bg || '#fff') : 'transparent',
+        color: on ? (tone?.fg || N.text) : N.textMuted,
+        fontFamily: 'inherit', fontSize: 12.5, fontWeight: on ? 600 : 500,
+        cursor: 'pointer', whiteSpace: 'nowrap',
+        transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+      }}
+      onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = N.sideHover; }}
+      onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = 'transparent'; }}
+    >
+      {tone?.icon || (
+        <span style={{
+          width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+          border: `1.5px solid ${on ? N.text : N.border}`,
+          background: on ? N.text : '#fff',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {on && <Check size={10} color="#fff" strokeWidth={3} />}
+        </span>
+      )}
+      {label}
+      {count !== undefined && (
+        <span style={{ fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: on ? (tone?.fg || N.textMuted) : N.textFaint }}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Filtres de la liste (réunion du 27/11/2026, sur le modèle du board) : une rangée de filtres principaux à choix
+// unique, puis les sous-filtres à cocher du filtre choisi et ses réglages, puis la météo client.
+function ViewFilters({
+  selection, onPickGroup, onToggleSub, groupCounts, subCounts,
+  lateOnboarding, onLateOnboardingChange, lateOnboardingCounts, lateNonAuto, onLateNonAutoChange,
   relanceMonths, onRelanceMonthsChange, creanceAge, onCreanceAgeChange,
-  optilexPhase = 'all', onOptilexPhaseChange, optilexPhaseCounts, noShowPhase = 'noshow', onNoShowPhaseChange, noShowPhaseCounts }) {
+  optilexPhase = 'all', onOptilexPhaseChange, optilexPhaseCounts,
+  meteoSel, onMeteoChange, meteoCounts,
+}) {
   const rowRef = useRef(null);
   // Après chaque rendu (compteurs, puce active : le texte change de largeur).
   useLayoutEffect(() => {
@@ -2473,121 +2452,134 @@ function ViewChips({ active, onChange, counts, lateOnboarding, onLateOnboardingC
       document.fonts?.removeEventListener?.('loadingdone', refit);
     };
   }, []);
+  const group = selection.group;
+  const checked = selection.checks[group] || new Set();
+  const subs = subsOf(group);
+  const toggleMeteo = (level) => onMeteoChange(meteoSel.includes(level) ? meteoSel.filter((x) => x !== level) : [...meteoSel, level]);
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' };
+  // Réglages du filtre choisi (comme « Affiner » sur le board) : en ET avec ses sous-filtres.
+  const refine = [];
+  if (group === 'retard') {
+    refine.push(
+      <OptilexIntegrationPicker key="onb" value={lateOnboarding} onChange={onLateOnboardingChange} counts={lateOnboardingCounts}
+        phases={LATE_ONBOARDING_PHASES} layoutId="tsf-late-onboarding" ariaLabel="Onboarding des clients en retard" />,
+      <CheckChip key="auto" on={lateNonAuto} label="Non automatisé seulement" onToggle={() => onLateNonAutoChange(!lateNonAuto)} />,
+    );
+    if (checked.has('creances')) {
+      refine.push(<OptilexIntegrationPicker key="age" value={creanceAge} onChange={onCreanceAgeChange}
+        phases={CREANCE_AGES} layoutId="tsf-creance-age" ariaLabel="Ancienneté des créances antérieures" />);
+    }
+  }
+  if (group === 'onboarding' && checked.has('onboarding_past')) {
+    refine.push(<RelanceMonthPicker key="mois" selected={relanceMonths} onChange={onRelanceMonthsChange} />);
+  }
+  if (group === 'onboarding' && checked.has('attente_optilex')) {
+    refine.push(<OptilexIntegrationPicker key="optilex" value={optilexPhase} onChange={onOptilexPhaseChange} counts={optilexPhaseCounts} />);
+  }
   return (
-    <div ref={rowRef} style={{
-      display: 'flex', alignItems: 'center', gap: chipCss('gap'),
-      padding: '10px 0 2px',
-      flexWrap: 'wrap',
-    }}>
-      {VIEW_FILTERS.map((v) => {
-        const isActive = active === v.key;
-        const count = counts?.[v.key];
-        return (
-          <button
-            key={v.key}
-            type="button"
-            data-chip
-            onClick={() => onChange(v.key)}
-            style={{
-              position: 'relative',
-              display: 'inline-flex', alignItems: 'center', gap: chipCss('gap'),
-              height: chipCss('height'), padding: `0 ${chipCss('padX')}`,
-              border: `1px solid ${isActive ? 'transparent' : N.border}`,
-              borderRadius: 999,
-              background: 'transparent',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: chipCss('font'),
-              fontWeight: isActive ? 600 : 500,
-              color: isActive ? '#ffffff' : N.textMuted,
-              transition: 'color 0.18s ease, border-color 0.18s ease',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = N.sideHover; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            {isActive && (
-              <motion.span
-                layoutId="tsf-view-chip-pill"
-                transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0 2px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <FilterRowLabel>Filtre</FilterRowLabel>
+        <div ref={rowRef} role="radiogroup" aria-label="Filtre principal" style={{
+          display: 'flex', alignItems: 'center', gap: chipCss('gap'), flex: 1, minWidth: 0, flexWrap: 'wrap',
+        }}>
+          {VIEW_GROUPS.map((g) => {
+            const isActive = group === g.key;
+            const count = groupCounts?.[g.key];
+            return (
+              <button
+                key={g.key}
+                type="button"
+                role="radio"
+                aria-checked={isActive}
+                data-chip
+                onClick={() => onPickGroup(g.key)}
                 style={{
-                  position: 'absolute', inset: -1,
-                  background: N.text,
+                  position: 'relative',
+                  display: 'inline-flex', alignItems: 'center', gap: chipCss('gap'),
+                  height: chipCss('height'), padding: `0 ${chipCss('padX')}`,
+                  border: `1px solid ${isActive ? 'transparent' : N.border}`,
                   borderRadius: 999,
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  fontSize: chipCss('font'),
+                  fontWeight: isActive ? 600 : 500,
+                  color: isActive ? '#ffffff' : N.textMuted,
+                  transition: 'color 0.18s ease, border-color 0.18s ease',
+                  whiteSpace: 'nowrap',
                 }}
-              />
-            )}
-            <span data-chip-label style={{ position: 'relative', zIndex: 1 }}>{v.label}</span>
-            {count !== undefined && (
-              <span data-chip-count style={{
-                position: 'relative', zIndex: 1,
-                fontSize: chipCss('count'), fontWeight: 500,
-                fontVariantNumeric: 'tabular-nums',
-                color: isActive ? 'rgba(255,255,255,0.72)' : N.textFaint,
-              }}>
-                {count}
-              </span>
-            )}
-          </button>
-        );
-      })}
-      <AnimatePresence initial={false}>
-        {active === 'onboarding' && (
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = N.sideHover; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="tsf-view-chip-pill"
+                    transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                    style={{ position: 'absolute', inset: -1, background: N.text, borderRadius: 999 }}
+                  />
+                )}
+                <span data-chip-label style={{ position: 'relative', zIndex: 1 }}>{g.label}</span>
+                {count !== undefined && (
+                  <span data-chip-count style={{
+                    position: 'relative', zIndex: 1,
+                    fontSize: chipCss('count'), fontWeight: 500,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: isActive ? 'rgba(255,255,255,0.72)' : N.textFaint,
+                  }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <AnimatePresence initial={false} mode="wait">
+        {subs.length > 1 && (
           <motion.div
-            key="onboarding-phase"
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -6 }}
+            key={`subs-${group}`}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}
           >
-            <OnboardingPhasePicker value={onboardingPhase} onChange={onOnboardingPhaseChange} />
-            {onboardingPhase === 'past' && (
-              <RelanceMonthPicker selected={relanceMonths} onChange={onRelanceMonthsChange} />
-            )}
+            <span style={{ paddingTop: 6 }}><FilterRowLabel>Détail</FilterRowLabel></span>
+            <div role="group" aria-label={`Sous-filtres : ${VIEW_GROUPS.find((g) => g.key === group)?.label}`} style={{ ...rowStyle, flex: 1, minWidth: 0 }}>
+              {subs.map((sub) => (
+                <CheckChip key={sub.key} on={checked.has(sub.key)} label={sub.label} count={subCounts?.[sub.key]}
+                  title={sub.hint} onToggle={() => onToggleSub(sub.key)} />
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-      {active === 'retard_mois' && (
-        <select aria-label="Onboarding des clients en retard" value={lateOnboarding} onChange={e => onLateOnboardingChange(e.target.value)}
-          style={{ border: '1px solid #e8e4de', borderRadius: 16, padding: '5px 10px', font: 'inherit', fontSize: 12, background: '#fff' }}>
-          <option value="all">Tous les onboardings</option>
-          <option value="past">Avec onboarding passé</option>
-          <option value="not_past">Sans onboarding passé (à venir ou sans date)</option>
-        </select>
+
+      {refine.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <FilterRowLabel>Affiner</FilterRowLabel>
+          <div style={{ ...rowStyle, flex: 1, minWidth: 0 }}>{refine}</div>
+        </div>
       )}
-      {active === 'creances' && (
-        <CreanceAgePicker value={creanceAge} onChange={onCreanceAgeChange} />
-      )}
-      <AnimatePresence initial={false}>
-        {active === 'attente_optilex' && (
-          <motion.div
-            key="optilex-integration-phase"
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -6 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-          >
-            <OptilexIntegrationPicker value={optilexPhase} onChange={onOptilexPhaseChange} counts={optilexPhaseCounts} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <AnimatePresence initial={false}>
-        {active === 'no_show' && (
-          <motion.div
-            key="no-show-phase"
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -6 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-          >
-            <OptilexIntegrationPicker value={noShowPhase} onChange={onNoShowPhaseChange} counts={noShowPhaseCounts}
-              phases={NO_SHOW_PHASES} layoutId="tsf-no-show-phase" ariaLabel="No show d’onboarding" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <FilterRowLabel>Météo</FilterRowLabel>
+        <div role="group" aria-label="Météo client" style={{ ...rowStyle, flex: 1, minWidth: 0 }}>
+          {METEO_LEVELS.map((level) => {
+            const on = meteoSel.includes(level);
+            const w = level === 'none' ? null : WEATHER[level];
+            const tone = w
+              ? { bg: w.bg, fg: w.color, border: w.color, icon: <MeteoIcon score={Number(level)} size={14} color={w.color} strokeWidth={1.8} /> }
+              : { bg: N.sideBg, fg: N.text, border: N.textFaint, icon: <CircleDashed size={13} color={N.textFaint} /> };
+            return (
+              <CheckChip key={level} on={on} label={w ? w.label : 'Non noté'} count={meteoCounts?.[level] ?? 0}
+                title={w ? w.description : 'Aucune météo posée sur le board'} tone={tone} onToggle={() => toggleMeteo(level)} />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -2731,7 +2723,7 @@ const FILTER_OPTIONS = [
 ];
 
 function FilterDropdown({
-  values, onToggle, etatOptions = [], responsibleOptions = [], meteoOptions = [],
+  values, onToggle, etatOptions = [], responsibleOptions = [],
   savedFilters = [], onCreateSavedFilter, onRemoveSavedFilter,
   readOnly = false,   // rôles en lecture seule : créer / supprimer un filtre visibles, désactivés
 }) {
@@ -2769,12 +2761,6 @@ function FilterDropdown({
     if (!q) return allOptions;
     return allOptions.filter((o) => o.label.toLowerCase().includes(q));
   }, [search, allOptions]);
-  // Météo client : un groupe à part, titré, comme « Mes filtres » — visible
-  // seulement pour les personnes autorisées (la liste arrive vide sinon).
-  const filteredMeteo = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return q ? meteoOptions.filter((o) => o.label.toLowerCase().includes(q)) : meteoOptions;
-  }, [search, meteoOptions]);
 
   const filteredFinances = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -2932,44 +2918,6 @@ function FilterDropdown({
               </button>
             );
           })}
-
-          {filteredMeteo.length > 0 && (
-            <div style={{ marginTop: 4, paddingTop: 4, borderTop: `1px solid ${N.borderSoft}` }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 14px 2px', fontSize: 10.5, fontWeight: 500,
-                color: N.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em',
-              }}>
-                <MeteoFilterIcon size={13} strokeWidth={1.7} />
-                Météo client
-              </div>
-              {filteredMeteo.map((opt) => {
-                const isActive = values && values.has(opt.value);
-                const Icon = opt.Icon;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => onToggle(opt.value)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      width: '100%', padding: '10px 14px',
-                      border: 'none',
-                      background: isActive ? N.sideHover : 'transparent',
-                      borderRadius: 6, fontSize: 14, color: N.text,
-                      textAlign: 'left', cursor: 'pointer',
-                      fontWeight: isActive ? 600 : 400, fontFamily: 'inherit',
-                    }}
-                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = N.sideHover; }}
-                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <Icon size={18} strokeWidth={1.8} style={{ flexShrink: 0, color: N.textMuted }} />
-                    <span style={{ flex: 1 }}>{opt.label}</span>
-                    {isActive && <span style={{ color: N.accent, fontSize: 14 }}>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
 
           {/* Mes filtres — ceux que l'utilisateur a composés lui-même
               (demande dev 2026-08-28). Séparés des filtres fournis pour
@@ -3168,7 +3116,6 @@ function TabRow({
   tableFilters, onToggleFilter, etatFilterOptions = [],
   savedFilters = [], onCreateSavedFilter, onRemoveSavedFilter, readOnly = false,
   responsibleOptions = [],
-  meteoOptions = [],
   scope, setScope, canGlobalScope,
 }) {
   // Trois onglets, trois contenus. « Par état » et « Mes clients » ne
@@ -3305,7 +3252,6 @@ function TabRow({
           onToggle={onToggleFilter}
           etatOptions={etatFilterOptions}
           responsibleOptions={responsibleOptions}
-          meteoOptions={meteoOptions}
           savedFilters={savedFilters}
           onCreateSavedFilter={onCreateSavedFilter}
           onRemoveSavedFilter={onRemoveSavedFilter}
