@@ -15,3 +15,9 @@ export function exitAmounts(values, limits) {
   }
   return amounts;
 }
+
+// Pause datée du board (réunion du 27/11/2026) : rien n'est supprimé. Les mois qui commencent pendant la pause ne sont
+// pas exigibles ; à la reprise, ils sont dus avec le mois en cours. Le paiement en une ou plusieurs fois reste manuel.
+// `start` et `end` : les dates de la pause déjà écrites en français.
+export const datedPauseSentence = (start, end) =>
+  `Rien d’exigible du ${start} au ${end}. À la reprise, les mois de la pause sont dus avec le mois en cours.`;

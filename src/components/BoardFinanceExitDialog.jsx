@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { X, ArrowRight, RefreshCw } from 'lucide-react';
 import apiClient from '../services/apiClient.js';
-import { exitAmounts } from '../utils/boardFinanceExit.js';
+import { datedPauseSentence, exitAmounts } from '../utils/boardFinanceExit.js';
 
 const money = value => Number(value || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 const input = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e3ded6', borderRadius: 8, font: 'inherit' };
@@ -100,7 +100,7 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
         {withdrawal ? <p style={{ padding: 14, background: '#fff7e9', borderRadius: 10 }}>Les attendus Owner et Opti’Lex seront automatiquement annulés depuis la signature. Les encaissements et remboursements restent dans l’historique.</p>
         : pause ? <>
           <p style={{ padding: 14, background: '#f7f5f2', borderRadius: 10 }}>{datedPause
-            ? <>Aucun attendu du {frDay(date)} au {frDay(payload.pause_end_date)} (les mois qui commencent pendant la pause), puis la facturation normale reprend.</>
+            ? datedPauseSentence(frDay(date), frDay(payload.pause_end_date))
             : <>La pause suspend la facturation après le dernier mois facturé ; la reprise se décide quand le client repart.</>}</p>
           <p>Facultatif : passer en perte ce que le client devait avant la pause. <strong>Le reste demeure à recouvrer.</strong></p>
           {['past', 'current'].map(key => <label key={key} style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: 12, alignItems: 'center', marginTop: 12 }}>
