@@ -15,7 +15,7 @@
 // editor mounted only when active.
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Copy } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import PortalDropdown from './components/PortalDropdown.jsx';
 import {
   formatEUR,
@@ -23,6 +23,7 @@ import {
   toNumber,
   STATUS_DETAIL_COLORS,
   STATUS_DETAIL_FALLBACK,
+  toggleValue,
 } from './constants.js';
 
 // ── Copy-to-clipboard helper ──────────────────────────────────────────────
@@ -561,15 +562,19 @@ export const EditableSelect = React.memo(function EditableSelect({
   // `chip` : rendu « champ » (bordure, fond, chevron) pour la fiche, où un
   // simple texte ne se lisait pas comme modifiable (retour dev 2026-09-19).
   chip = false,
+  // `multiple` : plusieurs valeurs cochées, `maxValues` au plus (deux PSP sur
+  // un encaissement Owner, facturation 27/11/2026). `value` est alors une
+  // liste et `onCommit` reçoit la liste complète ; le menu reste ouvert.
+  multiple = false,
+  maxValues = 2,
 }) {
   const [open, setOpen] = useState(false);
   const [state, flash] = useSaveFlash();
   const triggerRef = useRef(null);
   const [hover, setHover] = useState(false);
+  const values = useMemo(() => (multiple ? (value || []).filter(Boolean) : null), [multiple, value]);
 
-  const onPick = useCallback(async (next) => {
-    setOpen(false);
-    if (next === value) return;
+  const save = useCallback(async (next) => {
     flash('saving');
     try {
       await onCommit(next);
@@ -578,23 +583,41 @@ export const EditableSelect = React.memo(function EditableSelect({
       flash('error');
       console.error('[EditableSelect] commit failed', e);
     }
-  }, [value, onCommit, flash]);
+  }, [onCommit, flash]);
 
-  const meta = useMemo(() => {
-    if (!pillColors || !value) return pillFallback || null;
+  const onPick = useCallback(async (next) => {
+    if (multiple) {
+      if (next === null) {
+        setOpen(false);
+        if (values.length) await save([]);
+        return;
+      }
+      const picked = toggleValue(values, next, maxValues);
+      if (picked !== values) await save(picked);
+      return;
+    }
+    setOpen(false);
+    if (next === value) return;
+    await save(next);
+  }, [multiple, values, maxValues, value, save]);
+
+  const metaOf = useCallback((v) => {
+    if (!pillColors || !v) return pillFallback || null;
     // Match exact d'abord
-    if (pillColors[value]) return pillColors[value];
+    if (pillColors[v]) return pillColors[v];
     // Match case-insensitive fallback : 1096 rows en DB ont 'Non' (mixed case)
     // alors que le dict a 'NON' (uppercase). Évite de tomber sur le fallback
     // gris (capture dev 2026-05-11 #39).
-    const upper = String(value).toUpperCase();
+    const upper = String(v).toUpperCase();
     for (const k of Object.keys(pillColors)) {
       if (k.toUpperCase() === upper) return pillColors[k];
     }
     return pillFallback || null;
-  }, [value, pillColors, pillFallback]);
+  }, [pillColors, pillFallback]);
+  const meta = useMemo(() => metaOf(multiple ? null : value), [metaOf, multiple, value]);
+  const hasValue = multiple ? values.length > 0 : !!value;
 
-  const labelStyle = pillColors && value ? {
+  const labelStyle = pillColors && hasValue ? {
     background: meta?.bg || '#f4f2ee',
     color: meta?.fg || '#3a3733',
     padding: '2px 8px',
@@ -624,11 +647,12 @@ export const EditableSelect = React.memo(function EditableSelect({
         style={{
           ...cellStyle(state),
           width,
-          color: !value ? '#a8a39b' : '#1c1b19',
+          color: !hasValue ? '#a8a39b' : '#1c1b19',
           cursor: disabled ? 'default' : 'pointer',
           maxWidth: '100%',
           overflow: 'hidden',
-          fontStyle: !value && placeholderItalic ? 'italic' : 'normal',
+          fontStyle: !hasValue && placeholderItalic ? 'italic' : 'normal',
+          ...(multiple && hasValue ? { display: 'inline-flex', gap: 4, flexWrap: 'nowrap' } : {}),
           ...(chip && !disabled ? {
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '3px 8px 3px 10px', borderRadius: 6,
@@ -639,7 +663,13 @@ export const EditableSelect = React.memo(function EditableSelect({
         }}
         title={chip && !disabled ? 'Cliquer pour modifier' : undefined}
       >
-        {value ? (
+        {multiple && hasValue ? (
+          values.map((v) => (
+            <span key={v} style={{ ...labelStyle, background: metaOf(v)?.bg || '#f4f2ee', color: metaOf(v)?.fg || '#3a3733' }}>
+              {labelFor(v)}
+            </span>
+          ))
+        ) : value ? (
           pillColors ? (
             <span style={labelStyle}>{labelFor(value)}</span>
           ) : (
@@ -690,25 +720,30 @@ export const EditableSelect = React.memo(function EditableSelect({
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <button
             onClick={() => onPick(null)}
-            style={pickerItemStyle(value === null)}
+            style={pickerItemStyle(!hasValue)}
             onMouseEnter={(e) => e.currentTarget.style.background = '#f4f2ee'}
-            onMouseLeave={(e) => e.currentTarget.style.background = value === null ? '#eae9fb' : 'transparent'}
+            onMouseLeave={(e) => e.currentTarget.style.background = !hasValue ? '#eae9fb' : 'transparent'}
           >
             <span style={{ color: '#a8a39b', fontStyle: 'italic' }}>— effacer —</span>
           </button>
           <div style={{ height: 1, background: '#f4f2ee', margin: '4px 0' }} />
           {options.map((opt) => {
-            const isActive = opt === value;
+            const isActive = multiple ? values.includes(opt) : opt === value;
+            // Liste pleine : les autres options attendent qu'on en décoche une.
+            const full = multiple && !isActive && values.length >= maxValues;
             const optMeta = pillColors && pillColors[opt] ? pillColors[opt] : null;
             return (
               <button
                 key={opt}
                 onClick={() => onPick(opt)}
+                disabled={full}
+                aria-pressed={multiple ? isActive : undefined}
                 style={{
                   ...pickerItemStyle(isActive),
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
+                  ...(full ? { opacity: 0.45, cursor: 'default' } : {}),
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#f4f2ee'}
                 onMouseLeave={(e) => e.currentTarget.style.background = isActive ? '#eae9fb' : 'transparent'}
@@ -720,6 +755,7 @@ export const EditableSelect = React.memo(function EditableSelect({
                   }} />
                 )}
                 <span>{labelFor(opt)}</span>
+                {multiple && isActive && <Check size={13} strokeWidth={2.2} style={{ marginLeft: 'auto', color: '#4a3fc4' }} />}
               </button>
             );
           })}

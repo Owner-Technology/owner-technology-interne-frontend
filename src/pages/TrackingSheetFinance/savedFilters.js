@@ -10,7 +10,7 @@
 import {
   toNumber, parseDateFR, normalizeSearch,
   scopedPeriodAmounts, scopedOverdueCurrent, scopedOverdueCum,
-  paymentModeLabel, autoDebitPastilles,
+  paymentModeLabel, autoDebitPastilles, pspList,
 } from './constants.js';
 
 // ── Champs proposés ────────────────────────────────────────────────────────
@@ -52,7 +52,9 @@ export const FILTER_FIELDS = [
   },
   {
     key: 'psp', label: 'Check (PSP)', type: 'enum',
-    get: (r, { scope }) => (scope === 'optilex' ? r.psp_optilex : r.psp_owner) || null,
+    // Liste : un encaissement Owner peut porter deux PSP (27/11/2026) ; la
+    // condition « est Learnypay » vaut aussi pour Learnypay + IFX.
+    get: (r, { scope }) => pspList(r, scope),
   },
   {
     key: 'paymentPromise', label: 'Promesse de règlement', type: 'enum',
@@ -172,6 +174,12 @@ function testCondition(row, cond, ctx) {
     case 'number': return testNumber(value, cond.op, cond.value, cond.value2);
     case 'date':   return testDate(value, cond.op, cond.value);
     case 'enum':
+      if (Array.isArray(value)) {
+        if (cond.op === 'empty')  return !value.length;
+        if (cond.op === 'nempty') return value.length > 0;
+        const has = value.map(String).includes(String(cond.value || ''));
+        return cond.op === 'neq' ? !has : has;
+      }
       if (cond.op === 'empty')  return !value;
       if (cond.op === 'nempty') return !!value;
       return cond.op === 'neq'
