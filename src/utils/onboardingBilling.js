@@ -10,13 +10,13 @@ export function billingLeader(info) {
 }
 
 // Les personnes à qui la passer : toutes sauf celle qui la mène, dans l'ordre du serveur, seulement si le serveur dit
-// qu'elle peut encore changer de main. `offWeek` : la personne ne prend pas les onboardings de cette semaine (on peut
-// quand même la choisir).
+// qu'elle peut encore changer de main. `offWeek` : la personne ne prend pas les onboardings de cette semaine ;
+// `sameTime` : elle a déjà un onboarding du CRM sur ces 15 minutes. Deux avertissements : on peut quand même la choisir.
 export function billingTargets(info) {
     if (!info?.can_change) return [];
     return (info.options || [])
         .filter((option) => option?.name && option.name !== info.name)
-        .map((option) => ({ name: option.name, offWeek: option.this_week === false }));
+        .map((option) => ({ name: option.name, offWeek: option.this_week === false, sameTime: option.same_time === true }));
 }
 
 // Lundi (AAAA-MM-JJ) de la semaine d'un jour AAAA-MM-JJ, sans fuseau.

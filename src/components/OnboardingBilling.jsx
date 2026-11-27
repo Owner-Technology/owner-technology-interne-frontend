@@ -64,6 +64,11 @@ function TransferBillingModal({ numeroClient, label, target, current, onClose, o
         <div style={{ fontSize: 12, color: MUTED, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {label}{current ? ` · ${current}` : ""}{target.offWeek ? " · hors de sa semaine" : ""}
         </div>
+        {target.sameTime && !pending && (
+          <div style={{ marginTop: 10, fontSize: 12.5, color: "#7a5a05", lineHeight: 1.5 }}>
+            {target.name} a déjà un onboarding à cette heure.
+          </div>
+        )}
         {error && <div role="alert" style={{ marginTop: 10, fontSize: 12, color: RED, lineHeight: 1.5 }}>{error}</div>}
         {pending ? (
           <>
