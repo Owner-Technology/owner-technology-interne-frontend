@@ -19,38 +19,39 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
   const [lastMonth, setLastMonth] = useState(null);
   const billedUntil = lastMonth ?? date.slice(0, 7);
   const [version, setVersion] = useState(0);
-  // Renouvellement annuel concerné par la sortie (serveur, selon la date et le dernier mois) et le choix de la
-  // direction, en douzièmes de l'annuel : '' = selon la date, 0 = rien, 1 à 3 = mois de préavis, 12 = l'année.
-  const [renewals, setRenewals] = useState([]);
+  // Renouvellement annuel : choix de la direction en douzièmes de l'annuel ('' = au prorata de la date d'effet,
+  // 0 = rien, 1 à 3 = mois de préavis, 12 = l'année). Les renouvellements concernés viennent de l'aperçu.
   const [twelfths, setTwelfths] = useState('');
+  const [loading, setLoading] = useState(true);
   const dialog = useRef(null);
   const withdrawal = payload.etat === 'Rétractation';
   const pause = payload.etat === 'Pause';
   // Pause datée : aucun attendu pendant la pause, facturation normale ensuite ; les mois découlent des dates.
   const datedPause = pause && Boolean(payload.pause_end_date);
   const frDay = iso => iso ? new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR') : '';
+  const exit = !withdrawal && !pause;
+  // Sortie actée : l'aperçu est calculé pour la date, le dernier mois et le renouvellement choisis, une fois la sortie
+  // appliquée (serveur) ; la perte se décide sur ce qui reste dû. Il est redemandé à chaque changement.
+  const ready = exit && date && /^\d{4}-\d{2}$/.test(billedUntil);
   useEffect(() => {
     let alive = true;
-    setPreview(null); setError(''); setLinked(false); setAllRemaining(false);
-    apiClient.get(`/api/v1/optilex/exit-finance-preview?numero_client=${encodeURIComponent(numero)}`)
+    setError(''); setLinked(false); setAllRemaining(false); setLoading(true);
+    const query = new URLSearchParams({ numero_client: numero, etat: payload.etat || '' });
+    if (ready) {
+      query.set('etat_date', date); query.set('last_month', billedUntil);
+      if (twelfths !== '') query.set('renewal_twelfths', twelfths);
+    }
+    apiClient.get(`/api/v1/optilex/exit-finance-preview?${query}`)
       .then(data => {
         if (!alive) return;
-        setPreview(data);
+        setPreview(data); setLoading(false);
         setValues(Object.fromEntries(Object.entries(data.amounts).map(([key, amount]) => [key, Number(amount) === 0 || data.review.active_loss || payload.etat === 'Pause' ? '0' : ''])));
-      }).catch(e => { if (alive) setError(typeof e?.data?.detail === 'string' ? e.data.detail : 'Impossible de charger les montants. Réessayez.'); });
+        if (!(data.renewals || []).length) setTwelfths('');
+      }).catch(e => { if (alive) { setLoading(false); setError(typeof e?.data?.detail === 'string' ? e.data.detail : 'Impossible de charger les montants. Réessayez.'); } });
     return () => { alive = false; };
-  }, [numero, version, payload.etat]);
-  const exit = !withdrawal && !pause;
-  useEffect(() => {
-    if (!exit || !date || !/^\d{4}-\d{2}$/.test(billedUntil)) { setRenewals([]); return undefined; }
-    let alive = true;
-    const query = new URLSearchParams({ numero_client: numero, etat_date: date, last_month: billedUntil });
-    apiClient.get(`/api/v1/optilex/exit-finance-preview?${query}`)
-      .then(data => { if (alive) setRenewals(data.renewals || []); })
-      .catch(() => { if (alive) setRenewals([]); });
-    return () => { alive = false; };
-  }, [numero, date, billedUntil, exit]);
-  useEffect(() => { if (!renewals.length) setTwelfths(''); }, [renewals.length]);
+  }, [numero, version, payload.etat, ready, date, billedUntil, twelfths]);
+  const renewals = (exit && preview?.renewals) || [];
+  const afterExit = exit ? preview?.after_exit : null;
   useEffect(() => {
     const previous = document.activeElement;
     dialog.current?.focus();
@@ -62,7 +63,7 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
   const needsLink = loss && !preview?.review?.finance_withdrawn_at;
   // Pause : perte facultative sur ce qui était dû AVANT la pause (créances, mois en cours), jamais le futur.
   const pauseAmounts = pause && amounts ? { amount_past: amounts.amount_past, amount_current: amounts.amount_current, amount_future: 0 } : null;
-  const canConfirm = preview && date && (withdrawal || (pause ? Boolean(pauseAmounts) && (datedPause || /^\d{4}-\d{2}$/.test(billedUntil))
+  const canConfirm = preview && !loading && date && (withdrawal || (pause ? Boolean(pauseAmounts) && (datedPause || /^\d{4}-\d{2}$/.test(billedUntil))
     : /^\d{4}-\d{2}$/.test(billedUntil) && amounts)) && (!needsLink || linked);
   const keyDown = e => {
     if (e.key === 'Escape') { e.stopPropagation(); onResolve(null); }
@@ -88,13 +89,13 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
       {exit && renewals.length > 0 && <div style={{ marginTop: 14 }}>
         {renewals.map(r => <p key={r.entity} style={{ margin: '0 0 6px', padding: 10, background: '#f7f5f2', borderRadius: 10 }}>{r.sentence}</p>)}
         <label style={{ display: 'block' }}>Renouvellement annuel<select aria-label="Renouvellement annuel" value={twelfths} onChange={e => setTwelfths(e.target.value)} style={{ ...input, marginTop: 6 }}>
-          <option value="">Selon la date ({renewals.every(r => r.billed_by_date) ? 'attendu gardé' : 'non facturé'})</option>
+          <option value="">Selon la date ({renewals.map(r => r.months_by_date ? `${r.months_by_date} mois, ${money(r.amount_by_date)}` : 'non facturé').join(' + ')})</option>
           <option value="0">Non facturé</option>
           {[1, 2, 3].map(n => <option key={n} value={n}>{n} mois de préavis ({renewals.map(r => money((r.annual_amount || 0) * n / 12)).join(' + ')})</option>)}
           <option value="12">Année entière ({renewals.map(r => money(r.annual_amount)).join(' + ')})</option>
         </select></label>
       </div>}
-      {!preview && !error && <p role="status">Chargement des montants financiers…</p>}
+      {loading && !error && <p role="status">{preview ? 'Mise à jour des montants…' : 'Chargement des montants financiers…'}</p>}
       {error && <div role="alert"><p style={{ color: '#c5221f' }}>{error}</p><button style={button} onClick={() => setVersion(v => v + 1)}><RefreshCw size={14}/> Réessayer</button></div>}
       {preview && <>
         {withdrawal ? <p style={{ padding: 14, background: '#fff7e9', borderRadius: 10 }}>Les attendus Owner et Opti’Lex seront automatiquement annulés depuis la signature. Les encaissements et remboursements restent dans l’historique.</p>
@@ -108,7 +109,12 @@ export function BoardFinanceExitDialog({ numero, payload, onResolve }) {
             <span><input aria-label={`Perte · ${labels[key]}`} inputMode="decimal" value={values[key]} disabled={Boolean(loss)} placeholder="0,00" style={{ ...input, textAlign: 'right' }} onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))}/></span>
           </label>)}
         </> : <>
-          <p>Choisissez les montants à passer en perte. <strong>Le reste demeure à recouvrer.</strong></p>
+          {afterExit && (afterExit.cleared > 0 || afterExit.cash_after > 0) && <p style={{ padding: 10, background: '#f7f5f2', borderRadius: 10 }}>
+            {afterExit.cleared > 0 && <>Retiré après la sortie : {money(afterExit.cleared)}, sans perte.</>}
+            {afterExit.cleared > 0 && afterExit.cash_after > 0 && ' '}
+            {afterExit.cash_after > 0 && <>Encaissé après la sortie : {money(afterExit.cash_after)}, imputé sur l’ancien retard, sinon en trop-perçu.</>}
+          </p>}
+          <p>Choisissez les montants à passer en perte sur ce qui reste dû. <strong>Le reste demeure à recouvrer.</strong></p>
           {Object.entries(labels).map(([key, label]) => <label key={key} style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: 12, alignItems: 'center', marginTop: 12 }}>
             <span>{label}<small style={{ display: 'block', color: '#8b867e' }}>Disponible : {money(preview.amounts[key])}</small>{amounts && <small style={{ display: 'block', color: '#24735a' }}>Restant : {money(Number(preview.amounts[key]) - amounts[`amount_${key}`])}</small>}</span>
             <span><input aria-label={`Perte · ${label}`} inputMode="decimal" value={values[key]} disabled={Boolean(loss)} placeholder="0,00" style={{ ...input, textAlign: 'right' }} onChange={e => { setAllRemaining(false); setValues(v => ({ ...v, [key]: e.target.value })); }}/></span>
